@@ -186,5 +186,3 @@ npm run build
 - MUI kurulumu
 - Axios API client yapısı
 - Temel dashboard sayfası ve yönlendirmesi
-
-Sonraki aşamada proje ve haftalık rapor veri modelleri ile temel API endpointleri geliştirilecektir.
