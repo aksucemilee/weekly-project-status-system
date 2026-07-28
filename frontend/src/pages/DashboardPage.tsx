@@ -1,5 +1,13 @@
+import BackendStatus from "../components/BackendStatus";
+
 function DashboardPage() {
-  return <h1>Dashboard Page</h1>
+  return (
+    <main>
+      <h1>Dashboard</h1>
+
+      <BackendStatus />
+    </main>
+  );
 }
 
-export default DashboardPage
+export default DashboardPage;
