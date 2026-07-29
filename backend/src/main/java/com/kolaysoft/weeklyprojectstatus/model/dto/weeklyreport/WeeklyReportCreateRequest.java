@@ -16,6 +16,7 @@ public class WeeklyReportCreateRequest {
     private RiskLevel riskLevel;
     private String completedSummary;
     private String nextWeekPlan;
+    private String blockers;
     private String generalNote;
 
     public WeeklyReportCreateRequest() {
@@ -83,6 +84,14 @@ public class WeeklyReportCreateRequest {
 
     public void setNextWeekPlan(String nextWeekPlan) {
         this.nextWeekPlan = nextWeekPlan;
+    }
+
+    public String getBlockers() {
+        return blockers;
+    }
+
+    public void setBlockers(String blockers) {
+        this.blockers = blockers;
     }
 
     public String getGeneralNote() {

@@ -62,6 +62,9 @@ public class WeeklyReport {
     @Column(name = "next_week_plan", length = 4000)
     private String nextWeekPlan;
 
+    @Column(name = "blockers", length = 4000)
+    private String blockers;
+
     @Column(name = "general_note", length = 4000)
     private String generalNote;
 
@@ -160,6 +163,14 @@ public class WeeklyReport {
 
     public void setNextWeekPlan(String nextWeekPlan) {
         this.nextWeekPlan = nextWeekPlan;
+    }
+
+    public String getBlockers() {
+        return blockers;
+    }
+
+    public void setBlockers(String blockers) {
+        this.blockers = blockers;
     }
 
     public String getGeneralNote() {

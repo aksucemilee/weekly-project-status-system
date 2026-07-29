@@ -20,6 +20,7 @@ public class WeeklyReportResponse {
     private RiskLevel riskLevel;
     private String completedSummary;
     private String nextWeekPlan;
+    private String blockers;
     private String generalNote;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -39,10 +40,10 @@ public class WeeklyReportResponse {
             RiskLevel riskLevel,
             String completedSummary,
             String nextWeekPlan,
+            String blockers,
             String generalNote,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
-    ) {
+            LocalDateTime updatedAt) {
         this.id = id;
         this.projectId = projectId;
         this.projectName = projectName;
@@ -54,6 +55,7 @@ public class WeeklyReportResponse {
         this.riskLevel = riskLevel;
         this.completedSummary = completedSummary;
         this.nextWeekPlan = nextWeekPlan;
+        this.blockers = blockers;
         this.generalNote = generalNote;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -145,6 +147,14 @@ public class WeeklyReportResponse {
 
     public void setNextWeekPlan(String nextWeekPlan) {
         this.nextWeekPlan = nextWeekPlan;
+    }
+
+    public String getBlockers() {
+        return blockers;
+    }
+
+    public void setBlockers(String blockers) {
+        this.blockers = blockers;
     }
 
     public String getGeneralNote() {
