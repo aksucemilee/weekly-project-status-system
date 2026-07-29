@@ -15,84 +15,79 @@ import java.util.List;
 @Transactional
 public class WeeklyReportService {
 
-    private final WeeklyReportRepository weeklyReportRepository;
-    private final ProjectService projectService;
+        private final WeeklyReportRepository weeklyReportRepository;
+        private final ProjectService projectService;
 
-    public WeeklyReportService(
-            WeeklyReportRepository weeklyReportRepository,
-            ProjectService projectService
-    ) {
-        this.weeklyReportRepository = weeklyReportRepository;
-        this.projectService = projectService;
-    }
-
-    public WeeklyReportResponse createWeeklyReport(
-            Long projectId,
-            WeeklyReportCreateRequest request
-    ) {
-        Project project = projectService.getProjectEntity(projectId);
-
-        boolean reportAlreadyExists =
-                weeklyReportRepository.existsByProjectIdAndReportWeekStart(
-                        projectId,
-                        request.getReportWeekStart()
-                );
-
-        if (reportAlreadyExists) {
-            throw new DuplicateResourceException(
-                    "Weekly report already exists for project id "
-                            + projectId
-                            + " and week "
-                            + request.getReportWeekStart()
-            );
+        public WeeklyReportService(
+                        WeeklyReportRepository weeklyReportRepository,
+                        ProjectService projectService) {
+                this.weeklyReportRepository = weeklyReportRepository;
+                this.projectService = projectService;
         }
 
-        WeeklyReport weeklyReport = new WeeklyReport();
+        public WeeklyReportResponse createWeeklyReport(
+                        Long projectId,
+                        WeeklyReportCreateRequest request) {
+                Project project = projectService.getProjectEntity(projectId);
 
-        weeklyReport.setProject(project);
-        weeklyReport.setReportWeekStart(request.getReportWeekStart());
-        weeklyReport.setTargetProgress(request.getTargetProgress());
-        weeklyReport.setActualProgress(request.getActualProgress());
-        weeklyReport.setGeneralStatus(request.getGeneralStatus());
-        weeklyReport.setScheduleStatus(request.getScheduleStatus());
-        weeklyReport.setRiskLevel(request.getRiskLevel());
-        weeklyReport.setCompletedSummary(request.getCompletedSummary());
-        weeklyReport.setNextWeekPlan(request.getNextWeekPlan());
-        weeklyReport.setGeneralNote(request.getGeneralNote());
+                boolean reportAlreadyExists = weeklyReportRepository.existsByProjectIdAndReportWeekStart(
+                                projectId,
+                                request.getReportWeekStart());
 
-        WeeklyReport savedReport =
-                weeklyReportRepository.save(weeklyReport);
+                if (reportAlreadyExists) {
+                        throw new DuplicateResourceException(
+                                        "Weekly report already exists for project id "
+                                                        + projectId
+                                                        + " and week "
+                                                        + request.getReportWeekStart());
+                }
 
-        return toResponse(savedReport);
-    }
+                WeeklyReport weeklyReport = new WeeklyReport();
 
-    @Transactional(readOnly = true)
-    public List<WeeklyReportResponse> getReportsByProject(Long projectId) {
-        projectService.getProjectEntity(projectId);
+                weeklyReport.setProject(project);
+                weeklyReport.setReportWeekStart(request.getReportWeekStart());
+                weeklyReport.setTargetProgress(request.getTargetProgress());
+                weeklyReport.setActualProgress(request.getActualProgress());
+                weeklyReport.setGeneralStatus(request.getGeneralStatus());
+                weeklyReport.setScheduleStatus(request.getScheduleStatus());
+                weeklyReport.setRiskLevel(request.getRiskLevel());
+                weeklyReport.setCompletedSummary(request.getCompletedSummary());
+                weeklyReport.setNextWeekPlan(request.getNextWeekPlan());
+                weeklyReport.setBlockers(request.getBlockers());
+                weeklyReport.setGeneralNote(request.getGeneralNote());
 
-        return weeklyReportRepository
-                .findByProjectIdOrderByReportWeekStartDesc(projectId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
+                WeeklyReport savedReport = weeklyReportRepository.save(weeklyReport);
 
-    private WeeklyReportResponse toResponse(WeeklyReport weeklyReport) {
-        return new WeeklyReportResponse(
-                weeklyReport.getId(),
-                weeklyReport.getProject().getId(),
-                weeklyReport.getProject().getName(),
-                weeklyReport.getReportWeekStart(),
-                weeklyReport.getTargetProgress(),
-                weeklyReport.getActualProgress(),
-                weeklyReport.getGeneralStatus(),
-                weeklyReport.getScheduleStatus(),
-                weeklyReport.getRiskLevel(),
-                weeklyReport.getCompletedSummary(),
-                weeklyReport.getNextWeekPlan(),
-                weeklyReport.getGeneralNote(),
-                weeklyReport.getCreatedAt(),
-                weeklyReport.getUpdatedAt()
-        );
-    }
+                return toResponse(savedReport);
+        }
+
+        @Transactional(readOnly = true)
+        public List<WeeklyReportResponse> getReportsByProject(Long projectId) {
+                projectService.getProjectEntity(projectId);
+
+                return weeklyReportRepository
+                                .findByProjectIdOrderByReportWeekStartDesc(projectId)
+                                .stream()
+                                .map(this::toResponse)
+                                .toList();
+        }
+
+        private WeeklyReportResponse toResponse(WeeklyReport weeklyReport) {
+                return new WeeklyReportResponse(
+                                weeklyReport.getId(),
+                                weeklyReport.getProject().getId(),
+                                weeklyReport.getProject().getName(),
+                                weeklyReport.getReportWeekStart(),
+                                weeklyReport.getTargetProgress(),
+                                weeklyReport.getActualProgress(),
+                                weeklyReport.getGeneralStatus(),
+                                weeklyReport.getScheduleStatus(),
+                                weeklyReport.getRiskLevel(),
+                                weeklyReport.getCompletedSummary(),
+                                weeklyReport.getNextWeekPlan(),
+                                weeklyReport.getBlockers(),
+                                weeklyReport.getGeneralNote(),
+                                weeklyReport.getCreatedAt(),
+                                weeklyReport.getUpdatedAt());
+        }
 }
