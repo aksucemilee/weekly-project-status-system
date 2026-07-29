@@ -11,7 +11,6 @@ Proje yöneticilerinin haftalık durum raporlarını oluşturabildiği, CTO’nu
 - Spring Web
 - Spring Data JPA
 - PostgreSQL
-- Bean Validation
 - Swagger / OpenAPI
 - Maven
 
@@ -115,6 +114,19 @@ Swagger arayüzü:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+## API Endpointleri
+
+| Metot  | Endpoint                                   | Açıklama                               |
+| ------ | ------------------------------------------ | -------------------------------------- |
+| `GET`  | `/api/health`                              | Backend sağlık kontrolü                |
+| `POST` | `/api/projects`                            | Yeni proje oluşturur                   |
+| `GET`  | `/api/projects`                            | Projeleri listeler                     |
+| `GET`  | `/api/projects/{projectId}`                | Proje detayını getirir                 |
+| `POST` | `/api/projects/{projectId}/weekly-reports` | Projeye haftalık rapor ekler           |
+| `GET`  | `/api/projects/{projectId}/weekly-reports` | Projenin haftalık raporlarını listeler |
+
+Uygulama başlatılırken `JPA_DDL_AUTO` ortam değişkeni verilmezse geliştirme ortamında varsayılan olarak `update` değeri kullanılır.
+
 ## Frontend Ayarları
 
 Frontend’in backend ile bağlantı kurabilmesi için `frontend/.env.local` dosyası oluşturulmalıdır.
@@ -177,12 +189,25 @@ npm run build
 
 Şu ana kadar tamamlanan çalışmalar:
 
-- Spring Boot backend iskeleti
-- PostgreSQL bağlantı ayarları
-- Health endpoint
+### Backend
+
+- Spring Boot proje iskeleti
+- PostgreSQL bağlantısı ve ortam değişkeni yapılandırması
+- `Project` ve `WeeklyReport` veri modelleri
+- Request ve response DTO yapıları
+- Repository, service ve controller katmanları
+- Proje oluşturma, listeleme ve detay endpointleri
+- Haftalık rapor oluşturma ve listeleme endpointleri
+- Aynı proje ve rapor haftası için ikinci kaydın engellenmesi
+- Merkezi `404 Not Found` ve `409 Conflict` hata yönetimi
 - Swagger / OpenAPI yapılandırması
-- React ve TypeScript frontend iskeleti
-- React Router yapılandırması
+- Endpointlerin PostgreSQL üzerinde gerçek isteklerle test edilmesi
+
+### Frontend
+
+- React ve TypeScript proje iskeleti
+- Vite yapılandırması
+- React Router yönlendirme yapısı
 - MUI kurulumu
 - Axios API client yapısı
-- Temel dashboard sayfası ve yönlendirmesi
+- Temel dashboard sayfası
