@@ -3,6 +3,7 @@ package com.kolaysoft.weeklyprojectstatus.controller;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
 import com.kolaysoft.weeklyprojectstatus.service.WeeklyReportService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,36 +19,30 @@ import java.util.List;
 @RequestMapping("/api/projects/{projectId}/weekly-reports")
 public class WeeklyReportController {
 
-    private final WeeklyReportService weeklyReportService;
+        private final WeeklyReportService weeklyReportService;
 
-    public WeeklyReportController(
-            WeeklyReportService weeklyReportService
-    ) {
-        this.weeklyReportService = weeklyReportService;
-    }
+        public WeeklyReportController(
+                        WeeklyReportService weeklyReportService) {
+                this.weeklyReportService = weeklyReportService;
+        }
 
-    @PostMapping
-    public ResponseEntity<WeeklyReportResponse> createWeeklyReport(
-            @PathVariable Long projectId,
-            @RequestBody WeeklyReportCreateRequest request
-    ) {
-        WeeklyReportResponse createdReport =
-                weeklyReportService.createWeeklyReport(
-                        projectId,
-                        request
-                );
+        @PostMapping
+        public ResponseEntity<WeeklyReportResponse> createWeeklyReport(
+                        @PathVariable Long projectId,
+                        @Valid @RequestBody WeeklyReportCreateRequest request) {
+                WeeklyReportResponse createdReport = weeklyReportService.createWeeklyReport(
+                                projectId,
+                                request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(createdReport);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(createdReport);
+        }
 
-    @GetMapping
-    public ResponseEntity<List<WeeklyReportResponse>> getReportsByProject(
-            @PathVariable Long projectId
-    ) {
-        return ResponseEntity.ok(
-                weeklyReportService.getReportsByProject(projectId)
-        );
-    }
+        @GetMapping
+        public ResponseEntity<List<WeeklyReportResponse>> getReportsByProject(
+                        @PathVariable Long projectId) {
+                return ResponseEntity.ok(
+                                weeklyReportService.getReportsByProject(projectId));
+        }
 }
