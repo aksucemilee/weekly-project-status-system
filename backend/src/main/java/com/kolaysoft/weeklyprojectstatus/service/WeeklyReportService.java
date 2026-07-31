@@ -6,6 +6,7 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResp
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
+import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +71,14 @@ public class WeeklyReportService {
                                 .stream()
                                 .map(this::toResponse)
                                 .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public WeeklyReport getWeeklyReportEntity(Long weeklyReportId) {
+                return weeklyReportRepository
+                                .findById(weeklyReportId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Weekly report not found with id: " + weeklyReportId));
         }
 
         private WeeklyReportResponse toResponse(WeeklyReport weeklyReport) {
