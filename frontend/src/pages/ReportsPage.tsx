@@ -16,6 +16,7 @@ import { getWeeklyReportsByProject } from "../services/weeklyReportService";
 import type { Project } from "../types/project";
 import type { WeeklyReport } from "../types/weeklyReport";
 import WorkItemManager from "../components/work-items/WorkItemManager";
+import RiskIssueManager from "../components/risk-issues/RiskIssueManager";
 
 function ReportsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -155,7 +156,17 @@ function ReportsPage() {
           />
 
           {selectedReport && (
-            <WorkItemManager key={selectedReport.id} report={selectedReport} />
+            <Stack spacing={4}>
+              <WorkItemManager
+                key={`work-items-${selectedReport.id}`}
+                report={selectedReport}
+              />
+
+              <RiskIssueManager
+                key={`risk-issues-${selectedReport.id}`}
+                report={selectedReport}
+              />
+            </Stack>
           )}
         </Stack>
       )}

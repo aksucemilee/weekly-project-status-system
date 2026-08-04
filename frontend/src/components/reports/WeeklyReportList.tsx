@@ -389,8 +389,8 @@ function WeeklyReportList({
                   }}
                 >
                   {selectedReportId === report.id
-                    ? "İş Kalemleri Seçildi"
-                    : "İş Kalemlerini Yönet"}
+                    ? "Rapor Detayları Seçildi"
+                    : "Rapor Detaylarını Yönet"}
                 </Button>
               </Box>
             </Stack>
