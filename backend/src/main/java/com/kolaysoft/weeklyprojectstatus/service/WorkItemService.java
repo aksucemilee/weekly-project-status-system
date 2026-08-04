@@ -1,7 +1,9 @@
 package com.kolaysoft.weeklyprojectstatus.service;
 
+import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemResponse;
+import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WorkItem;
 import com.kolaysoft.weeklyprojectstatus.repository.WorkItemRepository;
@@ -57,6 +59,60 @@ public class WorkItemService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public WorkItemResponse getWorkItem(
+            Long weeklyReportId,
+            Long workItemId) {
+
+        WorkItem workItem = getWorkItemEntity(weeklyReportId, workItemId);
+
+        return toResponse(workItem);
+    }
+
+    public WorkItemResponse updateWorkItem(
+            Long weeklyReportId,
+            Long workItemId,
+            WorkItemUpdateRequest request) {
+
+        WorkItem workItem = getWorkItemEntity(weeklyReportId, workItemId);
+
+        workItem.setTitle(request.getTitle());
+        workItem.setDescription(request.getDescription());
+        workItem.setResponsible(request.getResponsible());
+        workItem.setStatus(request.getStatus());
+        workItem.setPlannedDate(request.getPlannedDate());
+        workItem.setCompletedDate(request.getCompletedDate());
+        workItem.setNote(request.getNote());
+
+        WorkItem updatedWorkItem = workItemRepository.save(workItem);
+
+        return toResponse(updatedWorkItem);
+    }
+
+    public void deleteWorkItem(
+            Long weeklyReportId,
+            Long workItemId) {
+
+        WorkItem workItem = getWorkItemEntity(weeklyReportId, workItemId);
+
+        workItemRepository.delete(workItem);
+    }
+
+    private WorkItem getWorkItemEntity(
+            Long weeklyReportId,
+            Long workItemId) {
+
+        return workItemRepository
+                .findByIdAndWeeklyReport_Id(
+                        workItemId,
+                        weeklyReportId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Work item not found with id: "
+                                + workItemId
+                                + " for weekly report id: "
+                                + weeklyReportId));
     }
 
     private WorkItemResponse toResponse(WorkItem workItem) {
