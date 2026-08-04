@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.LocalDateTime;
 
@@ -46,6 +47,16 @@ public class GlobalExceptionHandler {
                 return buildErrorResponse(
                                 HttpStatus.BAD_REQUEST,
                                 message,
+                                request.getRequestURI());
+        }
+
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(
+                        HttpMessageNotReadableException exception,
+                        HttpServletRequest request) {
+                return buildErrorResponse(
+                                HttpStatus.BAD_REQUEST,
+                                "Gönderilen JSON verisi geçersizdir. Enum değerlerini ve tarih biçimini kontrol edin.",
                                 request.getRequestURI());
         }
 
