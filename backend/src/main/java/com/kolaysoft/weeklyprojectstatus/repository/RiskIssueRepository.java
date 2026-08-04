@@ -4,8 +4,13 @@ import com.kolaysoft.weeklyprojectstatus.model.entity.RiskIssue;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RiskIssueRepository extends JpaRepository<RiskIssue, Long> {
 
     List<RiskIssue> findByWeeklyReport_Id(Long weeklyReportId);
+
+    Optional<RiskIssue> findByIdAndWeeklyReport_Id(
+            Long id,
+            Long weeklyReportId);
 }
