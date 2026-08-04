@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   LinearProgress,
@@ -25,6 +26,8 @@ type WeeklyReportListProps = {
   reports: WeeklyReport[];
   isLoading: boolean;
   errorMessage: string;
+  selectedReportId: number | null;
+  onManageWorkItems: (report: WeeklyReport) => void;
 };
 
 type ProgressSummaryProps = {
@@ -83,6 +86,8 @@ function WeeklyReportList({
   reports,
   isLoading,
   errorMessage,
+  selectedReportId,
+  onManageWorkItems,
 }: WeeklyReportListProps) {
   if (isLoading) {
     return (
@@ -360,6 +365,33 @@ function WeeklyReportList({
                     {report.generalNote || "Not girilmedi."}
                   </Typography>
                 </Box>
+              </Box>
+              {/* BURAYA EKLENECEK */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: {
+                    xs: "stretch",
+                    sm: "flex-end",
+                  },
+                }}
+              >
+                <Button
+                  variant={
+                    selectedReportId === report.id ? "contained" : "outlined"
+                  }
+                  onClick={() => onManageWorkItems(report)}
+                  sx={{
+                    width: {
+                      xs: "100%",
+                      sm: "auto",
+                    },
+                  }}
+                >
+                  {selectedReportId === report.id
+                    ? "İş Kalemleri Seçildi"
+                    : "İş Kalemlerini Yönet"}
+                </Button>
               </Box>
             </Stack>
           </Paper>
