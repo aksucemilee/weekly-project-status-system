@@ -15,12 +15,16 @@ import { getProjects } from "../services/projectService";
 import { getWeeklyReportsByProject } from "../services/weeklyReportService";
 import type { Project } from "../types/project";
 import type { WeeklyReport } from "../types/weeklyReport";
+import WorkItemManager from "../components/work-items/WorkItemManager";
 
 function ReportsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
 
   const [reports, setReports] = useState<WeeklyReport[]>([]);
+  const [selectedReport, setSelectedReport] = useState<WeeklyReport | null>(
+    null,
+  );
 
   const [isProjectsLoading, setIsProjectsLoading] = useState(true);
 
@@ -55,6 +59,7 @@ function ReportsPage() {
   useEffect(() => {
     if (!selectedProjectId) {
       setReports([]);
+      setSelectedReport(null);
       return;
     }
 
@@ -62,6 +67,7 @@ function ReportsPage() {
       setIsReportsLoading(true);
       setReportListErrorMessage("");
       setReports([]);
+      setSelectedReport(null);
 
       try {
         const reportList = await getWeeklyReportsByProject(
@@ -83,10 +89,12 @@ function ReportsPage() {
 
   const handleProjectChange = (projectId: string) => {
     setSelectedProjectId(projectId);
+    setSelectedReport(null);
   };
 
   const handleReportCreated = (createdReport: WeeklyReport) => {
     setReports((previousReports) => [createdReport, ...previousReports]);
+    setSelectedReport(createdReport);
   };
 
   return (
@@ -142,7 +150,13 @@ function ReportsPage() {
             reports={reports}
             isLoading={isReportsLoading}
             errorMessage={reportListErrorMessage}
+            selectedReportId={selectedReport?.id ?? null}
+            onManageWorkItems={setSelectedReport}
           />
+
+          {selectedReport && (
+            <WorkItemManager key={selectedReport.id} report={selectedReport} />
+          )}
         </Stack>
       )}
     </Box>
