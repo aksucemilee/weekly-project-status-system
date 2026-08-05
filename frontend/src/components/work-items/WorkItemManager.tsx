@@ -48,6 +48,8 @@ type WorkItemFormState = {
   note: string;
 };
 
+type WorkItemFieldErrors = Partial<Record<keyof WorkItemFormState, string>>;
+
 type WorkItemChipColor =
   | "default"
   | "primary"
@@ -93,6 +95,8 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
   const [workItemForm, setWorkItemForm] =
     useState<WorkItemFormState>(initialWorkItemForm);
 
+  const [fieldErrors, setFieldErrors] = useState<WorkItemFieldErrors>({});
+
   const [editingWorkItemId, setEditingWorkItemId] = useState<number | null>(
     null,
   );
@@ -122,6 +126,7 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
       setSuccessMessage("");
       setEditingWorkItemId(null);
       setWorkItemForm(initialWorkItemForm);
+      setFieldErrors({});
       setIsFormOpen(false);
       setWorkItems([]);
       setDeletingWorkItemId(null);
@@ -166,6 +171,11 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
       ...previousForm,
       [field]: value,
     }));
+
+    setFieldErrors((previousErrors) => ({
+      ...previousErrors,
+      [field]: undefined,
+    }));
   };
 
   const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
@@ -183,6 +193,7 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
   const resetForm = () => {
     setWorkItemForm(initialWorkItemForm);
     setEditingWorkItemId(null);
+    setFieldErrors({});
   };
 
   const scrollToForm = () => {
@@ -206,9 +217,13 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
     clearMessages();
 
     if (!workItemForm.title.trim()) {
-      setErrorMessage("İş kalemi başlığı zorunludur.");
+      setFieldErrors({
+        title: "İş kalemi başlığı zorunludur.",
+      });
       return;
     }
+
+    setFieldErrors({});
 
     const request: WorkItemCreateRequest = {
       title: workItemForm.title.trim(),
@@ -261,6 +276,7 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
 
   const handleEdit = (workItem: WorkItem) => {
     clearMessages();
+    setFieldErrors({});
     setEditingWorkItemId(workItem.id);
     setIsFormOpen(true);
 
@@ -410,7 +426,7 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
               scrollMarginTop: 24,
             }}
           >
-            <Box component="form" onSubmit={handleSubmit}>
+            <Box component="form" onSubmit={handleSubmit} noValidate>
               <Stack spacing={2.5}>
                 <Typography variant="h6">
                   {editingWorkItemId !== null
@@ -434,6 +450,8 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
                     onChange={(event) =>
                       updateFormField("title", event.target.value)
                     }
+                    error={Boolean(fieldErrors.title)}
+                    helperText={fieldErrors.title}
                     slotProps={{
                       htmlInput: {
                         maxLength: 200,

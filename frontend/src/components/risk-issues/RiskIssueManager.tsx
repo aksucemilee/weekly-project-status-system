@@ -50,6 +50,8 @@ type RiskIssueFormState = {
   status: RiskIssueStatus;
 };
 
+type RiskIssueFieldErrors = Partial<Record<keyof RiskIssueFormState, string>>;
+
 type ChipColor = "default" | "primary" | "success" | "warning" | "error";
 
 const initialRiskIssueForm: RiskIssueFormState = {
@@ -97,6 +99,8 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
   const [riskIssueForm, setRiskIssueForm] =
     useState<RiskIssueFormState>(initialRiskIssueForm);
 
+  const [fieldErrors, setFieldErrors] = useState<RiskIssueFieldErrors>({});
+
   const [editingRiskIssueId, setEditingRiskIssueId] = useState<number | null>(
     null,
   );
@@ -126,6 +130,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
       setSuccessMessage("");
       setEditingRiskIssueId(null);
       setRiskIssueForm(initialRiskIssueForm);
+      setFieldErrors({});
       setRiskIssues([]);
       setIsFormOpen(false);
       setRiskIssuePendingDelete(null);
@@ -170,6 +175,11 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
       ...previousForm,
       [field]: value,
     }));
+
+    setFieldErrors((previousErrors) => ({
+      ...previousErrors,
+      [field]: undefined,
+    }));
   };
 
   const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
@@ -187,6 +197,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
   const resetForm = () => {
     setRiskIssueForm(initialRiskIssueForm);
     setEditingRiskIssueId(null);
+    setFieldErrors({});
   };
 
   const scrollToForm = () => {
@@ -210,9 +221,13 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
     clearMessages();
 
     if (!riskIssueForm.title.trim()) {
-      setErrorMessage("Risk veya engel başlığı zorunludur.");
+      setFieldErrors({
+        title: "Risk veya engel başlığı zorunludur.",
+      });
       return;
     }
+
+    setFieldErrors({});
 
     const request: RiskIssueCreateRequest = {
       type: riskIssueForm.type,
@@ -269,6 +284,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
 
   const handleEdit = (riskIssue: RiskIssue) => {
     clearMessages();
+    setFieldErrors({});
     setEditingRiskIssueId(riskIssue.id);
     setIsFormOpen(true);
 
@@ -423,7 +439,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
               scrollMarginTop: 24,
             }}
           >
-            <Box component="form" onSubmit={handleSubmit}>
+            <Box component="form" onSubmit={handleSubmit} noValidate>
               <Stack spacing={2.5}>
                 <Typography variant="h6">
                   {editingRiskIssueId !== null
@@ -469,6 +485,8 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
                     onChange={(event) =>
                       updateFormField("title", event.target.value)
                     }
+                    error={Boolean(fieldErrors.title)}
+                    helperText={fieldErrors.title}
                     slotProps={{
                       htmlInput: {
                         maxLength: 200,

@@ -13,7 +13,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import PageHeader from "../components/common/PageHeader";
 import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
@@ -35,22 +35,23 @@ function ProjectsPage() {
   const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      setLoadErrorMessage("");
+  const loadProjects = useCallback(async () => {
+    setIsLoading(true);
+    setLoadErrorMessage("");
 
-      try {
-        const projectList = await getProjects();
-        setProjects(projectList);
-      } catch {
-        setLoadErrorMessage("Projeler yüklenirken bir hata oluştu.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadProjects();
+    try {
+      const projectList = await getProjects();
+      setProjects(projectList);
+    } catch {
+      setLoadErrorMessage("Projeler yüklenirken bir hata oluştu.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
 
   const projectSummary = useMemo(
     () => ({
@@ -114,7 +115,20 @@ function ProjectsPage() {
 
       {!isLoading && loadErrorMessage && (
         <Paper sx={{ p: 3 }}>
-          <Alert severity="error">{loadErrorMessage}</Alert>
+          <Alert
+            severity="error"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => void loadProjects()}
+              >
+                Tekrar dene
+              </Button>
+            }
+          >
+            {loadErrorMessage}
+          </Alert>
         </Paper>
       )}
 
