@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 
+import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
 import type { WeeklyReport } from "../../types/weeklyReport";
 import EmptyState from "../feedback/EmptyState";
 import {
@@ -27,7 +28,7 @@ type WeeklyReportListProps = {
   isLoading: boolean;
   errorMessage: string;
   selectedReportId: number | null;
-  onManageWorkItems: (report: WeeklyReport) => void;
+  onManageReportDetails: (report: WeeklyReport) => void;
 };
 
 type ProgressSummaryProps = {
@@ -36,42 +37,34 @@ type ProgressSummaryProps = {
 };
 
 function ProgressSummary({ label, value }: ProgressSummaryProps) {
-  const isValueValid = Number.isFinite(value) && value >= 0 && value <= 100;
-
   const normalizedValue = Math.min(100, Math.max(0, value));
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0 }}>
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 2,
-          mb: 1,
+          gap: 1,
+          mb: 0.75,
         }}
       >
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="caption" color="text.secondary">
           {label}
         </Typography>
 
-        <Typography
-          variant="body2"
-          color={isValueValid ? "text.primary" : "error.main"}
-          sx={{ fontWeight: 800 }}
-        >
-          {isValueValid ? `%${value}` : `Geçersiz değer: %${value}`}
+        <Typography variant="caption" sx={{ fontWeight: 900 }}>
+          %{value}
         </Typography>
       </Box>
 
       <LinearProgress
         variant="determinate"
         value={normalizedValue}
-        color={isValueValid ? "primary" : "error"}
         sx={{
-          height: 8,
+          height: 7,
           borderRadius: 999,
-          backgroundColor: "rgba(37, 99, 235, 0.08)",
 
           "& .MuiLinearProgress-bar": {
             borderRadius: 999,
@@ -87,13 +80,13 @@ function WeeklyReportList({
   isLoading,
   errorMessage,
   selectedReportId,
-  onManageWorkItems,
+  onManageReportDetails,
 }: WeeklyReportListProps) {
   if (isLoading) {
     return (
       <Paper
         sx={{
-          minHeight: 240,
+          minHeight: 220,
           display: "grid",
           placeItems: "center",
           p: 3,
@@ -142,17 +135,18 @@ function WeeklyReportList({
             xs: "column",
             sm: "row",
           },
-          gap: 2,
-          mb: 2.5,
+          gap: 1.5,
+          mb: 2,
         }}
       >
         <Box>
           <Typography variant="h5" component="h2">
-            Rapor Listesi
+            Haftalık raporlar
           </Typography>
 
-          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-            Seçilen projeye ait haftalık durum raporları
+          <Typography color="text.secondary" sx={{ mt: 0.25 }}>
+            Bir raporu seçerek genel görünümünü, iş kalemlerini ve risklerini
+            inceleyin.
           </Typography>
         </Box>
 
@@ -163,62 +157,62 @@ function WeeklyReportList({
         />
       </Box>
 
-      <Stack spacing={2.5}>
-        {reports.map((report) => (
-          <Paper
-            key={report.id}
-            component="article"
-            sx={{
-              p: {
-                xs: 2.5,
-                md: 3,
-              },
-              transition:
-                "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+      <ResponsiveCardGrid variant="standard">
+        {reports.map((report) => {
+          const isSelected = selectedReportId === report.id;
 
-              "&:hover": {
-                transform: "translateY(-2px)",
-                borderColor: "rgba(37, 99, 235, 0.22)",
-                boxShadow: "0 14px 32px rgba(15, 23, 42, 0.08)",
-              },
-            }}
-          >
-            <Stack spacing={3}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: {
-                    xs: "flex-start",
-                    md: "center",
-                  },
-                  justifyContent: "space-between",
-                  flexDirection: {
-                    xs: "column",
-                    md: "row",
-                  },
-                  gap: 2,
-                }}
-              >
-                <Box>
-                  <Typography variant="h6" component="h3">
-                    {report.projectName}
+          return (
+            <Paper
+              key={report.id}
+              component="article"
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                minWidth: 0,
+                minHeight: {
+                  xs: "auto",
+                  md: 310,
+                },
+                p: {
+                  xs: 2,
+                  md: 2.25,
+                },
+                borderColor: isSelected ? "primary.main" : "divider",
+                boxShadow: isSelected ? "0 0 0 1px" : undefined,
+                transition:
+                  "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  borderColor: "primary.main",
+                },
+              }}
+            >
+              <Stack spacing={2} sx={{ height: "100%" }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="overline"
+                    color="primary.main"
+                    sx={{ fontWeight: 900 }}
+                  >
+                    {formatReportDate(report.reportWeekStart)}
                   </Typography>
 
                   <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    variant="h6"
+                    component="h3"
+                    sx={{ overflowWrap: "anywhere" }}
                   >
-                    Hafta başlangıcı: {formatReportDate(report.reportWeekStart)}
+                    {report.projectName}
                   </Typography>
                 </Box>
 
                 <Stack
-                  spacing={1}
                   useFlexGap
                   sx={{
                     flexDirection: "row",
                     flexWrap: "wrap",
+                    gap: 0.75,
                   }}
                 >
                   <Chip
@@ -242,161 +236,69 @@ function WeeklyReportList({
                     variant="outlined"
                   />
                 </Stack>
-              </Box>
 
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    md: "repeat(2, minmax(0, 1fr))",
-                  },
-                  gap: 3,
-                  p: 2.5,
-                  borderRadius: 2.5,
-                  backgroundColor: "rgba(15, 23, 42, 0.025)",
-                }}
-              >
-                <ProgressSummary
-                  label="Hedeflenen ilerleme"
-                  value={report.targetProgress}
-                />
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, minmax(0, 1fr))",
+                    },
+                    gap: 2,
+                    p: 1.75,
+                    borderRadius: 2.5,
+                    backgroundColor: "action.hover",
+                  }}
+                >
+                  <ProgressSummary
+                    label="Hedef"
+                    value={report.targetProgress}
+                  />
 
-                <ProgressSummary
-                  label="Gerçekleşen ilerleme"
-                  value={report.actualProgress}
-                />
-              </Box>
+                  <ProgressSummary
+                    label="Gerçekleşen"
+                    value={report.actualProgress}
+                  />
+                </Box>
 
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "repeat(2, minmax(0, 1fr))",
-                  },
-                  gap: 3,
-                }}
-              >
-                <Box>
+                <Box sx={{ flexGrow: 1 }}>
                   <Typography
                     variant="subtitle2"
                     sx={{
-                      mb: 0.75,
+                      mb: 0.5,
                       fontWeight: 800,
                     }}
                   >
-                    Yapılanlar
+                    Bu hafta yapılanlar
                   </Typography>
 
                   <Typography
                     color="text.secondary"
                     sx={{
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-line",
+                      lineHeight: 1.65,
+                      overflowWrap: "anywhere",
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 3,
+                      overflow: "hidden",
                     }}
                   >
                     {report.completedSummary || "Bilgi girilmedi."}
                   </Typography>
                 </Box>
 
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      mb: 0.75,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Gelecek hafta yapılacaklar
-                  </Typography>
-
-                  <Typography
-                    color="text.secondary"
-                    sx={{
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-line",
-                    }}
-                  >
-                    {report.nextWeekPlan || "Bilgi girilmedi."}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      mb: 0.75,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Engeller
-                  </Typography>
-
-                  <Typography
-                    color="text.secondary"
-                    sx={{
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-line",
-                    }}
-                  >
-                    {report.blockers || "Engel belirtilmedi."}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      mb: 0.75,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Genel not
-                  </Typography>
-
-                  <Typography
-                    color="text.secondary"
-                    sx={{
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-line",
-                    }}
-                  >
-                    {report.generalNote || "Not girilmedi."}
-                  </Typography>
-                </Box>
-              </Box>
-              {/* BURAYA EKLENECEK */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: {
-                    xs: "stretch",
-                    sm: "flex-end",
-                  },
-                }}
-              >
                 <Button
-                  variant={
-                    selectedReportId === report.id ? "contained" : "outlined"
-                  }
-                  onClick={() => onManageWorkItems(report)}
-                  sx={{
-                    width: {
-                      xs: "100%",
-                      sm: "auto",
-                    },
-                  }}
+                  variant={isSelected ? "contained" : "outlined"}
+                  onClick={() => onManageReportDetails(report)}
+                  fullWidth
                 >
-                  {selectedReportId === report.id
-                    ? "Rapor Detayları Seçildi"
-                    : "Rapor Detaylarını Yönet"}
+                  {isSelected ? "Detayları kapat" : "Raporu incele"}
                 </Button>
-              </Box>
-            </Stack>
-          </Paper>
-        ))}
-      </Stack>
+              </Stack>
+            </Paper>
+          );
+        })}
+      </ResponsiveCardGrid>
     </Box>
   );
 }

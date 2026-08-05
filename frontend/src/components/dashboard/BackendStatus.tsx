@@ -1,15 +1,13 @@
 import {
   Alert,
   Box,
-  Button,
   Chip,
   CircularProgress,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import apiClient from "../../api/apiClient";
 
@@ -20,44 +18,52 @@ type HealthResponse = {
 
 function BackendStatus() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
+
   const [errorMessage, setErrorMessage] = useState("");
 
-  const fetchBackendStatus = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage("");
-
-    try {
-      const response = await apiClient.get<HealthResponse>("/health");
-      setHealth(response.data);
-    } catch {
-      setHealth(null);
-      setErrorMessage("Backend bağlantısı kurulamadı.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
+    let isActive = true;
+
+    const fetchBackendStatus = async () => {
+      setErrorMessage("");
+
+      try {
+        const response = await apiClient.get<HealthResponse>("/health");
+
+        if (isActive) {
+          setHealth(response.data);
+        }
+      } catch {
+        if (isActive) {
+          setErrorMessage("Backend bağlantısı kurulamadı.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     void fetchBackendStatus();
-  }, [fetchBackendStatus]);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   if (isLoading) {
     return (
       <Paper
         sx={{
-          minHeight: 240,
-          p: 3,
+          minHeight: 260,
           display: "grid",
           placeItems: "center",
+          p: 3,
         }}
       >
-        <Stack
-          spacing={2}
-          sx={{
-            alignItems: "center",
-          }}
-        >
+        <Stack spacing={1.5} sx={{ alignItems: "center" }}>
           <CircularProgress size={30} />
 
           <Typography color="text.secondary">
@@ -70,128 +76,105 @@ function BackendStatus() {
 
   if (errorMessage) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Alert
-          severity="error"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => {
-                void fetchBackendStatus();
-              }}
-            >
-              Tekrar Dene
-            </Button>
-          }
+      <Paper
+        sx={{
+          minHeight: 260,
+          p: 3,
+        }}
+      >
+        <Typography
+          variant="overline"
+          color="error.main"
+          sx={{ fontWeight: 900 }}
         >
-          {errorMessage}
-        </Alert>
+          Sistem durumu
+        </Typography>
+
+        <Typography variant="h5" component="h2" sx={{ mt: 0.25, mb: 2 }}>
+          Backend bağlantısı
+        </Typography>
+
+        <Alert severity="error">{errorMessage}</Alert>
       </Paper>
     );
   }
 
-  const isBackendRunning = health?.status === "UP";
+  const isHealthy = health?.status === "UP" || health?.status === "OK";
 
   return (
     <Paper
+      component="section"
       sx={{
-        height: "100%",
-        p: 3,
+        minHeight: 260,
+        p: {
+          xs: 2.5,
+          md: 3,
+        },
       }}
     >
-      <Stack spacing={3}>
-        <Stack
-          direction="row"
-          spacing={2}
+      <Stack spacing={2.5}>
+        <Box
           sx={{
+            display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
+            gap: 2,
           }}
         >
           <Box>
             <Typography
               variant="overline"
-              color="text.secondary"
-              sx={{ fontWeight: 800 }}
+              color="success.main"
+              sx={{ fontWeight: 900 }}
             >
-              Sistem Durumu
+              Sistem durumu
             </Typography>
 
-            <Typography variant="h5" component="h2" sx={{ mt: 0.5 }}>
-              Backend Bağlantısı
+            <Typography variant="h5" component="h2" sx={{ mt: 0.25 }}>
+              Backend bağlantısı
             </Typography>
           </Box>
 
           <Chip
             label={
-              isBackendRunning ? "Çalışıyor" : (health?.status ?? "Bilinmiyor")
+              isHealthy ? "Bağlantı aktif" : health?.status || "Bilinmiyor"
             }
-            color={isBackendRunning ? "success" : "warning"}
+            color={isHealthy ? "success" : "warning"}
             size="small"
+            variant="outlined"
           />
-        </Stack>
+        </Box>
 
         <Box
-          sx={(theme) => ({
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
+          sx={{
             p: 2,
-            border: "1px solid",
             borderRadius: 2.5,
-            borderColor: isBackendRunning
-              ? alpha(theme.palette.success.main, 0.22)
-              : alpha(theme.palette.warning.main, 0.22),
-            backgroundColor: isBackendRunning
-              ? alpha(theme.palette.success.main, 0.06)
-              : alpha(theme.palette.warning.main, 0.06),
-          })}
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "action.hover",
+          }}
         >
-          <Box
-            aria-hidden="true"
-            sx={{
-              width: 12,
-              height: 12,
-              flexShrink: 0,
-              borderRadius: "50%",
-              backgroundColor: isBackendRunning
-                ? "success.main"
-                : "warning.main",
-              boxShadow: isBackendRunning
-                ? "0 0 0 6px rgba(22, 163, 74, 0.10)"
-                : "0 0 0 6px rgba(217, 119, 6, 0.10)",
-            }}
-          />
-
-          <Box>
-            <Typography sx={{ fontWeight: 700 }}>
-              {isBackendRunning
-                ? "Backend API erişilebilir durumda"
-                : "Backend durumu kontrol edilmeli"}
-            </Typography>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {health?.message ?? "Sağlık kontrolü sonucu alınamadı."}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box>
-          <Typography variant="caption" color="text.secondary">
-            Kontrol edilen endpoint
-          </Typography>
-
           <Typography
-            variant="body2"
+            variant="caption"
+            color="text.secondary"
             sx={{
-              mt: 0.5,
-              fontFamily: "monospace",
+              display: "block",
+              mb: 0.5,
+              fontWeight: 800,
             }}
           >
-            /api/health
+            Servis mesajı
+          </Typography>
+
+          <Typography sx={{ lineHeight: 1.7 }}>
+            {health?.message || "Backend servisi isteklere yanıt veriyor."}
           </Typography>
         </Box>
+
+        <Typography variant="body2" color="text.secondary">
+          Bu kontrol, frontend uygulamasının Spring Boot API'ye erişebildiğini
+          gösterir.
+        </Typography>
       </Stack>
     </Paper>
   );

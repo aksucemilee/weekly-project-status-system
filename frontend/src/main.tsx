@@ -1,21 +1,20 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
-import { CssBaseline } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
 
 import "./index.css";
 import App from "./App";
-import theme from "./theme/theme";
+import { NotificationProvider } from "./components/feedback/NotificationProvider";
+import { ColorModeProvider } from "./theme/ColorModeProvider";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </ThemeProvider>
+    <ColorModeProvider>
+      <NotificationProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </NotificationProvider>
+    </ColorModeProvider>
   </StrictMode>,
 );
