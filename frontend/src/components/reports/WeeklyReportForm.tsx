@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -36,10 +35,9 @@ type WeeklyReportFormState = Omit<
 };
 
 type WeeklyReportFormProps = {
-  projects: Project[];
-  selectedProjectId: string;
-  onProjectChange: (projectId: string) => void;
+  project: Project;
   onReportCreated: (report: WeeklyReport) => void;
+  onCancel: () => void;
 };
 
 const initialReportForm: WeeklyReportFormState = {
@@ -56,21 +54,18 @@ const initialReportForm: WeeklyReportFormState = {
 };
 
 function WeeklyReportForm({
-  projects,
-  selectedProjectId,
-  onProjectChange,
+  project,
   onReportCreated,
+  onCancel,
 }: WeeklyReportFormProps) {
   const [reportForm, setReportForm] =
     useState<WeeklyReportFormState>(initialReportForm);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const clearMessages = () => {
     setErrorMessage("");
-    setSuccessMessage("");
   };
 
   const updateFormField = <K extends keyof WeeklyReportFormState>(
@@ -83,11 +78,6 @@ function WeeklyReportForm({
       ...previousForm,
       [field]: value,
     }));
-  };
-
-  const handleSelectedProjectChange = (projectId: string) => {
-    clearMessages();
-    onProjectChange(projectId);
   };
 
   const getApiErrorMessage = (error: unknown) => {
@@ -111,11 +101,6 @@ function WeeklyReportForm({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearMessages();
-
-    if (!selectedProjectId) {
-      setErrorMessage("Bir proje seçilmelidir.");
-      return;
-    }
 
     const targetProgress = Number(reportForm.targetProgress);
     const actualProgress = Number(reportForm.actualProgress);
@@ -161,14 +146,10 @@ function WeeklyReportForm({
     setIsSubmitting(true);
 
     try {
-      const createdReport = await createWeeklyReport(
-        Number(selectedProjectId),
-        request,
-      );
+      const createdReport = await createWeeklyReport(project.id, request);
 
       onReportCreated(createdReport);
       setReportForm(initialReportForm);
-      setSuccessMessage("Haftalık rapor başarıyla oluşturuldu.");
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error));
     } finally {
@@ -177,322 +158,239 @@ function WeeklyReportForm({
   };
 
   return (
-    <Paper
-      component="section"
-      sx={{
-        p: {
-          xs: 2.5,
-          md: 3.5,
-        },
-      }}
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      onInvalidCapture={clearMessages}
     >
-      <Stack spacing={0.75} sx={{ mb: 3 }}>
-        <Typography
-          variant="overline"
-          color="primary.main"
-          sx={{ fontWeight: 800 }}
-        >
-          Yeni Kayıt
-        </Typography>
-
-        <Typography variant="h5" component="h2">
-          Yeni Haftalık Rapor
-        </Typography>
-
-        <Typography
-          color="text.secondary"
+      <Stack spacing={2.5}>
+        <Box
           sx={{
-            maxWidth: 760,
-            lineHeight: 1.7,
+            p: 2,
+            borderRadius: 2.5,
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "action.hover",
           }}
         >
-          Projenin haftalık ilerleme, durum, risk ve plan bilgilerini kaydedin.
-        </Typography>
-      </Stack>
-
-      {errorMessage && (
-        <Alert severity="error" sx={{ mb: 2.5 }}>
-          {errorMessage}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 2.5 }}>
-          {successMessage}
-        </Alert>
-      )}
-
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        onInvalidCapture={clearMessages}
-      >
-        <Stack spacing={3}>
-          <Box component="section">
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 1.5,
-                fontWeight: 800,
-              }}
-            >
-              Temel bilgiler
-            </Typography>
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "minmax(0, 2fr) minmax(240px, 1fr)",
-                },
-                gap: 2,
-              }}
-            >
-              <TextField
-                select
-                label="Proje"
-                value={selectedProjectId}
-                onChange={(event) =>
-                  handleSelectedProjectChange(event.target.value)
-                }
-                required
-                fullWidth
-              >
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={String(project.id)}>
-                    {project.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Rapor haftası"
-                type="date"
-                value={reportForm.reportWeekStart}
-                onChange={(event) =>
-                  updateFormField("reportWeekStart", event.target.value)
-                }
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                }}
-                required
-                fullWidth
-              />
-            </Box>
-          </Box>
-
-          <Box component="section">
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 1.5,
-                fontWeight: 800,
-              }}
-            >
-              İlerleme ve durum
-            </Typography>
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, minmax(0, 1fr))",
-                  lg: "repeat(3, minmax(0, 1fr))",
-                },
-                gap: 2,
-              }}
-            >
-              <TextField
-                label="Hedeflenen ilerleme (%)"
-                type="number"
-                value={reportForm.targetProgress}
-                onChange={(event) =>
-                  updateFormField("targetProgress", event.target.value)
-                }
-                slotProps={{
-                  htmlInput: {
-                    min: 0,
-                    max: 100,
-                    step: 1,
-                  },
-                }}
-                required
-                fullWidth
-              />
-
-              <TextField
-                label="Gerçekleşen ilerleme (%)"
-                type="number"
-                value={reportForm.actualProgress}
-                onChange={(event) =>
-                  updateFormField("actualProgress", event.target.value)
-                }
-                slotProps={{
-                  htmlInput: {
-                    min: 0,
-                    max: 100,
-                    step: 1,
-                  },
-                }}
-                required
-                fullWidth
-              />
-
-              <TextField
-                select
-                label="Genel durum"
-                value={reportForm.generalStatus}
-                onChange={(event) =>
-                  updateFormField(
-                    "generalStatus",
-                    event.target.value as GeneralStatus,
-                  )
-                }
-                fullWidth
-              >
-                {Object.entries(generalStatusLabels).map(([status, label]) => (
-                  <MenuItem key={status} value={status}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                select
-                label="Takvim durumu"
-                value={reportForm.scheduleStatus}
-                onChange={(event) =>
-                  updateFormField(
-                    "scheduleStatus",
-                    event.target.value as ScheduleStatus,
-                  )
-                }
-                fullWidth
-              >
-                {Object.entries(scheduleStatusLabels).map(([status, label]) => (
-                  <MenuItem key={status} value={status}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                select
-                label="Risk seviyesi"
-                value={reportForm.riskLevel}
-                onChange={(event) =>
-                  updateFormField("riskLevel", event.target.value as RiskLevel)
-                }
-                fullWidth
-              >
-                {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
-                  <MenuItem key={riskLevel} value={riskLevel}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          </Box>
-
-          <Box component="section">
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 1.5,
-                fontWeight: 800,
-              }}
-            >
-              Haftalık çalışma özeti
-            </Typography>
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  lg: "repeat(2, minmax(0, 1fr))",
-                },
-                gap: 2,
-              }}
-            >
-              <TextField
-                label="Yapılanlar"
-                value={reportForm.completedSummary}
-                onChange={(event) =>
-                  updateFormField("completedSummary", event.target.value)
-                }
-                multiline
-                minRows={4}
-                required
-                fullWidth
-              />
-
-              <TextField
-                label="Gelecek hafta yapılacaklar"
-                value={reportForm.nextWeekPlan}
-                onChange={(event) =>
-                  updateFormField("nextWeekPlan", event.target.value)
-                }
-                multiline
-                minRows={4}
-                required
-                fullWidth
-              />
-
-              <TextField
-                label="Engeller"
-                value={reportForm.blockers}
-                onChange={(event) =>
-                  updateFormField("blockers", event.target.value)
-                }
-                multiline
-                minRows={3}
-                fullWidth
-              />
-
-              <TextField
-                label="Genel not"
-                value={reportForm.generalNote}
-                onChange={(event) =>
-                  updateFormField("generalNote", event.target.value)
-                }
-                multiline
-                minRows={3}
-                fullWidth
-              />
-            </Box>
-          </Box>
-
-          <Box
+          <Typography
+            variant="caption"
+            color="text.secondary"
             sx={{
-              display: "flex",
-              justifyContent: {
-                xs: "stretch",
-                sm: "flex-start",
-              },
+              display: "block",
+              mb: 0.25,
+              fontWeight: 800,
             }}
           >
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={isSubmitting}
-              sx={{
-                width: {
-                  xs: "100%",
-                  sm: "auto",
-                },
-              }}
-            >
-              {isSubmitting ? "Kaydediliyor..." : "Rapor Oluştur"}
-            </Button>
-          </Box>
+            Rapor oluşturulan proje
+          </Typography>
+
+          <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+            {project.name}
+          </Typography>
+        </Box>
+
+        {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+            },
+            gap: 2,
+          }}
+        >
+          <TextField
+            label="Rapor haftası"
+            type="date"
+            value={reportForm.reportWeekStart}
+            onChange={(event) =>
+              updateFormField("reportWeekStart", event.target.value)
+            }
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
+            required
+            fullWidth
+          />
+
+          <TextField
+            select
+            label="Genel durum"
+            value={reportForm.generalStatus}
+            onChange={(event) =>
+              updateFormField(
+                "generalStatus",
+                event.target.value as GeneralStatus,
+              )
+            }
+            fullWidth
+          >
+            {Object.entries(generalStatusLabels).map(([status, label]) => (
+              <MenuItem key={status} value={status}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="Hedeflenen ilerleme (%)"
+            type="number"
+            value={reportForm.targetProgress}
+            onChange={(event) =>
+              updateFormField("targetProgress", event.target.value)
+            }
+            slotProps={{
+              htmlInput: {
+                min: 0,
+                max: 100,
+                step: 1,
+              },
+            }}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Gerçekleşen ilerleme (%)"
+            type="number"
+            value={reportForm.actualProgress}
+            onChange={(event) =>
+              updateFormField("actualProgress", event.target.value)
+            }
+            slotProps={{
+              htmlInput: {
+                min: 0,
+                max: 100,
+                step: 1,
+              },
+            }}
+            required
+            fullWidth
+          />
+
+          <TextField
+            select
+            label="Takvim durumu"
+            value={reportForm.scheduleStatus}
+            onChange={(event) =>
+              updateFormField(
+                "scheduleStatus",
+                event.target.value as ScheduleStatus,
+              )
+            }
+            fullWidth
+          >
+            {Object.entries(scheduleStatusLabels).map(([status, label]) => (
+              <MenuItem key={status} value={status}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            label="Risk seviyesi"
+            value={reportForm.riskLevel}
+            onChange={(event) =>
+              updateFormField("riskLevel", event.target.value as RiskLevel)
+            }
+            fullWidth
+          >
+            {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
+              <MenuItem key={riskLevel} value={riskLevel}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "repeat(2, minmax(0, 1fr))",
+            },
+            gap: 2,
+          }}
+        >
+          <TextField
+            label="Yapılanlar"
+            value={reportForm.completedSummary}
+            onChange={(event) =>
+              updateFormField("completedSummary", event.target.value)
+            }
+            multiline
+            minRows={3}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Gelecek hafta yapılacaklar"
+            value={reportForm.nextWeekPlan}
+            onChange={(event) =>
+              updateFormField("nextWeekPlan", event.target.value)
+            }
+            multiline
+            minRows={3}
+            required
+            fullWidth
+          />
+
+          <TextField
+            label="Engeller"
+            value={reportForm.blockers}
+            onChange={(event) =>
+              updateFormField("blockers", event.target.value)
+            }
+            multiline
+            minRows={2}
+            fullWidth
+          />
+
+          <TextField
+            label="Genel not"
+            value={reportForm.generalNote}
+            onChange={(event) =>
+              updateFormField("generalNote", event.target.value)
+            }
+            multiline
+            minRows={2}
+            fullWidth
+          />
+        </Box>
+
+        <Stack
+          spacing={1.25}
+          sx={{
+            flexDirection: {
+              xs: "column-reverse",
+              sm: "row",
+            },
+            justifyContent: "flex-end",
+          }}
+        >
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            İptal
+          </Button>
+
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            {isSubmitting ? "Kaydediliyor..." : "Rapor Oluştur"}
+          </Button>
         </Stack>
-      </Box>
-    </Paper>
+      </Stack>
+    </Box>
   );
 }
 

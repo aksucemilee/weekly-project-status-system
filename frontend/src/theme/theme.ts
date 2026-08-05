@@ -1,137 +1,198 @@
-import { createTheme } from "@mui/material/styles";
+import { alpha, createTheme } from "@mui/material/styles";
+import type { PaletteMode } from "@mui/material";
 
-const theme = createTheme({
-  palette: {
-    mode: "light",
+const createAppTheme = (mode: PaletteMode) => {
+  const isLight = mode === "light";
 
-    primary: {
-      main: "#2563EB",
-      dark: "#1D4ED8",
-      contrastText: "#FFFFFF",
+  return createTheme({
+    palette: {
+      mode,
+
+      primary: {
+        main: isLight ? "#2563EB" : "#60A5FA",
+        dark: isLight ? "#1D4ED8" : "#3B82F6",
+        light: isLight ? "#DBEAFE" : "#1E3A8A",
+        contrastText: "#FFFFFF",
+      },
+
+      secondary: {
+        main: isLight ? "#7C3AED" : "#A78BFA",
+      },
+
+      background: {
+        default: isLight ? "#F4F6FA" : "#0B1120",
+        paper: isLight ? "#FFFFFF" : "#111827",
+      },
+
+      text: {
+        primary: isLight ? "#172033" : "#F3F4F6",
+        secondary: isLight ? "#667085" : "#9CA3AF",
+      },
+
+      divider: isLight
+        ? "rgba(15, 23, 42, 0.10)"
+        : "rgba(255, 255, 255, 0.10)",
+
+      success: {
+        main: isLight ? "#16A34A" : "#4ADE80",
+      },
+
+      warning: {
+        main: isLight ? "#D97706" : "#FBBF24",
+      },
+
+      error: {
+        main: isLight ? "#DC2626" : "#F87171",
+      },
+
+      info: {
+        main: isLight ? "#0284C7" : "#38BDF8",
+      },
     },
 
-    secondary: {
-      main: "#7C3AED",
+    shape: {
+      borderRadius: 14,
     },
 
-    background: {
-      default: "#F5F7FB",
-      paper: "#FFFFFF",
+    typography: {
+      fontFamily:
+        'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+
+      h1: {
+        fontSize: "2rem",
+        fontWeight: 800,
+        letterSpacing: "-0.03em",
+      },
+
+      h4: {
+        fontWeight: 800,
+        letterSpacing: "-0.03em",
+      },
+
+      h5: {
+        fontWeight: 750,
+        letterSpacing: "-0.02em",
+      },
+
+      h6: {
+        fontWeight: 700,
+      },
+
+      button: {
+        textTransform: "none",
+        fontWeight: 700,
+      },
     },
 
-    text: {
-      primary: "#172033",
-      secondary: "#667085",
-    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            minHeight: "100vh",
+            backgroundColor: isLight ? "#F4F6FA" : "#0B1120",
+            transition:
+              "background-color 180ms ease, color 180ms ease",
+          },
+        },
+      },
 
-    divider: "#E7EAF0",
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: "none",
+            border: `1px solid ${
+              isLight
+                ? "rgba(15, 23, 42, 0.10)"
+                : "rgba(255, 255, 255, 0.10)"
+            }`,
+            boxShadow: isLight
+              ? "0 10px 28px rgba(15, 23, 42, 0.06)"
+              : "0 12px 34px rgba(0, 0, 0, 0.24)",
+          },
+        },
+      },
 
-    success: {
-      main: "#16A34A",
-    },
+      MuiButton: {
+        defaultProps: {
+          disableElevation: true,
+        },
 
-    warning: {
-      main: "#D97706",
-    },
+        styleOverrides: {
+          root: {
+            minHeight: 40,
+            paddingLeft: 16,
+            paddingRight: 16,
+            borderRadius: 10,
+          },
+        },
+      },
 
-    error: {
-      main: "#DC2626",
-    },
-  },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+          },
+        },
+      },
 
-  shape: {
-    borderRadius: 14,
-  },
+      MuiTextField: {
+        defaultProps: {
+          size: "small",
+        },
+      },
 
-  typography: {
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+            backgroundColor: isLight
+              ? "#FFFFFF"
+              : alpha("#FFFFFF", 0.035),
+          },
+        },
+      },
 
-    h1: {
-      fontSize: "2rem",
-      fontWeight: 800,
-      letterSpacing: "-0.03em",
-    },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            fontWeight: 700,
+          },
+        },
+      },
 
-    h4: {
-      fontWeight: 800,
-      letterSpacing: "-0.03em",
-    },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 18,
+          },
+        },
+      },
 
-    h5: {
-      fontWeight: 750,
-      letterSpacing: "-0.02em",
-    },
+      MuiTabs: {
+        styleOverrides: {
+          root: {
+            minHeight: 44,
+          },
+          indicator: {
+            height: 3,
+            borderRadius: 999,
+          },
+        },
+      },
 
-    h6: {
-      fontWeight: 700,
-    },
-
-    button: {
-      textTransform: "none",
-      fontWeight: 700,
-    },
-  },
-
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          minHeight: "100vh",
-          backgroundColor: "#F5F7FB",
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            minHeight: 44,
+            textTransform: "none",
+            fontWeight: 700,
+          },
         },
       },
     },
+  });
+};
 
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "none",
-          border: "1px solid #E7EAF0",
-          boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
-        },
-      },
-    },
-
-    MuiButton: {
-      defaultProps: {
-        disableElevation: true,
-      },
-
-      styleOverrides: {
-        root: {
-          minHeight: 40,
-          paddingLeft: 16,
-          paddingRight: 16,
-          borderRadius: 10,
-        },
-      },
-    },
-
-    MuiTextField: {
-      defaultProps: {
-        size: "small",
-      },
-    },
-
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          borderRadius: 10,
-          backgroundColor: "#FFFFFF",
-        },
-      },
-    },
-
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          fontWeight: 700,
-        },
-      },
-    },
-  },
-});
-
-export default theme;
+export { createAppTheme };
+export default createAppTheme;

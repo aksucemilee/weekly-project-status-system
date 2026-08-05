@@ -26,9 +26,18 @@ export const projectStatusColors: Record<
   BLOCKED: "error",
 };
 
-export const formatProjectDate = (date: string) =>
-  new Intl.DateTimeFormat("tr-TR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
+export const formatProjectDate = (
+  date: string | null | undefined,
+) => {
+  if (!date) {
+    return "Belirtilmedi";
+  }
+
+  const [year, month, day] = date.split("-");
+
+  if (!year || !month || !day) {
+    return date;
+  }
+
+  return `${day}.${month}.${year}`;
+};

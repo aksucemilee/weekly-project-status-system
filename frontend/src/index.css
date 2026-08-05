@@ -1,7 +1,6 @@
 :root {
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  color-scheme: light;
 }
 
 * {
@@ -34,4 +33,9 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+::selection {
+  color: #ffffff;
+  background: #2563eb;
 }

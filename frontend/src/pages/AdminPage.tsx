@@ -1,7 +1,9 @@
 import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 
 import PageHeader from "../components/common/PageHeader";
+import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
 import EmptyState from "../components/feedback/EmptyState";
+import { layoutTokens } from "../theme/layoutTokens";
 
 type PlannedAdminModule = {
   title: string;
@@ -44,7 +46,7 @@ function AdminPage() {
         component="section"
         aria-labelledby="planned-admin-modules-title"
         sx={{
-          mt: 4,
+          mt: layoutTokens.spacing.section,
         }}
       >
         <Typography
@@ -60,38 +62,32 @@ function AdminPage() {
           Planlanan Modüller
         </Typography>
 
-        <Typography variant="h5" component="h2" sx={{ mb: 2.5 }}>
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           Admin kapsamı
         </Typography>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "repeat(3, minmax(0, 1fr))",
-            },
-            gap: 2,
-          }}
-        >
+        <ResponsiveCardGrid variant="compact">
           {plannedAdminModules.map((module) => (
             <Paper
               key={module.title}
               sx={{
                 height: "100%",
-                p: 3,
+                p: {
+                  xs: 2.25,
+                  md: 2.75,
+                },
                 boxShadow: "none",
                 transition:
                   "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
 
                 "&:hover": {
                   transform: "translateY(-2px)",
-                  borderColor: "rgba(37, 99, 235, 0.28)",
-                  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+                  borderColor: "primary.main",
+                  boxShadow: 4,
                 },
               }}
             >
-              <Stack spacing={2}>
+              <Stack spacing={1.75}>
                 <Chip
                   label="Planlandı"
                   size="small"
@@ -116,7 +112,7 @@ function AdminPage() {
               </Stack>
             </Paper>
           ))}
-        </Box>
+        </ResponsiveCardGrid>
       </Box>
     </Box>
   );

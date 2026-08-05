@@ -4,6 +4,12 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   MenuItem,
   Paper,
   Stack,
@@ -11,7 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import {
@@ -27,6 +33,7 @@ import type {
   RiskIssueType,
 } from "../../types/riskIssue";
 import type { RiskLevel, WeeklyReport } from "../../types/weeklyReport";
+import { formatDisplayDate } from "../../utils/dateFormat";
 
 type RiskIssueManagerProps = {
   report: WeeklyReport;
@@ -93,15 +100,22 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
   const [editingRiskIssueId, setEditingRiskIssueId] = useState<number | null>(
     null,
   );
+
   const [deletingRiskIssueId, setDeletingRiskIssueId] = useState<number | null>(
     null,
   );
 
+  const [riskIssuePendingDelete, setRiskIssuePendingDelete] =
+    useState<RiskIssue | null>(null);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const formSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -113,6 +127,9 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
       setEditingRiskIssueId(null);
       setRiskIssueForm(initialRiskIssueForm);
       setRiskIssues([]);
+      setIsFormOpen(false);
+      setRiskIssuePendingDelete(null);
+      setDeletingRiskIssueId(null);
 
       try {
         const riskIssueList = await getRiskIssuesByWeeklyReport(report.id);
@@ -172,6 +189,22 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
     setEditingRiskIssueId(null);
   };
 
+  const scrollToForm = () => {
+    window.setTimeout(() => {
+      formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  const handleOpenCreateForm = () => {
+    clearMessages();
+    resetForm();
+    setIsFormOpen(true);
+    scrollToForm();
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearMessages();
@@ -221,6 +254,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
       }
 
       resetForm();
+      setIsFormOpen(false);
     } catch (error) {
       setErrorMessage(
         getApiErrorMessage(
@@ -236,6 +270,7 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
   const handleEdit = (riskIssue: RiskIssue) => {
     clearMessages();
     setEditingRiskIssueId(riskIssue.id);
+    setIsFormOpen(true);
 
     setRiskIssueForm({
       type: riskIssue.type,
@@ -247,21 +282,35 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
       targetDate: riskIssue.targetDate ?? "",
       status: riskIssue.status,
     });
+
+    scrollToForm();
   };
 
   const handleCancelEdit = () => {
     clearMessages();
     resetForm();
+    setIsFormOpen(false);
   };
 
-  const handleDelete = async (riskIssue: RiskIssue) => {
-    const isConfirmed = window.confirm(
-      `"${riskIssue.title}" kaydını silmek istediğinizden emin misiniz?`,
-    );
+  const handleOpenDeleteDialog = (riskIssue: RiskIssue) => {
+    clearMessages();
+    setRiskIssuePendingDelete(riskIssue);
+  };
 
-    if (!isConfirmed) {
+  const handleCloseDeleteDialog = () => {
+    if (deletingRiskIssueId !== null) {
       return;
     }
+
+    setRiskIssuePendingDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!riskIssuePendingDelete) {
+      return;
+    }
+
+    const riskIssue = riskIssuePendingDelete;
 
     clearMessages();
     setDeletingRiskIssueId(riskIssue.id);
@@ -277,9 +326,12 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
 
       if (editingRiskIssueId === riskIssue.id) {
         resetForm();
+        setIsFormOpen(false);
       }
 
       setSuccessMessage("Risk veya engel başarıyla silindi.");
+
+      setRiskIssuePendingDelete(null);
     } catch (error) {
       setErrorMessage(
         getApiErrorMessage(
@@ -293,289 +345,415 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
   };
 
   return (
-    <Paper
-      component="section"
-      sx={{
-        p: {
-          xs: 2.5,
-          md: 3.5,
-        },
-      }}
-    >
-      <Stack spacing={0.75} sx={{ mb: 3 }}>
-        <Typography
-          variant="overline"
-          color="primary.main"
-          sx={{ fontWeight: 800 }}
+    <>
+      <Paper
+        component="section"
+        variant="outlined"
+        sx={{
+          p: {
+            xs: 2,
+            md: 2.5,
+          },
+          boxShadow: "none",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: {
+              xs: "stretch",
+              sm: "flex-start",
+            },
+            justifyContent: "space-between",
+            flexDirection: {
+              xs: "column",
+              sm: "row",
+            },
+            gap: 2,
+            mb: 3,
+          }}
         >
-          Rapor Detayı
-        </Typography>
-
-        <Typography variant="h5" component="h2">
-          Risk ve Engel Yönetimi
-        </Typography>
-
-        <Typography color="text.secondary">
-          {report.projectName} projesinin {report.reportWeekStart} tarihli
-          raporuna ait risk, engel ve aksiyon bilgileri
-        </Typography>
-      </Stack>
-
-      {errorMessage && (
-        <Alert severity="error" sx={{ mb: 2.5 }}>
-          {errorMessage}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 2.5 }}>
-          {successMessage}
-        </Alert>
-      )}
-
-      <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={2.5}>
-          <Typography variant="h6">
-            {editingRiskIssueId !== null
-              ? "Risk veya Engeli Düzenle"
-              : "Yeni Risk veya Engel"}
-          </Typography>
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(2, minmax(0, 1fr))",
-              },
-              gap: 2,
-            }}
-          >
-            <TextField
-              select
-              label="Tür"
-              value={riskIssueForm.type}
-              onChange={(event) =>
-                updateFormField("type", event.target.value as RiskIssueType)
-              }
-              required
-              fullWidth
+          <Stack spacing={0.75}>
+            <Typography
+              variant="overline"
+              color="primary.main"
+              sx={{ fontWeight: 800 }}
             >
-              {Object.entries(riskIssueTypeLabels).map(([type, label]) => (
-                <MenuItem key={type} value={type}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
+              Rapor Detayı
+            </Typography>
 
-            <TextField
-              label="Başlık"
-              value={riskIssueForm.title}
-              onChange={(event) => updateFormField("title", event.target.value)}
-              slotProps={{
-                htmlInput: {
-                  maxLength: 200,
-                },
-              }}
-              required
-              fullWidth
-            />
+            <Typography variant="h5" component="h2">
+              Risk ve Engel Yönetimi
+            </Typography>
 
-            <TextField
-              select
-              label="Risk seviyesi"
-              value={riskIssueForm.riskLevel}
-              onChange={(event) =>
-                updateFormField("riskLevel", event.target.value as RiskLevel)
-              }
-              required
-              fullWidth
-            >
-              {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
-                <MenuItem key={riskLevel} value={riskLevel}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              label="Durum"
-              value={riskIssueForm.status}
-              onChange={(event) =>
-                updateFormField("status", event.target.value as RiskIssueStatus)
-              }
-              required
-              fullWidth
-            >
-              {Object.entries(riskIssueStatusLabels).map(([status, label]) => (
-                <MenuItem key={status} value={status}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              label="Sorumlu"
-              value={riskIssueForm.responsible}
-              onChange={(event) =>
-                updateFormField("responsible", event.target.value)
-              }
-              slotProps={{
-                htmlInput: {
-                  maxLength: 150,
-                },
-              }}
-              fullWidth
-            />
-
-            <TextField
-              label="Hedef tarih"
-              type="date"
-              value={riskIssueForm.targetDate}
-              onChange={(event) =>
-                updateFormField("targetDate", event.target.value)
-              }
-              slotProps={{
-                inputLabel: {
-                  shrink: true,
-                },
-              }}
-              fullWidth
-            />
-          </Box>
-
-          <TextField
-            label="Açıklama"
-            value={riskIssueForm.description}
-            onChange={(event) =>
-              updateFormField("description", event.target.value)
-            }
-            slotProps={{
-              htmlInput: {
-                maxLength: 2000,
-              },
-            }}
-            multiline
-            minRows={3}
-            fullWidth
-          />
-
-          <TextField
-            label="Aksiyon planı"
-            value={riskIssueForm.actionPlan}
-            onChange={(event) =>
-              updateFormField("actionPlan", event.target.value)
-            }
-            slotProps={{
-              htmlInput: {
-                maxLength: 2000,
-              },
-            }}
-            multiline
-            minRows={3}
-            fullWidth
-          />
-
-          <Stack
-            spacing={1.5}
-            useFlexGap
-            sx={{
-              flexDirection: {
-                xs: "column",
-                sm: "row",
-              },
-            }}
-          >
-            <Button type="submit" variant="contained" disabled={isSubmitting}>
-              {isSubmitting
-                ? "Kaydediliyor..."
-                : editingRiskIssueId !== null
-                  ? "Değişiklikleri Kaydet"
-                  : "Risk veya Engel Oluştur"}
-            </Button>
-
-            {editingRiskIssueId !== null && (
-              <Button
-                type="button"
-                variant="outlined"
-                onClick={handleCancelEdit}
-                disabled={isSubmitting}
-              >
-                Düzenlemeyi İptal Et
-              </Button>
-            )}
+            <Typography color="text.secondary">
+              {report.projectName} projesinin{" "}
+              {formatDisplayDate(report.reportWeekStart)} tarihli raporuna ait
+              risk, engel ve aksiyon bilgileri
+            </Typography>
           </Stack>
-        </Stack>
-      </Box>
 
-      <Box component="section" sx={{ mt: 4 }}>
-        <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
-          Risk ve Engel Listesi
-        </Typography>
-
-        {isLoading && (
-          <Box
-            sx={{
-              minHeight: 160,
-              display: "grid",
-              placeItems: "center",
-            }}
+          <Button
+            type="button"
+            variant={isFormOpen ? "outlined" : "contained"}
+            onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
+            aria-expanded={isFormOpen}
+            sx={{ flexShrink: 0 }}
           >
-            <Stack spacing={1.5} sx={{ alignItems: "center" }}>
-              <CircularProgress size={28} />
+            {isFormOpen ? "Formu Kapat" : "Yeni Risk veya Engel"}
+          </Button>
+        </Box>
 
-              <Typography color="text.secondary">
-                Risk ve engeller yükleniyor...
-              </Typography>
-            </Stack>
-          </Box>
-        )}
-
-        {!isLoading && riskIssues.length === 0 && (
-          <Alert severity="info">
-            Bu haftalık rapora ait risk veya engel bulunmuyor.
+        {errorMessage && (
+          <Alert severity="error" sx={{ mb: 2.5 }}>
+            {errorMessage}
           </Alert>
         )}
 
-        {!isLoading && riskIssues.length > 0 && (
-          <Stack spacing={2}>
-            {riskIssues.map((riskIssue) => (
-              <Paper
-                key={riskIssue.id}
-                variant="outlined"
-                component="article"
-                sx={{ p: 2.5 }}
-              >
-                <Stack spacing={2}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: {
-                        xs: "flex-start",
-                        md: "center",
-                      },
-                      justifyContent: "space-between",
-                      flexDirection: {
-                        xs: "column",
-                        md: "row",
-                      },
-                      gap: 1.5,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                        {riskIssue.title}
-                      </Typography>
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2.5 }}>
+            {successMessage}
+          </Alert>
+        )}
 
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
+        <Collapse in={isFormOpen} timeout="auto" unmountOnExit>
+          <Box
+            ref={formSectionRef}
+            sx={{
+              scrollMarginTop: 24,
+            }}
+          >
+            <Box component="form" onSubmit={handleSubmit}>
+              <Stack spacing={2.5}>
+                <Typography variant="h6">
+                  {editingRiskIssueId !== null
+                    ? "Risk veya Engeli Düzenle"
+                    : "Yeni Risk veya Engel"}
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      md: "repeat(2, minmax(0, 1fr))",
+                    },
+                    gap: 2,
+                  }}
+                >
+                  <TextField
+                    select
+                    label="Tür"
+                    value={riskIssueForm.type}
+                    onChange={(event) =>
+                      updateFormField(
+                        "type",
+                        event.target.value as RiskIssueType,
+                      )
+                    }
+                    required
+                    fullWidth
+                  >
+                    {Object.entries(riskIssueTypeLabels).map(
+                      ([type, label]) => (
+                        <MenuItem key={type} value={type}>
+                          {label}
+                        </MenuItem>
+                      ),
+                    )}
+                  </TextField>
+
+                  <TextField
+                    label="Başlık"
+                    value={riskIssueForm.title}
+                    onChange={(event) =>
+                      updateFormField("title", event.target.value)
+                    }
+                    slotProps={{
+                      htmlInput: {
+                        maxLength: 200,
+                      },
+                    }}
+                    required
+                    fullWidth
+                  />
+
+                  <TextField
+                    select
+                    label="Risk seviyesi"
+                    value={riskIssueForm.riskLevel}
+                    onChange={(event) =>
+                      updateFormField(
+                        "riskLevel",
+                        event.target.value as RiskLevel,
+                      )
+                    }
+                    required
+                    fullWidth
+                  >
+                    {Object.entries(riskLevelLabels).map(
+                      ([riskLevel, label]) => (
+                        <MenuItem key={riskLevel} value={riskLevel}>
+                          {label}
+                        </MenuItem>
+                      ),
+                    )}
+                  </TextField>
+
+                  <TextField
+                    select
+                    label="Durum"
+                    value={riskIssueForm.status}
+                    onChange={(event) =>
+                      updateFormField(
+                        "status",
+                        event.target.value as RiskIssueStatus,
+                      )
+                    }
+                    required
+                    fullWidth
+                  >
+                    {Object.entries(riskIssueStatusLabels).map(
+                      ([status, label]) => (
+                        <MenuItem key={status} value={status}>
+                          {label}
+                        </MenuItem>
+                      ),
+                    )}
+                  </TextField>
+
+                  <TextField
+                    label="Sorumlu"
+                    value={riskIssueForm.responsible}
+                    onChange={(event) =>
+                      updateFormField("responsible", event.target.value)
+                    }
+                    slotProps={{
+                      htmlInput: {
+                        maxLength: 150,
+                      },
+                    }}
+                    fullWidth
+                  />
+
+                  <TextField
+                    label="Hedef tarih"
+                    type="date"
+                    value={riskIssueForm.targetDate}
+                    onChange={(event) =>
+                      updateFormField("targetDate", event.target.value)
+                    }
+                    slotProps={{
+                      inputLabel: {
+                        shrink: true,
+                      },
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <TextField
+                  label="Açıklama"
+                  value={riskIssueForm.description}
+                  onChange={(event) =>
+                    updateFormField("description", event.target.value)
+                  }
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: 2000,
+                    },
+                  }}
+                  multiline
+                  minRows={3}
+                  fullWidth
+                />
+
+                <TextField
+                  label="Aksiyon planı"
+                  value={riskIssueForm.actionPlan}
+                  onChange={(event) =>
+                    updateFormField("actionPlan", event.target.value)
+                  }
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: 2000,
+                    },
+                  }}
+                  multiline
+                  minRows={3}
+                  fullWidth
+                />
+
+                <Stack
+                  spacing={1.5}
+                  useFlexGap
+                  sx={{
+                    flexDirection: {
+                      xs: "column",
+                      sm: "row",
+                    },
+                  }}
+                >
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? "Kaydediliyor..."
+                      : editingRiskIssueId !== null
+                        ? "Değişiklikleri Kaydet"
+                        : "Risk veya Engel Oluştur"}
+                  </Button>
+
+                  {editingRiskIssueId !== null && (
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      onClick={handleCancelEdit}
+                      disabled={isSubmitting}
+                    >
+                      Düzenlemeyi İptal Et
+                    </Button>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
+          </Box>
+        </Collapse>
+
+        <Box
+          component="section"
+          sx={{
+            mt: isFormOpen ? 4 : 1,
+          }}
+        >
+          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+            Risk ve Engel Listesi
+          </Typography>
+
+          {isLoading && (
+            <Box
+              sx={{
+                minHeight: 160,
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <Stack spacing={1.5} sx={{ alignItems: "center" }}>
+                <CircularProgress size={28} />
+
+                <Typography color="text.secondary">
+                  Risk ve engeller yükleniyor...
+                </Typography>
+              </Stack>
+            </Box>
+          )}
+
+          {!isLoading && riskIssues.length === 0 && (
+            <Alert severity="info">
+              Bu haftalık rapora ait risk veya engel bulunmuyor.
+            </Alert>
+          )}
+
+          {!isLoading && riskIssues.length > 0 && (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  xl: "repeat(2, minmax(0, 1fr))",
+                },
+                gap: 1.5,
+              }}
+            >
+              {riskIssues.map((riskIssue) => (
+                <Paper
+                  key={riskIssue.id}
+                  variant="outlined"
+                  component="article"
+                  sx={{ p: 2 }}
+                >
+                  <Stack spacing={2}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: {
+                          xs: "flex-start",
+                          md: "center",
+                        },
+                        justifyContent: "space-between",
+                        flexDirection: {
+                          xs: "column",
+                          md: "row",
+                        },
+                        gap: 1.5,
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 800 }}
+                        >
+                          {riskIssue.title}
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
+                          Sorumlu: {riskIssue.responsible || "Belirtilmedi"}
+                        </Typography>
+                      </Box>
+
+                      <Stack
+                        spacing={1}
+                        useFlexGap
+                        sx={{
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                        }}
                       >
-                        Sorumlu: {riskIssue.responsible || "Belirtilmedi"}
-                      </Typography>
+                        <Chip
+                          label={riskIssueTypeLabels[riskIssue.type]}
+                          size="small"
+                          variant="outlined"
+                        />
+
+                        <Chip
+                          label={`Risk: ${
+                            riskLevelLabels[riskIssue.riskLevel]
+                          }`}
+                          color={riskLevelColors[riskIssue.riskLevel]}
+                          size="small"
+                          variant="outlined"
+                        />
+
+                        <Chip
+                          label={riskIssueStatusLabels[riskIssue.status]}
+                          color={riskIssueStatusColors[riskIssue.status]}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Stack>
                     </Box>
+
+                    {riskIssue.description && (
+                      <Typography color="text.secondary">
+                        {riskIssue.description}
+                      </Typography>
+                    )}
+
+                    <Typography variant="body2" color="text.secondary">
+                      Hedef tarih: {formatDisplayDate(riskIssue.targetDate)}
+                    </Typography>
+
+                    {riskIssue.actionPlan && (
+                      <Typography variant="body2" color="text.secondary">
+                        Aksiyon planı: {riskIssue.actionPlan}
+                      </Typography>
+                    )}
 
                     <Stack
                       spacing={1}
@@ -585,81 +763,80 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
                         flexWrap: "wrap",
                       }}
                     >
-                      <Chip
-                        label={riskIssueTypeLabels[riskIssue.type]}
-                        size="small"
+                      <Button
+                        type="button"
                         variant="outlined"
-                      />
+                        size="small"
+                        onClick={() => handleEdit(riskIssue)}
+                      >
+                        Düzenle
+                      </Button>
 
-                      <Chip
-                        label={`Risk: ${riskLevelLabels[riskIssue.riskLevel]}`}
-                        color={riskLevelColors[riskIssue.riskLevel]}
-                        size="small"
+                      <Button
+                        type="button"
                         variant="outlined"
-                      />
-
-                      <Chip
-                        label={riskIssueStatusLabels[riskIssue.status]}
-                        color={riskIssueStatusColors[riskIssue.status]}
+                        color="error"
                         size="small"
-                        variant="outlined"
-                      />
+                        disabled={deletingRiskIssueId !== null}
+                        onClick={() => handleOpenDeleteDialog(riskIssue)}
+                      >
+                        Sil
+                      </Button>
                     </Stack>
-                  </Box>
-
-                  {riskIssue.description && (
-                    <Typography color="text.secondary">
-                      {riskIssue.description}
-                    </Typography>
-                  )}
-
-                  <Typography variant="body2" color="text.secondary">
-                    Hedef tarih: {riskIssue.targetDate || "Belirtilmedi"}
-                  </Typography>
-
-                  {riskIssue.actionPlan && (
-                    <Typography variant="body2" color="text.secondary">
-                      Aksiyon planı: {riskIssue.actionPlan}
-                    </Typography>
-                  )}
-
-                  <Stack
-                    spacing={1}
-                    useFlexGap
-                    sx={{
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleEdit(riskIssue)}
-                    >
-                      Düzenle
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      disabled={deletingRiskIssueId === riskIssue.id}
-                      onClick={() => void handleDelete(riskIssue)}
-                    >
-                      {deletingRiskIssueId === riskIssue.id
-                        ? "Siliniyor..."
-                        : "Sil"}
-                    </Button>
                   </Stack>
-                </Stack>
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    </Paper>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Paper>
+
+      <Dialog
+        open={riskIssuePendingDelete !== null}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="risk-issue-delete-title"
+        aria-describedby="risk-issue-delete-description"
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle id="risk-issue-delete-title">
+          Risk veya engel silinsin mi?
+        </DialogTitle>
+
+        <DialogContent>
+          <DialogContentText id="risk-issue-delete-description">
+            {riskIssuePendingDelete
+              ? `"${riskIssuePendingDelete.title}" kaydı kalıcı olarak silinecektir.`
+              : "Seçilen kayıt kalıcı olarak silinecektir."}
+          </DialogContentText>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2.5,
+          }}
+        >
+          <Button
+            type="button"
+            onClick={handleCloseDeleteDialog}
+            disabled={deletingRiskIssueId !== null}
+          >
+            İptal
+          </Button>
+
+          <Button
+            type="button"
+            variant="contained"
+            color="error"
+            onClick={() => void handleConfirmDelete()}
+            disabled={deletingRiskIssueId !== null}
+          >
+            {deletingRiskIssueId !== null ? "Siliniyor..." : "Sil"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 

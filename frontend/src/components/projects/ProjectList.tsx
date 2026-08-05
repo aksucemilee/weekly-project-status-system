@@ -5,15 +5,10 @@ import {
   CircularProgress,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from "@mui/material";
 
+import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
 import type { Project } from "../../types/project";
 import EmptyState from "../feedback/EmptyState";
 import {
@@ -72,28 +67,29 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
   }
 
   return (
-    <Paper component="section" sx={{ overflow: "hidden" }}>
+    <Box component="section" aria-labelledby="project-list-title">
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-          px: {
-            xs: 2.5,
-            md: 3,
+          alignItems: {
+            xs: "flex-start",
+            sm: "center",
           },
-          py: 2.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          justifyContent: "space-between",
+          flexDirection: {
+            xs: "column",
+            sm: "row",
+          },
+          gap: 1.5,
+          mb: 2,
         }}
       >
         <Box>
-          <Typography variant="h5" component="h2">
-            Proje Listesi
+          <Typography id="project-list-title" variant="h5" component="h2">
+            Proje listesi
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography color="text.secondary" sx={{ mt: 0.25 }}>
             Sistemde kayıtlı projelerin güncel özeti
           </Typography>
         </Box>
@@ -105,120 +101,61 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
         />
       </Box>
 
-      <TableContainer
-        sx={{
-          display: {
-            xs: "none",
-            md: "block",
-          },
-        }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow
-              sx={{
-                backgroundColor: "rgba(15, 23, 42, 0.025)",
-              }}
-            >
-              <TableCell>Proje</TableCell>
-              <TableCell>Müşteri</TableCell>
-              <TableCell>Başlangıç</TableCell>
-              <TableCell>Hedef bitiş</TableCell>
-              <TableCell>Durum</TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {projects.map((project) => (
-              <TableRow
-                key={project.id}
-                hover
-                sx={{
-                  "&:last-child td": {
-                    borderBottom: 0,
-                  },
-                }}
-              >
-                <TableCell>
-                  <Typography sx={{ fontWeight: 700 }}>
-                    {project.name}
-                  </Typography>
-
-                  {project.description && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mt: 0.5,
-                        maxWidth: 360,
-                      }}
-                    >
-                      {project.description}
-                    </Typography>
-                  )}
-                </TableCell>
-
-                <TableCell>{project.customerName}</TableCell>
-
-                <TableCell>{formatProjectDate(project.startDate)}</TableCell>
-
-                <TableCell>
-                  {formatProjectDate(project.targetEndDate)}
-                </TableCell>
-
-                <TableCell>
-                  <Chip
-                    label={projectStatusLabels[project.status]}
-                    color={projectStatusColors[project.status]}
-                    size="small"
-                    variant="outlined"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box
-        sx={{
-          display: {
-            xs: "grid",
-            md: "none",
-          },
-          gap: 1.5,
-          p: 2,
-        }}
-      >
+      <ResponsiveCardGrid variant="compact">
         {projects.map((project) => (
-          <Box
+          <Paper
             key={project.id}
+            component="article"
             sx={{
-              p: 2,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2.5,
-              backgroundColor: "background.paper",
+              display: "flex",
+              flexDirection: "column",
+              minWidth: 0,
+              minHeight: {
+                xs: "auto",
+                md: 265,
+              },
+              p: {
+                xs: 2,
+                md: 2.25,
+              },
+              transition:
+                "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+
+              "&:hover": {
+                transform: "translateY(-3px)",
+                borderColor: "primary.main",
+                boxShadow: 4,
+              },
             }}
           >
-            <Stack spacing={2}>
+            <Stack spacing={2} sx={{ height: "100%" }}>
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "flex-start",
                   justifyContent: "space-between",
-                  gap: 2,
+                  gap: 1.5,
+                  minWidth: 0,
                 }}
               >
-                <Box>
-                  <Typography sx={{ fontWeight: 700 }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                    sx={{
+                      overflowWrap: "anywhere",
+                    }}
+                  >
                     {project.name}
                   </Typography>
 
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    sx={{
+                      mt: 0.35,
+                      overflowWrap: "anywhere",
+                    }}
                   >
                     {project.customerName}
                   </Typography>
@@ -229,41 +166,88 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
                   color={projectStatusColors[project.status]}
                   size="small"
                   variant="outlined"
+                  sx={{ flexShrink: 0 }}
                 />
               </Box>
 
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: 2,
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 1.5,
+                  p: 1.75,
+                  borderRadius: 2.5,
+                  backgroundColor: "action.hover",
                 }}
               >
                 <Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: "block",
+                      mb: 0.25,
+                    }}
+                  >
                     Başlangıç
                   </Typography>
 
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {formatProjectDate(project.startDate)}
                   </Typography>
                 </Box>
 
                 <Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: "block",
+                      mb: 0.25,
+                    }}
+                  >
                     Hedef bitiş
                   </Typography>
 
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {formatProjectDate(project.targetEndDate)}
                   </Typography>
                 </Box>
               </Box>
+
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 0.5,
+                    fontWeight: 800,
+                  }}
+                >
+                  Proje açıklaması
+                </Typography>
+
+                <Typography
+                  color="text.secondary"
+                  sx={{
+                    lineHeight: 1.65,
+                    overflowWrap: "anywhere",
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: 3,
+                    overflow: "hidden",
+                  }}
+                >
+                  {project.description || "Proje açıklaması girilmedi."}
+                </Typography>
+              </Box>
             </Stack>
-          </Box>
+          </Paper>
         ))}
-      </Box>
-    </Paper>
+      </ResponsiveCardGrid>
+    </Box>
   );
 }
 
