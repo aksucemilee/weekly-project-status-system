@@ -4,6 +4,7 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.dashboard.DashboardProjectSum
 import com.kolaysoft.weeklyprojectstatus.model.dto.dashboard.DashboardSummaryResponse;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
+import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ProjectStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
@@ -14,6 +15,7 @@ import com.kolaysoft.weeklyprojectstatus.repository.WorkItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,11 +41,26 @@ public class DashboardService {
                 this.workItemRepository = workItemRepository;
         }
 
-        public DashboardSummaryResponse getDashboardSummary() {
+        public DashboardSummaryResponse getDashboardSummary(
+                        LocalDate weekStart,
+                        Long projectId,
+                        GeneralStatus generalStatus,
+                        RiskLevel riskLevel) {
+                LocalDate weekEnd = weekStart == null ? null : weekStart.plusDays(6);
+
                 List<DashboardProjectSummaryResponse> projectSummaries = projectRepository
                                 .findByActiveTrueOrderByNameAsc()
                                 .stream()
-                                .map(this::createProjectSummary)
+                                .filter(project -> projectId == null
+                                                || project.getId().equals(projectId))
+                                .map(project -> createProjectSummary(
+                                                project,
+                                                weekStart,
+                                                weekEnd))
+                                .filter(summary -> generalStatus == null
+                                                || summary.generalStatus() == generalStatus)
+                                .filter(summary -> riskLevel == null
+                                                || summary.riskLevel() == riskLevel)
                                 .toList();
 
                 long projectsWithReports = projectSummaries.stream()
@@ -72,16 +89,28 @@ public class DashboardService {
         }
 
         private DashboardProjectSummaryResponse createProjectSummary(
-                        Project project) {
-                Optional<WeeklyReport> latestReport = weeklyReportRepository
-                                .findFirstByProjectIdOrderByReportWeekStartDesc(
-                                                project.getId());
+                        Project project,
+                        LocalDate weekStart,
+                        LocalDate weekEnd) {
+                Optional<WeeklyReport> selectedReport;
 
-                if (latestReport.isEmpty()) {
+                if (weekStart == null) {
+                        selectedReport = weeklyReportRepository
+                                        .findFirstByProjectIdOrderByReportWeekStartDesc(
+                                                        project.getId());
+                } else {
+                        selectedReport = weeklyReportRepository
+                                        .findFirstByProjectIdAndReportWeekStartBetweenOrderByReportWeekStartDesc(
+                                                        project.getId(),
+                                                        weekStart,
+                                                        weekEnd);
+                }
+
+                if (selectedReport.isEmpty()) {
                         return createSummaryWithoutReport(project);
                 }
 
-                WeeklyReport report = latestReport.get();
+                WeeklyReport report = selectedReport.get();
 
                 long activeWorkItemCount = workItemRepository.countByWeeklyReport_IdAndStatusIn(
                                 report.getId(),

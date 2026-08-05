@@ -14,6 +14,17 @@ export async function getWeeklyReportsByProject(
   return response.data;
 }
 
+export async function getWeeklyReportById(
+  projectId: number,
+  weeklyReportId: number,
+): Promise<WeeklyReport> {
+  const response = await apiClient.get<WeeklyReport>(
+    `/projects/${projectId}/weekly-reports/${weeklyReportId}`,
+  );
+
+  return response.data;
+}
+
 export async function createWeeklyReport(
   projectId: number,
   request: WeeklyReportCreateRequest,

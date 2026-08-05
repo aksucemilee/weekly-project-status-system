@@ -18,7 +18,7 @@ export const dashboardHealthLabels: Record<DashboardHealth, string> = {
   HEALTHY: "İyi",
   ATTENTION: "Dikkat",
   CRITICAL: "Kritik",
-  NO_REPORT: "Rapor Yok",
+  NO_REPORT: "Rapor bekleniyor",
 };
 
 export const dashboardHealthColors: Record<

@@ -45,4 +45,14 @@ public class WeeklyReportController {
                 return ResponseEntity.ok(
                                 weeklyReportService.getReportsByProject(projectId));
         }
+
+        @GetMapping("/{weeklyReportId}")
+        public ResponseEntity<WeeklyReportResponse> getReportById(
+                        @PathVariable Long projectId,
+                        @PathVariable Long weeklyReportId) {
+                return ResponseEntity.ok(
+                                weeklyReportService.getReportById(
+                                                projectId,
+                                                weeklyReportId));
+        }
 }
