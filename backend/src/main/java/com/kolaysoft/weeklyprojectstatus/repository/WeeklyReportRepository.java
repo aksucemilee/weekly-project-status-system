@@ -5,16 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface WeeklyReportRepository
-        extends JpaRepository<WeeklyReport, Long> {
+                extends JpaRepository<WeeklyReport, Long> {
 
-    List<WeeklyReport> findByProjectIdOrderByReportWeekStartDesc(
-            Long projectId
-    );
+        List<WeeklyReport> findByProjectIdOrderByReportWeekStartDesc(
+                        Long projectId);
 
-    boolean existsByProjectIdAndReportWeekStart(
-            Long projectId,
-            LocalDate reportWeekStart
-    );
+        Optional<WeeklyReport> findFirstByProjectIdOrderByReportWeekStartDesc(
+                        Long projectId);
+
+        boolean existsByProjectIdAndReportWeekStart(
+                        Long projectId,
+                        LocalDate reportWeekStart);
 }
