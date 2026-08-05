@@ -29,6 +29,7 @@ type WeeklyReportListProps = {
   errorMessage: string;
   selectedReportId: number | null;
   onManageReportDetails: (report: WeeklyReport) => void;
+  onRetry: () => void;
 };
 
 type ProgressSummaryProps = {
@@ -81,6 +82,7 @@ function WeeklyReportList({
   errorMessage,
   selectedReportId,
   onManageReportDetails,
+  onRetry,
 }: WeeklyReportListProps) {
   if (isLoading) {
     return (
@@ -106,7 +108,16 @@ function WeeklyReportList({
   if (errorMessage) {
     return (
       <Paper sx={{ p: 3 }}>
-        <Alert severity="error">{errorMessage}</Alert>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={onRetry}>
+              Tekrar dene
+            </Button>
+          }
+        >
+          {errorMessage}
+        </Alert>
       </Paper>
     );
   }

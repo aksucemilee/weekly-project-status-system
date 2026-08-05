@@ -20,7 +20,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import PageHeader from "../components/common/PageHeader";
 import { layoutTokens } from "../theme/layoutTokens";
@@ -144,60 +144,72 @@ function ReportsPage() {
     projects.find((project) => String(project.id) === selectedProjectId) ??
     null;
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      setProjectErrorMessage("");
+  const loadProjects = useCallback(async () => {
+    setIsProjectsLoading(true);
+    setProjectErrorMessage("");
 
-      try {
-        const projectList = await getProjects();
+    try {
+      const projectList = await getProjects();
 
-        setProjects(projectList);
+      setProjects(projectList);
 
-        if (projectList.length > 0) {
-          setSelectedProjectId(String(projectList[0].id));
-        }
-      } catch {
-        setProjectErrorMessage("Projeler yüklenirken bir hata oluştu.");
-      } finally {
-        setIsProjectsLoading(false);
+      if (projectList.length > 0) {
+        setSelectedProjectId((currentProjectId) => {
+          const currentProjectStillExists = projectList.some(
+            (project) => String(project.id) === currentProjectId,
+          );
+
+          return currentProjectStillExists
+            ? currentProjectId
+            : String(projectList[0].id);
+        });
+      } else {
+        setSelectedProjectId("");
       }
-    };
-
-    void loadProjects();
+    } catch {
+      setProjectErrorMessage("Projeler yüklenirken bir hata oluştu.");
+    } finally {
+      setIsProjectsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  const loadReports = useCallback(async () => {
     if (!selectedProjectId) {
       setReports([]);
       setSelectedReport(null);
       setSelectedDetailTab("overview");
+      setIsReportsLoading(false);
       return;
     }
 
-    const loadReports = async () => {
-      setIsReportsLoading(true);
-      setReportListErrorMessage("");
-      setReports([]);
-      setSelectedReport(null);
-      setSelectedDetailTab("overview");
+    setIsReportsLoading(true);
+    setReportListErrorMessage("");
+    setReports([]);
+    setSelectedReport(null);
+    setSelectedDetailTab("overview");
 
-      try {
-        const reportList = await getWeeklyReportsByProject(
-          Number(selectedProjectId),
-        );
+    try {
+      const reportList = await getWeeklyReportsByProject(
+        Number(selectedProjectId),
+      );
 
-        setReports(reportList);
-      } catch {
-        setReportListErrorMessage(
-          "Haftalık raporlar yüklenirken bir hata oluştu.",
-        );
-      } finally {
-        setIsReportsLoading(false);
-      }
-    };
-
-    void loadReports();
+      setReports(reportList);
+    } catch {
+      setReportListErrorMessage(
+        "Haftalık raporlar yüklenirken bir hata oluştu.",
+      );
+    } finally {
+      setIsReportsLoading(false);
+    }
   }, [selectedProjectId]);
+
+  useEffect(() => {
+    void loadReports();
+  }, [loadReports]);
 
   useEffect(() => {
     if (!selectedReport) {
@@ -285,7 +297,20 @@ function ReportsPage() {
 
       {!isProjectsLoading && projectErrorMessage && (
         <Paper sx={{ p: 3 }}>
-          <Alert severity="error">{projectErrorMessage}</Alert>
+          <Alert
+            severity="error"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => void loadProjects()}
+              >
+                Tekrar dene
+              </Button>
+            }
+          >
+            {projectErrorMessage}
+          </Alert>
         </Paper>
       )}
 
@@ -373,6 +398,7 @@ function ReportsPage() {
             errorMessage={reportListErrorMessage}
             selectedReportId={selectedReport?.id ?? null}
             onManageReportDetails={handleManageReport}
+            onRetry={() => void loadReports()}
           />
 
           {selectedReport && (

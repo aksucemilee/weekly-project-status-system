@@ -34,6 +34,10 @@ type WeeklyReportFormState = Omit<
   actualProgress: string;
 };
 
+type WeeklyReportFieldErrors = Partial<
+  Record<keyof WeeklyReportFormState, string>
+>;
+
 type WeeklyReportFormProps = {
   project: Project;
   onReportCreated: (report: WeeklyReport) => void;
@@ -61,6 +65,8 @@ function WeeklyReportForm({
   const [reportForm, setReportForm] =
     useState<WeeklyReportFormState>(initialReportForm);
 
+  const [fieldErrors, setFieldErrors] = useState<WeeklyReportFieldErrors>({});
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -78,6 +84,59 @@ function WeeklyReportForm({
       ...previousForm,
       [field]: value,
     }));
+
+    setFieldErrors((previousErrors) => ({
+      ...previousErrors,
+      [field]: undefined,
+    }));
+  };
+
+  const validateForm = () => {
+    const nextErrors: WeeklyReportFieldErrors = {};
+
+    if (!reportForm.reportWeekStart) {
+      nextErrors.reportWeekStart = "Rapor haftası zorunludur.";
+    }
+
+    if (!reportForm.targetProgress.trim()) {
+      nextErrors.targetProgress = "Hedeflenen ilerleme zorunludur.";
+    } else {
+      const targetProgress = Number(reportForm.targetProgress);
+
+      if (
+        !Number.isInteger(targetProgress) ||
+        targetProgress < 0 ||
+        targetProgress > 100
+      ) {
+        nextErrors.targetProgress = "0 ile 100 arasında tam sayı girilmelidir.";
+      }
+    }
+
+    if (!reportForm.actualProgress.trim()) {
+      nextErrors.actualProgress = "Gerçekleşen ilerleme zorunludur.";
+    } else {
+      const actualProgress = Number(reportForm.actualProgress);
+
+      if (
+        !Number.isInteger(actualProgress) ||
+        actualProgress < 0 ||
+        actualProgress > 100
+      ) {
+        nextErrors.actualProgress = "0 ile 100 arasında tam sayı girilmelidir.";
+      }
+    }
+
+    if (!reportForm.completedSummary.trim()) {
+      nextErrors.completedSummary = "Yapılanlar alanı zorunludur.";
+    }
+
+    if (!reportForm.nextWeekPlan.trim()) {
+      nextErrors.nextWeekPlan = "Gelecek hafta yapılacaklar alanı zorunludur.";
+    }
+
+    setFieldErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
   };
 
   const getApiErrorMessage = (error: unknown) => {
@@ -102,33 +161,12 @@ function WeeklyReportForm({
     event.preventDefault();
     clearMessages();
 
+    if (!validateForm()) {
+      return;
+    }
+
     const targetProgress = Number(reportForm.targetProgress);
     const actualProgress = Number(reportForm.actualProgress);
-
-    const progressValuesAreInvalid =
-      !Number.isInteger(targetProgress) ||
-      !Number.isInteger(actualProgress) ||
-      targetProgress < 0 ||
-      targetProgress > 100 ||
-      actualProgress < 0 ||
-      actualProgress > 100;
-
-    if (progressValuesAreInvalid) {
-      setErrorMessage(
-        "Hedeflenen ve gerçekleşen ilerleme 0 ile 100 arasında tam sayı olmalıdır.",
-      );
-      return;
-    }
-
-    if (
-      !reportForm.completedSummary.trim() ||
-      !reportForm.nextWeekPlan.trim()
-    ) {
-      setErrorMessage(
-        "Yapılanlar ve gelecek hafta yapılacaklar alanları zorunludur.",
-      );
-      return;
-    }
 
     const request: WeeklyReportCreateRequest = {
       reportWeekStart: reportForm.reportWeekStart,
@@ -150,6 +188,7 @@ function WeeklyReportForm({
 
       onReportCreated(createdReport);
       setReportForm(initialReportForm);
+      setFieldErrors({});
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error));
     } finally {
@@ -158,11 +197,7 @@ function WeeklyReportForm({
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      onInvalidCapture={clearMessages}
-    >
+    <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={2.5}>
         <Box
           sx={{
@@ -209,6 +244,8 @@ function WeeklyReportForm({
             onChange={(event) =>
               updateFormField("reportWeekStart", event.target.value)
             }
+            error={Boolean(fieldErrors.reportWeekStart)}
+            helperText={fieldErrors.reportWeekStart}
             slotProps={{
               inputLabel: {
                 shrink: true,
@@ -244,6 +281,8 @@ function WeeklyReportForm({
             onChange={(event) =>
               updateFormField("targetProgress", event.target.value)
             }
+            error={Boolean(fieldErrors.targetProgress)}
+            helperText={fieldErrors.targetProgress}
             slotProps={{
               htmlInput: {
                 min: 0,
@@ -262,6 +301,8 @@ function WeeklyReportForm({
             onChange={(event) =>
               updateFormField("actualProgress", event.target.value)
             }
+            error={Boolean(fieldErrors.actualProgress)}
+            helperText={fieldErrors.actualProgress}
             slotProps={{
               htmlInput: {
                 min: 0,
@@ -325,6 +366,8 @@ function WeeklyReportForm({
             onChange={(event) =>
               updateFormField("completedSummary", event.target.value)
             }
+            error={Boolean(fieldErrors.completedSummary)}
+            helperText={fieldErrors.completedSummary}
             multiline
             minRows={3}
             required
@@ -337,6 +380,8 @@ function WeeklyReportForm({
             onChange={(event) =>
               updateFormField("nextWeekPlan", event.target.value)
             }
+            error={Boolean(fieldErrors.nextWeekPlan)}
+            helperText={fieldErrors.nextWeekPlan}
             multiline
             minRows={3}
             required
