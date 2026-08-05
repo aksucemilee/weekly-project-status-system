@@ -28,3 +28,10 @@ export type DashboardSummary = {
   blockedProjects: number;
   projects: DashboardProjectSummary[];
 };
+
+export type DashboardFilters = {
+  weekStart?: string;
+  projectId?: number;
+  generalStatus?: GeneralStatus;
+  riskLevel?: RiskLevel;
+};

@@ -1,12 +1,12 @@
 package com.kolaysoft.weeklyprojectstatus.service;
 
 import com.kolaysoft.weeklyprojectstatus.exception.DuplicateResourceException;
+import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
-import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,9 +31,10 @@ public class WeeklyReportService {
                         WeeklyReportCreateRequest request) {
                 Project project = projectService.getProjectEntity(projectId);
 
-                boolean reportAlreadyExists = weeklyReportRepository.existsByProjectIdAndReportWeekStart(
-                                projectId,
-                                request.getReportWeekStart());
+                boolean reportAlreadyExists = weeklyReportRepository
+                                .existsByProjectIdAndReportWeekStart(
+                                                projectId,
+                                                request.getReportWeekStart());
 
                 if (reportAlreadyExists) {
                         throw new DuplicateResourceException(
@@ -63,7 +64,8 @@ public class WeeklyReportService {
         }
 
         @Transactional(readOnly = true)
-        public List<WeeklyReportResponse> getReportsByProject(Long projectId) {
+        public List<WeeklyReportResponse> getReportsByProject(
+                        Long projectId) {
                 projectService.getProjectEntity(projectId);
 
                 return weeklyReportRepository
@@ -74,14 +76,34 @@ public class WeeklyReportService {
         }
 
         @Transactional(readOnly = true)
-        public WeeklyReport getWeeklyReportEntity(Long weeklyReportId) {
+        public WeeklyReportResponse getReportById(
+                        Long projectId,
+                        Long weeklyReportId) {
+                WeeklyReport weeklyReport = weeklyReportRepository
+                                .findByIdAndProject_Id(
+                                                weeklyReportId,
+                                                projectId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Weekly report not found with id: "
+                                                                + weeklyReportId
+                                                                + " for project id: "
+                                                                + projectId));
+
+                return toResponse(weeklyReport);
+        }
+
+        @Transactional(readOnly = true)
+        public WeeklyReport getWeeklyReportEntity(
+                        Long weeklyReportId) {
                 return weeklyReportRepository
                                 .findById(weeklyReportId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Weekly report not found with id: " + weeklyReportId));
+                                                "Weekly report not found with id: "
+                                                                + weeklyReportId));
         }
 
-        private WeeklyReportResponse toResponse(WeeklyReport weeklyReport) {
+        private WeeklyReportResponse toResponse(
+                        WeeklyReport weeklyReport) {
                 return new WeeklyReportResponse(
                                 weeklyReport.getId(),
                                 weeklyReport.getProject().getId(),
