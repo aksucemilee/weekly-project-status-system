@@ -181,10 +181,7 @@ function DashboardPage() {
 
   return (
     <Box>
-      <PageHeader
-        title="CTO Dashboard"
-        description="Projelerin haftalık durumlarını, ilerleme oranlarını, risklerini ve aktif iş sayılarını tek ekrandan inceleyin."
-      />
+      <PageHeader title="CTO Dashboard" />
 
       <Stack
         sx={{

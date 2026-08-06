@@ -77,14 +77,13 @@ function ProjectsPage() {
     <Box>
       <PageHeader
         title="Projeler"
-        description="Projeleri kompakt kartlarla takip edin; yeni proje oluşturun ve planlanan çalışma tarihlerini tek ekrandan görüntüleyin."
         action={
           <Button
             variant="contained"
             onClick={() => setIsCreateDialogOpen(true)}
             fullWidth={isSmallScreen}
           >
-            + Yeni Proje
+            + Yeni proje
           </Button>
         }
       />
@@ -142,8 +141,8 @@ function ProjectsPage() {
             <Paper
               sx={{
                 p: {
-                  xs: 1.75,
-                  sm: 2,
+                  xs: 1.5,
+                  sm: 1.75,
                 },
                 minWidth: 0,
                 boxShadow: "none",
@@ -162,8 +161,8 @@ function ProjectsPage() {
                 sx={{
                   mt: 0.5,
                   fontSize: {
-                    xs: "1.55rem",
-                    md: "2rem",
+                    xs: "1.5rem",
+                    md: "1.75rem",
                   },
                 }}
               >
@@ -174,8 +173,8 @@ function ProjectsPage() {
             <Paper
               sx={{
                 p: {
-                  xs: 1.75,
-                  sm: 2,
+                  xs: 1.5,
+                  sm: 1.75,
                 },
                 minWidth: 0,
                 boxShadow: "none",
@@ -194,8 +193,8 @@ function ProjectsPage() {
                 sx={{
                   mt: 0.5,
                   fontSize: {
-                    xs: "1.55rem",
-                    md: "2rem",
+                    xs: "1.5rem",
+                    md: "1.75rem",
                   },
                 }}
               >
@@ -206,8 +205,8 @@ function ProjectsPage() {
             <Paper
               sx={{
                 p: {
-                  xs: 1.75,
-                  sm: 2,
+                  xs: 1.5,
+                  sm: 1.75,
                 },
                 minWidth: 0,
                 boxShadow: "none",
@@ -227,8 +226,8 @@ function ProjectsPage() {
                 sx={{
                   mt: 0.5,
                   fontSize: {
-                    xs: "1.55rem",
-                    md: "2rem",
+                    xs: "1.5rem",
+                    md: "1.75rem",
                   },
                 }}
               >
@@ -239,8 +238,8 @@ function ProjectsPage() {
             <Paper
               sx={{
                 p: {
-                  xs: 1.75,
-                  sm: 2,
+                  xs: 1.5,
+                  sm: 1.75,
                 },
                 minWidth: 0,
                 boxShadow: "none",
@@ -260,8 +259,8 @@ function ProjectsPage() {
                 sx={{
                   mt: 0.5,
                   fontSize: {
-                    xs: "1.55rem",
-                    md: "2rem",
+                    xs: "1.5rem",
+                    md: "1.75rem",
                   },
                 }}
               >
@@ -289,17 +288,9 @@ function ProjectsPage() {
             gap: 2,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="overline"
-              color="primary.main"
-              sx={{ fontWeight: 900 }}
-            >
-              Yeni kayıt
-            </Typography>
-
-            <Typography variant="h5">Yeni proje oluştur</Typography>
-          </Box>
+          <Typography variant="h6" component="h2">
+            Yeni proje
+          </Typography>
 
           <IconButton
             type="button"

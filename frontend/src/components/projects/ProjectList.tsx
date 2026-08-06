@@ -8,8 +8,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
 import type { Project } from "../../types/project";
+import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
 import EmptyState from "../feedback/EmptyState";
 import {
   formatProjectDate,
@@ -34,12 +34,7 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
           p: 3,
         }}
       >
-        <Stack
-          spacing={2}
-          sx={{
-            alignItems: "center",
-          }}
-        >
+        <Stack spacing={2} sx={{ alignItems: "center" }}>
           <CircularProgress size={30} />
 
           <Typography color="text.secondary">Projeler yükleniyor...</Typography>
@@ -68,81 +63,71 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
 
   return (
     <Box component="section" aria-labelledby="project-list-title">
-      <Box
+      <Stack
+        direction="row"
         sx={{
-          display: "flex",
-          alignItems: {
-            xs: "flex-start",
-            sm: "center",
-          },
+          mb: 1.5,
+          alignItems: "center",
           justifyContent: "space-between",
-          flexDirection: {
-            xs: "column",
-            sm: "row",
-          },
           gap: 1.5,
-          mb: 2,
         }}
       >
-        <Box>
-          <Typography id="project-list-title" variant="h5" component="h2">
-            Proje listesi
-          </Typography>
-
-          <Typography color="text.secondary" sx={{ mt: 0.25 }}>
-            Sistemde kayıtlı projelerin güncel özeti
-          </Typography>
-        </Box>
+        <Typography id="project-list-title" variant="h6" component="h2">
+          Proje listesi
+        </Typography>
 
         <Chip
           label={`${projects.length} proje`}
           color="primary"
+          size="small"
           variant="outlined"
         />
-      </Box>
+      </Stack>
 
       <ResponsiveCardGrid variant="compact">
         {projects.map((project) => (
           <Paper
             key={project.id}
             component="article"
+            variant="outlined"
             sx={{
               display: "flex",
-              flexDirection: "column",
               minWidth: 0,
-              minHeight: {
-                xs: "auto",
-                md: 265,
-              },
               p: {
-                xs: 2,
-                md: 2.25,
+                xs: 1.75,
+                md: 2,
               },
               transition:
-                "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+                "border-color 160ms ease, background-color 160ms ease",
 
               "&:hover": {
-                transform: "translateY(-3px)",
                 borderColor: "primary.main",
-                boxShadow: 4,
+                backgroundColor: "action.hover",
               },
             }}
           >
-            <Stack spacing={2} sx={{ height: "100%" }}>
-              <Box
+            <Stack
+              spacing={1.5}
+              sx={{
+                width: "100%",
+                minWidth: 0,
+              }}
+            >
+              <Stack
+                direction="row"
                 sx={{
-                  display: "flex",
                   alignItems: "flex-start",
                   justifyContent: "space-between",
                   gap: 1.5,
-                  minWidth: 0,
                 }}
               >
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
-                    variant="h6"
+                    variant="subtitle1"
                     component="h3"
                     sx={{
+                      fontWeight: 800,
+                      lineHeight: 1.35,
                       overflowWrap: "anywhere",
                     }}
                   >
@@ -153,7 +138,7 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
                     variant="body2"
                     color="text.secondary"
                     sx={{
-                      mt: 0.35,
+                      mt: 0.25,
                       overflowWrap: "anywhere",
                     }}
                   >
@@ -166,83 +151,39 @@ function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
                   color={projectStatusColors[project.status]}
                   size="small"
                   variant="outlined"
-                  sx={{ flexShrink: 0 }}
+                  sx={{
+                    flexShrink: 0,
+                  }}
                 />
-              </Box>
+              </Stack>
 
-              <Box
+              <Typography
+                variant="body2"
+                color="text.secondary"
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    sm: "repeat(2, minmax(0, 1fr))",
-                  },
-                  gap: 1.5,
-                  p: 1.75,
-                  borderRadius: 2.5,
-                  backgroundColor: "action.hover",
+                  fontWeight: 600,
                 }}
               >
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: "block",
-                      mb: 0.25,
-                    }}
-                  >
-                    Başlangıç
-                  </Typography>
+                {formatProjectDate(project.startDate)}
+                {"  →  "}
+                {formatProjectDate(project.targetEndDate)}
+              </Typography>
 
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                    {formatProjectDate(project.startDate)}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: "block",
-                      mb: 0.25,
-                    }}
-                  >
-                    Hedef bitiş
-                  </Typography>
-
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                    {formatProjectDate(project.targetEndDate)}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 0.5,
-                    fontWeight: 800,
-                  }}
-                >
-                  Proje açıklaması
-                </Typography>
-
-                <Typography
-                  color="text.secondary"
-                  sx={{
-                    lineHeight: 1.65,
-                    overflowWrap: "anywhere",
-                    display: "-webkit-box",
-                    WebkitBoxOrient: "vertical",
-                    WebkitLineClamp: 3,
-                    overflow: "hidden",
-                  }}
-                >
-                  {project.description || "Proje açıklaması girilmedi."}
-                </Typography>
-              </Box>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  lineHeight: 1.6,
+                  overflowWrap: "anywhere",
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflow: "hidden",
+                }}
+              >
+                {project.description?.trim() ||
+                  "Bu proje için açıklama girilmemiş."}
+              </Typography>
             </Stack>
           </Paper>
         ))}

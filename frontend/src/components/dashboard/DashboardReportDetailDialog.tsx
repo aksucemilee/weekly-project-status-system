@@ -5,23 +5,22 @@ import {
   Chip,
   CircularProgress,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
   LinearProgress,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Tooltip,
   Typography,
   useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { useEffect, useState } from "react";
 
 import type { WeeklyReport } from "../../types/weeklyReport";
-import DashboardRiskIssueList from "./DashboardRiskIssueList";
-import DashboardWorkItemList from "./DashboardWorkItemList";
-
 import {
   formatReportDate,
   generalStatusColors,
@@ -31,6 +30,8 @@ import {
   scheduleStatusColors,
   scheduleStatusLabels,
 } from "../reports/reportPresentation";
+import DashboardRiskIssueList from "./DashboardRiskIssueList";
+import DashboardWorkItemList from "./DashboardWorkItemList";
 
 type DashboardReportDetailDialogProps = {
   open: boolean;
@@ -40,6 +41,8 @@ type DashboardReportDetailDialogProps = {
   onClose: () => void;
   onRetry: () => void;
 };
+
+type ReportDetailTab = 0 | 1 | 2;
 
 type ProgressCardProps = {
   label: string;
@@ -54,30 +57,30 @@ function ProgressCard({ label, value, color }: ProgressCardProps) {
     <Paper
       variant="outlined"
       sx={{
-        p: 2,
         minWidth: 0,
+        p: {
+          xs: 1.75,
+          md: 2,
+        },
         backgroundColor: "action.hover",
-        boxShadow: "none",
       }}
     >
       <Stack
         direction="row"
         sx={{
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 2,
           mb: 1,
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
         }}
       >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontWeight: 700 }}
-        >
+        <Typography variant="body2" color="text.secondary">
           {label}
         </Typography>
 
-        <Typography variant="h6">%{value}</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+          %{value}
+        </Typography>
       </Stack>
 
       <LinearProgress
@@ -85,7 +88,7 @@ function ProgressCard({ label, value, color }: ProgressCardProps) {
         value={normalizedValue}
         color={color}
         sx={{
-          height: 8,
+          height: 7,
           borderRadius: 999,
 
           "& .MuiLinearProgress-bar": {
@@ -111,16 +114,19 @@ function DetailSection({ title, value, emptyText }: DetailSectionProps) {
       variant="outlined"
       component="section"
       sx={{
-        minHeight: 130,
-        p: 2,
-        boxShadow: "none",
+        minWidth: 0,
+        minHeight: 116,
+        p: {
+          xs: 1.75,
+          md: 2,
+        },
       }}
     >
       <Typography
         variant="subtitle2"
         sx={{
           mb: 0.75,
-          fontWeight: 900,
+          fontWeight: 800,
         }}
       >
         {title}
@@ -130,7 +136,7 @@ function DetailSection({ title, value, emptyText }: DetailSectionProps) {
         variant="body2"
         color={hasValue ? "text.primary" : "text.secondary"}
         sx={{
-          lineHeight: 1.7,
+          lineHeight: 1.65,
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
         }}
@@ -150,8 +156,15 @@ function DashboardReportDetailDialog({
   onRetry,
 }: DashboardReportDetailDialogProps) {
   const theme = useTheme();
-
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [activeTab, setActiveTab] = useState<ReportDetailTab>(0);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(0);
+    }
+  }, [open, report?.id]);
 
   return (
     <Dialog
@@ -159,13 +172,15 @@ function DashboardReportDetailDialog({
       onClose={onClose}
       fullWidth
       fullScreen={isSmallScreen}
-      maxWidth="lg"
+      maxWidth={false}
       scroll="paper"
       aria-labelledby="dashboard-report-detail-title"
       slotProps={{
         paper: {
           sx: {
-            maxHeight: isSmallScreen ? "100%" : "90vh",
+            width: isSmallScreen ? "100%" : "min(1180px, calc(100vw - 48px))",
+            maxWidth: "none",
+            maxHeight: isSmallScreen ? "100%" : "88vh",
             borderRadius: isSmallScreen ? 0 : 3,
           },
         },
@@ -174,57 +189,149 @@ function DashboardReportDetailDialog({
       <DialogTitle
         id="dashboard-report-detail-title"
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
           px: {
             xs: 2,
             md: 3,
           },
           py: 2,
+          borderBottom: report ? 0 : "1px solid",
+          borderColor: "divider",
         }}
       >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" component="span">
-            Haftalık rapor detayı
-          </Typography>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              display: "block",
-              mt: 0.15,
-            }}
-          >
-            Salt okunur CTO görünümü
-          </Typography>
-        </Box>
-
-        <Tooltip title="Kapat">
-          <IconButton
-            aria-label="Rapor detayını kapat"
-            onClick={onClose}
-            edge="end"
-          >
-            <Box
-              component="span"
-              aria-hidden="true"
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="h6"
+              component="h2"
               sx={{
-                fontSize: "1.7rem",
-                lineHeight: 1,
-                fontWeight: 300,
+                overflowWrap: "anywhere",
               }}
             >
-              ×
-            </Box>
-          </IconButton>
-        </Tooltip>
+              {report?.projectName ?? "Haftalık rapor detayı"}
+            </Typography>
+
+            {report ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.35 }}
+              >
+                {formatReportDate(report.reportWeekStart)} haftası
+              </Typography>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.35 }}
+              >
+                Salt okunur CTO görünümü
+              </Typography>
+            )}
+          </Box>
+
+          <Tooltip title="Kapat">
+            <IconButton
+              type="button"
+              aria-label="Rapor detayını kapat"
+              onClick={onClose}
+              edge="end"
+              sx={{
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                component="span"
+                aria-hidden="true"
+                sx={{
+                  fontSize: "1.7rem",
+                  fontWeight: 300,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </Box>
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        {report ? (
+          <Stack
+            direction="row"
+            useFlexGap
+            sx={{
+              mt: 1.5,
+              flexWrap: "wrap",
+              gap: 0.75,
+            }}
+          >
+            <Chip
+              label={generalStatusLabels[report.generalStatus]}
+              color={generalStatusColors[report.generalStatus]}
+              size="small"
+              variant="outlined"
+            />
+
+            <Chip
+              label={scheduleStatusLabels[report.scheduleStatus]}
+              color={scheduleStatusColors[report.scheduleStatus]}
+              size="small"
+              variant="outlined"
+            />
+
+            <Chip
+              label={`Risk: ${riskLevelLabels[report.riskLevel]}`}
+              color={riskLevelColors[report.riskLevel]}
+              size="small"
+              variant="outlined"
+            />
+          </Stack>
+        ) : null}
       </DialogTitle>
 
+      {!isLoading && !errorMessage && report ? (
+        <Tabs
+          value={activeTab}
+          onChange={(_, value: ReportDetailTab) => setActiveTab(value)}
+          variant={isSmallScreen ? "scrollable" : "fullWidth"}
+          scrollButtons={isSmallScreen ? "auto" : false}
+          aria-label="Haftalık rapor detay bölümleri"
+          sx={{
+            px: {
+              xs: 1,
+              md: 2,
+            },
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Tab
+            id="report-detail-tab-overview"
+            aria-controls="report-detail-panel-overview"
+            label="Genel Bakış"
+          />
+
+          <Tab
+            id="report-detail-tab-work-items"
+            aria-controls="report-detail-panel-work-items"
+            label="İş Kalemleri"
+          />
+
+          <Tab
+            id="report-detail-tab-risks"
+            aria-controls="report-detail-panel-risks"
+            label="Risk ve Engeller"
+          />
+        </Tabs>
+      ) : null}
+
       <DialogContent
-        dividers
         sx={{
           p: {
             xs: 2,
@@ -232,7 +339,7 @@ function DashboardReportDetailDialog({
           },
         }}
       >
-        {isLoading && (
+        {isLoading ? (
           <Stack
             sx={{
               minHeight: 300,
@@ -247,9 +354,9 @@ function DashboardReportDetailDialog({
               Rapor bilgileri yükleniyor...
             </Typography>
           </Stack>
-        )}
+        ) : null}
 
-        {!isLoading && errorMessage && (
+        {!isLoading && errorMessage ? (
           <Alert
             severity="error"
             action={
@@ -260,60 +367,15 @@ function DashboardReportDetailDialog({
           >
             {errorMessage}
           </Alert>
-        )}
+        ) : null}
 
-        {!isLoading && !errorMessage && report && (
-          <Stack spacing={2.5}>
-            <Box>
-              <Typography
-                variant="h5"
-                component="h2"
-                sx={{
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {report.projectName}
-              </Typography>
-
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                Rapor haftası: {formatReportDate(report.reportWeekStart)}
-              </Typography>
-            </Box>
-
-            <Stack
-              direction="row"
-              useFlexGap
-              sx={{
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
-              <Chip
-                label={generalStatusLabels[report.generalStatus]}
-                color={generalStatusColors[report.generalStatus]}
-                size="small"
-                variant="outlined"
-              />
-
-              <Chip
-                label={scheduleStatusLabels[report.scheduleStatus]}
-                color={scheduleStatusColors[report.scheduleStatus]}
-                size="small"
-                variant="outlined"
-              />
-
-              <Chip
-                label={`Risk: ${riskLevelLabels[report.riskLevel]}`}
-                color={riskLevelColors[report.riskLevel]}
-                size="small"
-                variant="outlined"
-              />
-            </Stack>
-
+        {!isLoading && !errorMessage && report && activeTab === 0 ? (
+          <Stack
+            id="report-detail-panel-overview"
+            role="tabpanel"
+            aria-labelledby="report-detail-tab-overview"
+            spacing={2}
+          >
             <Box
               sx={{
                 display: "grid",
@@ -321,7 +383,7 @@ function DashboardReportDetailDialog({
                   xs: "1fr",
                   sm: "repeat(2, minmax(0, 1fr))",
                 },
-                gap: 2,
+                gap: 1.5,
               }}
             >
               <ProgressCard
@@ -344,11 +406,11 @@ function DashboardReportDetailDialog({
                   xs: "1fr",
                   md: "repeat(2, minmax(0, 1fr))",
                 },
-                gap: 2,
+                gap: 1.5,
               }}
             >
               <DetailSection
-                title="Tamamlanan çalışmalar"
+                title="Bu hafta yapılanlar"
                 value={report.completedSummary}
                 emptyText="Tamamlanan çalışma bilgisi girilmemiş."
               />
@@ -360,7 +422,7 @@ function DashboardReportDetailDialog({
               />
 
               <DetailSection
-                title="Engeller ve sorunlar"
+                title="Engeller"
                 value={report.blockers}
                 emptyText="Engel veya sorun belirtilmemiş."
               />
@@ -371,43 +433,29 @@ function DashboardReportDetailDialog({
                 emptyText="Genel not girilmemiş."
               />
             </Box>
-
-            <Box
-              sx={{
-                pt: 0.5,
-                borderTop: "1px solid",
-                borderColor: "divider",
-              }}
-            />
-
-            <DashboardWorkItemList weeklyReportId={report.id} />
-
-            <Box
-              sx={{
-                pt: 0.5,
-                borderTop: "1px solid",
-                borderColor: "divider",
-              }}
-            />
-
-            <DashboardRiskIssueList weeklyReportId={report.id} />
           </Stack>
-        )}
-      </DialogContent>
+        ) : null}
 
-      <DialogActions
-        sx={{
-          px: {
-            xs: 2,
-            md: 3,
-          },
-          py: 1.5,
-        }}
-      >
-        <Button variant="contained" onClick={onClose}>
-          Kapat
-        </Button>
-      </DialogActions>
+        {!isLoading && !errorMessage && report && activeTab === 1 ? (
+          <Box
+            id="report-detail-panel-work-items"
+            role="tabpanel"
+            aria-labelledby="report-detail-tab-work-items"
+          >
+            <DashboardWorkItemList weeklyReportId={report.id} />
+          </Box>
+        ) : null}
+
+        {!isLoading && !errorMessage && report && activeTab === 2 ? (
+          <Box
+            id="report-detail-panel-risks"
+            role="tabpanel"
+            aria-labelledby="report-detail-tab-risks"
+          >
+            <DashboardRiskIssueList weeklyReportId={report.id} />
+          </Box>
+        ) : null}
+      </DialogContent>
     </Dialog>
   );
 }

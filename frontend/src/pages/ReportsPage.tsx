@@ -262,8 +262,7 @@ function ReportsPage() {
   return (
     <Box>
       <PageHeader
-        title="Haftalık Raporlar"
-        description="Projelerin haftalık ilerlemesini kompakt kartlarla takip edin; iş kalemleri ve risk detaylarına gerektiğinde ulaşın."
+        title="Haftalık raporlar"
         action={
           <Button
             variant="contained"
@@ -271,7 +270,7 @@ function ReportsPage() {
             disabled={!selectedProject}
             fullWidth={isSmallScreen}
           >
-            + Yeni Rapor
+            + Yeni rapor
           </Button>
         }
       />
@@ -331,7 +330,10 @@ function ReportsPage() {
           <Paper
             component="section"
             sx={{
-              p: 2,
+              p: {
+                xs: 1.5,
+                md: 1.75,
+              },
             }}
           >
             <Stack
@@ -356,7 +358,7 @@ function ReportsPage() {
                 sx={{
                   width: {
                     xs: "100%",
-                    md: 360,
+                    md: 420,
                   },
                 }}
               >
@@ -375,17 +377,12 @@ function ReportsPage() {
                   gap: 1,
                 }}
               >
-                <Chip
-                  label={`${reports.length} rapor`}
-                  color="primary"
-                  variant="outlined"
-                />
-
                 {selectedProject && (
                   <Chip
                     label={getProjectStatusLabel(selectedProject.status)}
                     color={getProjectStatusColor(selectedProject.status)}
                     variant="outlined"
+                    size="small"
                   />
                 )}
               </Stack>
@@ -438,19 +435,15 @@ function ReportsPage() {
                     }}
                   >
                     <Box>
-                      <Typography
-                        variant="overline"
-                        color="primary.main"
-                        sx={{ fontWeight: 900 }}
-                      >
-                        Seçili rapor
-                      </Typography>
-
-                      <Typography variant="h5" component="h2">
+                      <Typography variant="h6" component="h2">
                         {selectedReport.projectName}
                       </Typography>
 
-                      <Typography color="text.secondary" sx={{ mt: 0.25 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.25 }}
+                      >
                         {formatDisplayDate(selectedReport.reportWeekStart)}
                       </Typography>
                     </Box>
@@ -715,17 +708,9 @@ function ReportsPage() {
             gap: 2,
           }}
         >
-          <Box>
-            <Typography
-              variant="overline"
-              color="primary.main"
-              sx={{ fontWeight: 900 }}
-            >
-              Yeni kayıt
-            </Typography>
-
-            <Typography variant="h5">Haftalık rapor oluştur</Typography>
-          </Box>
+          <Typography variant="h6" component="h2">
+            Yeni haftalık rapor
+          </Typography>
 
           <IconButton
             type="button"

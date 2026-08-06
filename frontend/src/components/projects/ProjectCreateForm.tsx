@@ -148,7 +148,7 @@ function ProjectCreateForm({
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Stack spacing={2.5}>
+      <Stack spacing={2}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
         <Box
@@ -156,9 +156,9 @@ function ProjectCreateForm({
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              md: "repeat(2, minmax(0, 1fr))",
+              md: "repeat(6, minmax(0, 1fr))",
             },
-            gap: 2,
+            gap: 1.5,
           }}
         >
           <TextField
@@ -169,6 +169,11 @@ function ProjectCreateForm({
             helperText={fieldErrors.name}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 3",
+              },
+            }}
           />
 
           <TextField
@@ -181,6 +186,11 @@ function ProjectCreateForm({
             helperText={fieldErrors.customerName}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 3",
+              },
+            }}
           />
 
           <TextField
@@ -190,7 +200,7 @@ function ProjectCreateForm({
               updateFormField("description", event.target.value)
             }
             multiline
-            minRows={3}
+            minRows={2}
             fullWidth
             sx={{
               gridColumn: {
@@ -215,6 +225,11 @@ function ProjectCreateForm({
             }}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           />
 
           <TextField
@@ -236,6 +251,11 @@ function ProjectCreateForm({
             }}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           />
 
           <TextField
@@ -246,6 +266,11 @@ function ProjectCreateForm({
               updateFormField("status", event.target.value as ProjectStatus)
             }
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           >
             {Object.entries(projectStatusLabels).map(([status, label]) => (
               <MenuItem key={status} value={status}>
@@ -275,7 +300,7 @@ function ProjectCreateForm({
           </Button>
 
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? "Kaydediliyor..." : "Proje Oluştur"}
+            {isSubmitting ? "Kaydediliyor..." : "Proje oluştur"}
           </Button>
         </Stack>
       </Stack>
