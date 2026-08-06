@@ -92,6 +92,7 @@ const getStatusColor = (status: WorkItemStatus): WorkItemChipColor => {
 
 function WorkItemManager({ report }: WorkItemManagerProps) {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+
   const [workItemForm, setWorkItemForm] =
     useState<WorkItemFormState>(initialWorkItemForm);
 
@@ -167,15 +168,41 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
   ) => {
     clearMessages();
 
-    setWorkItemForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
+    setWorkItemForm((previousForm) => {
+      if (field === "status") {
+        const nextStatus = value as WorkItemStatus;
 
-    setFieldErrors((previousErrors) => ({
-      ...previousErrors,
-      [field]: undefined,
-    }));
+        return {
+          ...previousForm,
+          status: nextStatus,
+          completedDate:
+            nextStatus === "COMPLETED" ? previousForm.completedDate : "",
+        };
+      }
+
+      return {
+        ...previousForm,
+        [field]: value,
+      };
+    });
+
+    setFieldErrors((previousErrors) => {
+      const nextErrors: WorkItemFieldErrors = {
+        ...previousErrors,
+        [field]: undefined,
+      };
+
+      if (
+        field === "status" ||
+        field === "plannedDate" ||
+        field === "completedDate"
+      ) {
+        nextErrors.completedDate = undefined;
+        nextErrors.status = undefined;
+      }
+
+      return nextErrors;
+    });
   };
 
   const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
@@ -212,18 +239,45 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
     scrollToForm();
   };
 
+  const validateForm = () => {
+    const nextErrors: WorkItemFieldErrors = {};
+
+    if (!workItemForm.title.trim()) {
+      nextErrors.title = "İş kalemi başlığı zorunludur.";
+    }
+
+    if (workItemForm.status !== "COMPLETED" && workItemForm.completedDate) {
+      nextErrors.status =
+        "Tamamlanma tarihi girildiğinde durum Tamamlandı olmalıdır.";
+      nextErrors.completedDate =
+        "Tamamlanma tarihi yalnızca tamamlanan işler için girilebilir.";
+    } else if (
+      workItemForm.status === "COMPLETED" &&
+      !workItemForm.completedDate
+    ) {
+      nextErrors.completedDate =
+        "Durum Tamamlandı olduğunda tamamlanma tarihi zorunludur.";
+    } else if (
+      workItemForm.plannedDate &&
+      workItemForm.completedDate &&
+      workItemForm.completedDate < workItemForm.plannedDate
+    ) {
+      nextErrors.completedDate =
+        "Tamamlanma tarihi planlanan tarihten önce olamaz.";
+    }
+
+    setFieldErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearMessages();
 
-    if (!workItemForm.title.trim()) {
-      setFieldErrors({
-        title: "İş kalemi başlığı zorunludur.",
-      });
+    if (!validateForm()) {
       return;
     }
-
-    setFieldErrors({});
 
     const request: WorkItemCreateRequest = {
       title: workItemForm.title.trim(),
@@ -286,7 +340,8 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
       responsible: workItem.responsible ?? "",
       status: workItem.status,
       plannedDate: workItem.plannedDate ?? "",
-      completedDate: workItem.completedDate ?? "",
+      completedDate:
+        workItem.status === "COMPLETED" ? (workItem.completedDate ?? "") : "",
       note: workItem.note ?? "",
     });
 
@@ -354,46 +409,44 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
         variant="outlined"
         sx={{
           p: {
-            xs: 2,
-            md: 2.5,
+            xs: 1.75,
+            md: 2,
           },
-          boxShadow: "none",
         }}
       >
-        <Box
+        <Stack
           sx={{
-            display: "flex",
-            alignItems: {
-              xs: "stretch",
-              sm: "flex-start",
-            },
-            justifyContent: "space-between",
+            mb: 2,
             flexDirection: {
               xs: "column",
               sm: "row",
             },
-            gap: 2,
-            mb: 3,
+            alignItems: {
+              xs: "stretch",
+              sm: "center",
+            },
+            justifyContent: "space-between",
+            gap: 1.5,
           }}
         >
-          <Stack spacing={0.75}>
-            <Typography
-              variant="overline"
-              color="primary.main"
-              sx={{ fontWeight: 800 }}
-            >
-              Rapor Detayı
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Typography variant="h6" component="h3">
+              İş kalemleri
             </Typography>
 
-            <Typography variant="h5" component="h2">
-              İş Kalemleri Yönetimi
-            </Typography>
-
-            <Typography color="text.secondary">
-              {report.projectName} projesinin{" "}
-              {formatDisplayDate(report.reportWeekStart)} tarihli raporuna ait
-              iş kalemleri
-            </Typography>
+            {!isLoading && (
+              <Chip
+                label={`${workItems.length} kayıt`}
+                size="small"
+                variant="outlined"
+              />
+            )}
           </Stack>
 
           <Button
@@ -401,20 +454,19 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
             variant={isFormOpen ? "outlined" : "contained"}
             onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
             aria-expanded={isFormOpen}
-            sx={{ flexShrink: 0 }}
           >
-            {isFormOpen ? "Formu Kapat" : "Yeni İş Kalemi"}
+            {isFormOpen ? "Formu kapat" : "Yeni iş kalemi"}
           </Button>
-        </Box>
+        </Stack>
 
         {errorMessage && (
-          <Alert severity="error" sx={{ mb: 2.5 }}>
+          <Alert severity="error" sx={{ mb: 2 }}>
             {errorMessage}
           </Alert>
         )}
 
         {successMessage && (
-          <Alert severity="success" sx={{ mb: 2.5 }}>
+          <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
           </Alert>
         )}
@@ -423,338 +475,447 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
           <Box
             ref={formSectionRef}
             sx={{
-              scrollMarginTop: 24,
+              mb: 2,
+              scrollMarginTop: 96,
             }}
           >
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <Stack spacing={2.5}>
-                <Typography variant="h6">
-                  {editingWorkItemId !== null
-                    ? "İş Kalemini Düzenle"
-                    : "Yeni İş Kalemi"}
-                </Typography>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: {
+                  xs: 1.75,
+                  md: 2,
+                },
+                backgroundColor: "action.hover",
+              }}
+            >
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                    {editingWorkItemId !== null
+                      ? "İş kalemini düzenle"
+                      : "Yeni iş kalemi"}
+                  </Typography>
 
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      md: "repeat(2, minmax(0, 1fr))",
-                    },
-                    gap: 2,
-                  }}
-                >
-                  <TextField
-                    label="Başlık"
-                    value={workItemForm.title}
-                    onChange={(event) =>
-                      updateFormField("title", event.target.value)
-                    }
-                    error={Boolean(fieldErrors.title)}
-                    helperText={fieldErrors.title}
-                    slotProps={{
-                      htmlInput: {
-                        maxLength: 200,
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        md: "repeat(6, minmax(0, 1fr))",
                       },
+                      gap: 1.5,
                     }}
-                    required
-                    fullWidth
-                  />
-
-                  <TextField
-                    label="Sorumlu"
-                    value={workItemForm.responsible}
-                    onChange={(event) =>
-                      updateFormField("responsible", event.target.value)
-                    }
-                    slotProps={{
-                      htmlInput: {
-                        maxLength: 150,
-                      },
-                    }}
-                    fullWidth
-                  />
-
-                  <TextField
-                    select
-                    label="Durum"
-                    value={workItemForm.status}
-                    onChange={(event) =>
-                      updateFormField(
-                        "status",
-                        event.target.value as WorkItemStatus,
-                      )
-                    }
-                    required
-                    fullWidth
                   >
-                    {Object.entries(workItemStatusLabels).map(
-                      ([status, label]) => (
-                        <MenuItem key={status} value={status}>
-                          {label}
-                        </MenuItem>
-                      ),
-                    )}
-                  </TextField>
+                    <TextField
+                      label="Başlık"
+                      value={workItemForm.title}
+                      onChange={(event) =>
+                        updateFormField("title", event.target.value)
+                      }
+                      error={Boolean(fieldErrors.title)}
+                      helperText={fieldErrors.title}
+                      slotProps={{
+                        htmlInput: {
+                          maxLength: 200,
+                        },
+                      }}
+                      required
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "span 3",
+                        },
+                      }}
+                    />
 
-                  <TextField
-                    label="Planlanan tarih"
-                    type="date"
-                    value={workItemForm.plannedDate}
-                    onChange={(event) =>
-                      updateFormField("plannedDate", event.target.value)
-                    }
-                    slotProps={{
-                      inputLabel: {
-                        shrink: true,
+                    <TextField
+                      label="Sorumlu"
+                      value={workItemForm.responsible}
+                      onChange={(event) =>
+                        updateFormField("responsible", event.target.value)
+                      }
+                      slotProps={{
+                        htmlInput: {
+                          maxLength: 150,
+                        },
+                      }}
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "span 3",
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      select
+                      label="Durum"
+                      value={workItemForm.status}
+                      onChange={(event) =>
+                        updateFormField(
+                          "status",
+                          event.target.value as WorkItemStatus,
+                        )
+                      }
+                      error={Boolean(fieldErrors.status)}
+                      helperText={fieldErrors.status}
+                      required
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "span 2",
+                        },
+                      }}
+                    >
+                      {Object.entries(workItemStatusLabels).map(
+                        ([status, label]) => (
+                          <MenuItem key={status} value={status}>
+                            {label}
+                          </MenuItem>
+                        ),
+                      )}
+                    </TextField>
+
+                    <TextField
+                      label="Planlanan tarih"
+                      type="date"
+                      value={workItemForm.plannedDate}
+                      onChange={(event) =>
+                        updateFormField("plannedDate", event.target.value)
+                      }
+                      slotProps={{
+                        inputLabel: {
+                          shrink: true,
+                        },
+                      }}
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "span 2",
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      label="Tamamlanma tarihi"
+                      type="date"
+                      value={workItemForm.completedDate}
+                      onChange={(event) =>
+                        updateFormField("completedDate", event.target.value)
+                      }
+                      error={Boolean(fieldErrors.completedDate)}
+                      helperText={
+                        fieldErrors.completedDate ??
+                        (workItemForm.status !== "COMPLETED"
+                          ? "Durum Tamamlandı seçildiğinde açılır."
+                          : undefined)
+                      }
+                      disabled={workItemForm.status !== "COMPLETED"}
+                      required={workItemForm.status === "COMPLETED"}
+                      slotProps={{
+                        inputLabel: {
+                          shrink: true,
+                        },
+                        htmlInput: {
+                          min: workItemForm.plannedDate || undefined,
+                        },
+                      }}
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "span 2",
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      label="Açıklama"
+                      value={workItemForm.description}
+                      onChange={(event) =>
+                        updateFormField("description", event.target.value)
+                      }
+                      slotProps={{
+                        htmlInput: {
+                          maxLength: 2000,
+                        },
+                      }}
+                      multiline
+                      minRows={2}
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "1 / -1",
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      label="Not"
+                      value={workItemForm.note}
+                      onChange={(event) =>
+                        updateFormField("note", event.target.value)
+                      }
+                      slotProps={{
+                        htmlInput: {
+                          maxLength: 2000,
+                        },
+                      }}
+                      multiline
+                      minRows={2}
+                      fullWidth
+                      sx={{
+                        gridColumn: {
+                          md: "1 / -1",
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Stack
+                    useFlexGap
+                    sx={{
+                      flexDirection: {
+                        xs: "column",
+                        sm: "row",
                       },
+                      gap: 1,
                     }}
-                    fullWidth
-                  />
-
-                  <TextField
-                    label="Tamamlanma tarihi"
-                    type="date"
-                    value={workItemForm.completedDate}
-                    onChange={(event) =>
-                      updateFormField("completedDate", event.target.value)
-                    }
-                    slotProps={{
-                      inputLabel: {
-                        shrink: true,
-                      },
-                    }}
-                    fullWidth
-                  />
-                </Box>
-
-                <TextField
-                  label="Açıklama"
-                  value={workItemForm.description}
-                  onChange={(event) =>
-                    updateFormField("description", event.target.value)
-                  }
-                  slotProps={{
-                    htmlInput: {
-                      maxLength: 2000,
-                    },
-                  }}
-                  multiline
-                  minRows={3}
-                  fullWidth
-                />
-
-                <TextField
-                  label="Not"
-                  value={workItemForm.note}
-                  onChange={(event) =>
-                    updateFormField("note", event.target.value)
-                  }
-                  slotProps={{
-                    htmlInput: {
-                      maxLength: 2000,
-                    },
-                  }}
-                  multiline
-                  minRows={2}
-                  fullWidth
-                />
-
-                <Stack
-                  spacing={1.5}
-                  useFlexGap
-                  sx={{
-                    flexDirection: {
-                      xs: "column",
-                      sm: "row",
-                    },
-                  }}
-                >
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isSubmitting}
                   >
-                    {isSubmitting
-                      ? "Kaydediliyor..."
-                      : editingWorkItemId !== null
-                        ? "Değişiklikleri Kaydet"
-                        : "İş Kalemi Oluştur"}
-                  </Button>
-
-                  {editingWorkItemId !== null && (
                     <Button
-                      type="button"
-                      variant="outlined"
-                      onClick={handleCancelEdit}
+                      type="submit"
+                      variant="contained"
                       disabled={isSubmitting}
                     >
-                      Düzenlemeyi İptal Et
+                      {isSubmitting
+                        ? "Kaydediliyor..."
+                        : editingWorkItemId !== null
+                          ? "Değişiklikleri kaydet"
+                          : "İş kalemi oluştur"}
                     </Button>
-                  )}
+
+                    {editingWorkItemId !== null && (
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        onClick={handleCancelEdit}
+                        disabled={isSubmitting}
+                      >
+                        Düzenlemeyi iptal et
+                      </Button>
+                    )}
+                  </Stack>
                 </Stack>
-              </Stack>
-            </Box>
+              </Box>
+            </Paper>
           </Box>
         </Collapse>
 
-        <Box
-          component="section"
-          sx={{
-            mt: isFormOpen ? 4 : 1,
-          }}
-        >
-          <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
-            İş Kalemi Listesi
-          </Typography>
+        {isLoading && (
+          <Paper
+            variant="outlined"
+            sx={{
+              minHeight: 130,
+              display: "grid",
+              placeItems: "center",
+              p: 2,
+            }}
+          >
+            <Stack spacing={1.5} sx={{ alignItems: "center" }}>
+              <CircularProgress size={26} />
 
-          {isLoading && (
-            <Box
-              sx={{
-                minHeight: 160,
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <Stack spacing={1.5} sx={{ alignItems: "center" }}>
-                <CircularProgress size={28} />
+              <Typography variant="body2" color="text.secondary">
+                İş kalemleri yükleniyor...
+              </Typography>
+            </Stack>
+          </Paper>
+        )}
 
-                <Typography color="text.secondary">
-                  İş kalemleri yükleniyor...
-                </Typography>
-              </Stack>
-            </Box>
-          )}
-
-          {!isLoading && workItems.length === 0 && (
-            <Alert severity="info">
+        {!isLoading && workItems.length === 0 && (
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
               Bu haftalık rapora ait iş kalemi bulunmuyor.
-            </Alert>
-          )}
+            </Typography>
+          </Paper>
+        )}
 
-          {!isLoading && workItems.length > 0 && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  xl: "repeat(2, minmax(0, 1fr))",
-                },
-                gap: 1.5,
-              }}
-            >
-              {workItems.map((workItem) => (
-                <Paper
-                  key={workItem.id}
-                  variant="outlined"
-                  component="article"
-                  sx={{ p: 2 }}
-                >
-                  <Stack spacing={2}>
-                    <Box
+        {!isLoading && workItems.length > 0 && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                lg:
+                  workItems.length === 1
+                    ? "minmax(0, 1fr)"
+                    : "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 1.5,
+            }}
+          >
+            {workItems.map((workItem) => (
+              <Paper
+                key={workItem.id}
+                variant="outlined"
+                component="article"
+                sx={{
+                  minWidth: 0,
+                  p: {
+                    xs: 1.75,
+                    md: 2,
+                  },
+                  borderColor:
+                    workItem.status === "BLOCKED" ? "error.main" : "divider",
+                }}
+              >
+                <Stack spacing={1.25}>
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 1.5,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      component="h4"
                       sx={{
-                        display: "flex",
-                        alignItems: {
-                          xs: "flex-start",
-                          sm: "center",
-                        },
-                        justifyContent: "space-between",
-                        flexDirection: {
-                          xs: "column",
-                          sm: "row",
-                        },
-                        gap: 1.5,
+                        fontWeight: 800,
+                        overflowWrap: "anywhere",
                       }}
                     >
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 800 }}
-                        >
-                          {workItem.title}
-                        </Typography>
+                      {workItem.title}
+                    </Typography>
 
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mt: 0.5 }}
-                        >
-                          Sorumlu: {workItem.responsible || "Belirtilmedi"}
-                        </Typography>
-                      </Box>
+                    <Chip
+                      label={workItemStatusLabels[workItem.status]}
+                      color={getStatusColor(workItem.status)}
+                      size="small"
+                      variant="outlined"
+                      sx={{ flexShrink: 0 }}
+                    />
+                  </Stack>
 
-                      <Chip
-                        label={workItemStatusLabels[workItem.status]}
-                        color={getStatusColor(workItem.status)}
-                        size="small"
-                        variant="outlined"
-                      />
+                  {workItem.description?.trim() && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        lineHeight: 1.6,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {workItem.description}
+                    </Typography>
+                  )}
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(3, minmax(0, 1fr))",
+                      },
+                      gap: 1.25,
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Sorumlu
+                      </Typography>
+
+                      <Typography variant="body2">
+                        {workItem.responsible?.trim() || "Belirtilmedi"}
+                      </Typography>
                     </Box>
 
-                    {workItem.description && (
-                      <Typography color="text.secondary">
-                        {workItem.description}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Planlanan tarih
                       </Typography>
-                    )}
 
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 2,
-                      }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Planlanan tarih:{" "}
+                      <Typography variant="body2">
                         {formatDisplayDate(workItem.plannedDate)}
                       </Typography>
+                    </Box>
 
-                      <Typography variant="body2" color="text.secondary">
-                        Tamamlanma tarihi:{" "}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Tamamlanma tarihi
+                      </Typography>
+
+                      <Typography variant="body2">
                         {formatDisplayDate(workItem.completedDate)}
                       </Typography>
                     </Box>
+                  </Box>
 
-                    {workItem.note && (
-                      <Typography variant="body2" color="text.secondary">
-                        Not: {workItem.note}
-                      </Typography>
-                    )}
-
-                    <Stack
-                      spacing={1}
-                      useFlexGap
+                  {workItem.note?.trim() && (
+                    <Box
                       sx={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
+                        pt: 1.25,
+                        borderTop: "1px solid",
+                        borderColor: "divider",
                       }}
                     >
-                      <Button
-                        type="button"
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleEdit(workItem)}
-                      >
-                        Düzenle
-                      </Button>
+                      <Typography variant="caption" color="text.secondary">
+                        Not
+                      </Typography>
 
-                      <Button
-                        type="button"
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        disabled={deletingWorkItemId !== null}
-                        onClick={() => handleOpenDeleteDialog(workItem)}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 0.25,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
                       >
-                        Sil
-                      </Button>
-                    </Stack>
+                        {workItem.note}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Stack
+                    direction="row"
+                    useFlexGap
+                    sx={{
+                      flexWrap: "wrap",
+                      gap: 0.75,
+                    }}
+                  >
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      size="small"
+                      onClick={() => handleEdit(workItem)}
+                    >
+                      Düzenle
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      disabled={deletingWorkItemId !== null}
+                      onClick={() => handleOpenDeleteDialog(workItem)}
+                    >
+                      Sil
+                    </Button>
                   </Stack>
-                </Paper>
-              ))}
-            </Box>
-          )}
-        </Box>
+                </Stack>
+              </Paper>
+            ))}
+          </Box>
+        )}
       </Paper>
 
       <Dialog
@@ -777,12 +938,7 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
           </DialogContentText>
         </DialogContent>
 
-        <DialogActions
-          sx={{
-            px: 3,
-            pb: 2.5,
-          }}
-        >
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
             type="button"
             onClick={handleCloseDeleteDialog}

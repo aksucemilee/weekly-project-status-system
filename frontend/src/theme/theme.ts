@@ -29,9 +29,7 @@ const createAppTheme = (mode: PaletteMode) => {
         secondary: isLight ? "#667085" : "#9CA3AF",
       },
 
-      divider: isLight
-        ? "rgba(15, 23, 42, 0.10)"
-        : "rgba(255, 255, 255, 0.10)",
+      divider: isLight ? "rgba(15, 23, 42, 0.10)" : "rgba(255, 255, 255, 0.10)",
 
       success: {
         main: isLight ? "#16A34A" : "#4ADE80",
@@ -59,23 +57,30 @@ const createAppTheme = (mode: PaletteMode) => {
         'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 
       h1: {
-        fontSize: "2rem",
+        fontSize: "1.75rem",
         fontWeight: 800,
-        letterSpacing: "-0.03em",
+        lineHeight: 1.25,
+        letterSpacing: "-0.025em",
       },
 
       h4: {
+        fontSize: "1.5rem",
         fontWeight: 800,
-        letterSpacing: "-0.03em",
+        lineHeight: 1.3,
+        letterSpacing: "-0.025em",
       },
 
       h5: {
+        fontSize: "1.25rem",
         fontWeight: 750,
-        letterSpacing: "-0.02em",
+        lineHeight: 1.35,
+        letterSpacing: "-0.015em",
       },
 
       h6: {
+        fontSize: "1.05rem",
         fontWeight: 700,
+        lineHeight: 1.4,
       },
 
       button: {
@@ -90,8 +95,7 @@ const createAppTheme = (mode: PaletteMode) => {
           body: {
             minHeight: "100vh",
             backgroundColor: isLight ? "#F4F6FA" : "#0B1120",
-            transition:
-              "background-color 180ms ease, color 180ms ease",
+            transition: "background-color 180ms ease, color 180ms ease",
           },
         },
       },
@@ -101,9 +105,7 @@ const createAppTheme = (mode: PaletteMode) => {
           root: {
             backgroundImage: "none",
             border: `1px solid ${
-              isLight
-                ? "rgba(15, 23, 42, 0.10)"
-                : "rgba(255, 255, 255, 0.10)"
+              isLight ? "rgba(15, 23, 42, 0.10)" : "rgba(255, 255, 255, 0.10)"
             }`,
             boxShadow: isLight
               ? "0 10px 28px rgba(15, 23, 42, 0.06)"
@@ -145,9 +147,7 @@ const createAppTheme = (mode: PaletteMode) => {
         styleOverrides: {
           root: {
             borderRadius: 10,
-            backgroundColor: isLight
-              ? "#FFFFFF"
-              : alpha("#FFFFFF", 0.035),
+            backgroundColor: isLight ? "#FFFFFF" : alpha("#FFFFFF", 0.035),
           },
         },
       },
@@ -164,7 +164,10 @@ const createAppTheme = (mode: PaletteMode) => {
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: 18,
+            borderRadius: 16,
+            boxShadow: isLight
+              ? "0 24px 70px rgba(15, 23, 42, 0.20)"
+              : "0 24px 70px rgba(0, 0, 0, 0.48)",
           },
         },
       },

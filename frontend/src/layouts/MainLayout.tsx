@@ -118,13 +118,18 @@ function MainLayout() {
           borderColor: "divider",
         }}
       >
-        <Container maxWidth={layoutTokens.page.maxWidth}>
+        <Container
+          maxWidth={layoutTokens.page.maxWidth}
+          sx={{
+            maxWidth: `${layoutTokens.page.contentMaxWidth}px`,
+          }}
+        >
           <Toolbar
             disableGutters
             sx={{
               minHeight: {
-                xs: 62,
-                md: 70,
+                xs: 60,
+                md: 64,
               },
               gap: {
                 xs: 1,
@@ -394,6 +399,7 @@ function MainLayout() {
         maxWidth={layoutTokens.page.maxWidth}
         sx={{
           minWidth: 0,
+          maxWidth: `${layoutTokens.page.contentMaxWidth}px`,
           px: layoutTokens.page.paddingX,
           py: layoutTokens.page.paddingY,
         }}

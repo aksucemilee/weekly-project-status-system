@@ -237,7 +237,7 @@ function RiskAndWorkOverview({
       <Typography
         variant="body2"
         color="text.secondary"
-        sx={{ fontWeight: 700 }}
+        sx={{ fontWeight: 500 }}
       >
         {project.activeWorkItemCount === 0
           ? "Aktif iş bulunmuyor"
@@ -318,8 +318,8 @@ function DashboardProjectTable({
       <Stack
         sx={{
           p: {
-            xs: 2,
-            md: 2.5,
+            xs: 1.75,
+            md: 2,
           },
           flexDirection: {
             xs: "column",
@@ -335,16 +335,9 @@ function DashboardProjectTable({
           borderColor: "divider",
         }}
       >
-        <Box>
-          <Typography variant="h5" component="h2">
-            Proje sağlık görünümü
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Öncelikli projeler üstte gösterilir. İlerleme, durum, risk ve rapor
-            bilgilerini karşılaştırın.
-          </Typography>
-        </Box>
+        <Typography variant="h6" component="h2">
+          Proje sağlık görünümü
+        </Typography>
 
         <Chip
           label={`${projects.length} proje`}

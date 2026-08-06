@@ -227,7 +227,10 @@ function DashboardRiskIssueList({
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              md: "repeat(2, minmax(0, 1fr))",
+              md:
+                sortedRiskIssues.length === 1
+                  ? "minmax(0, 1fr)"
+                  : "repeat(2, minmax(0, 1fr))",
             },
             gap: 1.5,
           }}
@@ -241,9 +244,11 @@ function DashboardRiskIssueList({
                 variant="outlined"
                 component="article"
                 sx={{
-                  p: 2,
+                  p: {
+                    xs: 1.75,
+                    md: 2,
+                  },
                   minWidth: 0,
-                  boxShadow: "none",
                   borderColor:
                     riskIssue.type === "BLOCKER" &&
                     riskIssue.status !== "RESOLVED"
@@ -251,7 +256,7 @@ function DashboardRiskIssueList({
                       : "divider",
                 }}
               >
-                <Stack spacing={1.5}>
+                <Stack spacing={1.25}>
                   <Stack
                     direction="row"
                     useFlexGap

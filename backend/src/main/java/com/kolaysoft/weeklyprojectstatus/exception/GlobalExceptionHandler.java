@@ -33,6 +33,16 @@ public class GlobalExceptionHandler {
                                 request.getRequestURI());
         }
 
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
+                        IllegalArgumentException exception,
+                        HttpServletRequest request) {
+                return buildErrorResponse(
+                                HttpStatus.BAD_REQUEST,
+                                exception.getMessage(),
+                                request.getRequestURI());
+        }
+
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<ApiErrorResponse> handleValidationException(
                         MethodArgumentNotValidException exception,

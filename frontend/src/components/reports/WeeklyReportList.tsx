@@ -147,24 +147,18 @@ function WeeklyReportList({
             sm: "row",
           },
           gap: 1.5,
-          mb: 2,
+          mb: 1.5,
         }}
       >
-        <Box>
-          <Typography variant="h5" component="h2">
-            Haftalık raporlar
-          </Typography>
-
-          <Typography color="text.secondary" sx={{ mt: 0.25 }}>
-            Bir raporu seçerek genel görünümünü, iş kalemlerini ve risklerini
-            inceleyin.
-          </Typography>
-        </Box>
+        <Typography variant="h6" component="h2">
+          Rapor geçmişi
+        </Typography>
 
         <Chip
           label={`${reports.length} rapor`}
           color="primary"
           variant="outlined"
+          size="small"
         />
       </Box>
 
@@ -176,47 +170,39 @@ function WeeklyReportList({
             <Paper
               key={report.id}
               component="article"
+              variant="outlined"
               sx={{
                 display: "flex",
                 flexDirection: "column",
                 minWidth: 0,
-                minHeight: {
-                  xs: "auto",
-                  md: 310,
-                },
                 p: {
-                  xs: 2,
-                  md: 2.25,
+                  xs: 1.75,
+                  md: 2,
                 },
                 borderColor: isSelected ? "primary.main" : "divider",
-                boxShadow: isSelected ? "0 0 0 1px" : undefined,
+                backgroundColor: isSelected
+                  ? "action.selected"
+                  : "background.paper",
                 transition:
-                  "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+                  "border-color 160ms ease, background-color 160ms ease",
 
                 "&:hover": {
-                  transform: "translateY(-2px)",
                   borderColor: "primary.main",
+                  backgroundColor: "action.hover",
                 },
               }}
             >
-              <Stack spacing={2} sx={{ height: "100%" }}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="overline"
-                    color="primary.main"
-                    sx={{ fontWeight: 900 }}
-                  >
-                    {formatReportDate(report.reportWeekStart)}
-                  </Typography>
-
-                  <Typography
-                    variant="h6"
-                    component="h3"
-                    sx={{ overflowWrap: "anywhere" }}
-                  >
-                    {report.projectName}
-                  </Typography>
-                </Box>
+              <Stack spacing={1.5} sx={{ height: "100%" }}>
+                <Typography
+                  variant="subtitle1"
+                  component="h3"
+                  sx={{
+                    fontWeight: 800,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {formatReportDate(report.reportWeekStart)} haftası
+                </Typography>
 
                 <Stack
                   useFlexGap
@@ -255,9 +241,9 @@ function WeeklyReportList({
                       xs: "1fr",
                       sm: "repeat(2, minmax(0, 1fr))",
                     },
-                    gap: 2,
-                    p: 1.75,
-                    borderRadius: 2.5,
+                    gap: 1.25,
+                    p: 1.25,
+                    borderRadius: 2,
                     backgroundColor: "action.hover",
                   }}
                 >
@@ -280,7 +266,7 @@ function WeeklyReportList({
                       fontWeight: 800,
                     }}
                   >
-                    Bu hafta yapılanlar
+                    Yapılanlar
                   </Typography>
 
                   <Typography
@@ -290,7 +276,7 @@ function WeeklyReportList({
                       overflowWrap: "anywhere",
                       display: "-webkit-box",
                       WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 3,
+                      WebkitLineClamp: 2,
                       overflow: "hidden",
                     }}
                   >
@@ -300,8 +286,11 @@ function WeeklyReportList({
 
                 <Button
                   variant={isSelected ? "contained" : "outlined"}
+                  size="small"
                   onClick={() => onManageReportDetails(report)}
-                  fullWidth
+                  sx={{
+                    alignSelf: "flex-start",
+                  }}
                 >
                   {isSelected ? "Detayları kapat" : "Raporu incele"}
                 </Button>

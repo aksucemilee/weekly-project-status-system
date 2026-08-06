@@ -6,10 +6,12 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WorkItem;
+import com.kolaysoft.weeklyprojectstatus.model.enums.WorkItemStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.WorkItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -31,6 +33,11 @@ public class WorkItemService {
             WorkItemCreateRequest request) {
 
         WeeklyReport weeklyReport = weeklyReportService.getWeeklyReportEntity(weeklyReportId);
+
+        validateDatesAndStatus(
+                request.getStatus(),
+                request.getPlannedDate(),
+                request.getCompletedDate());
 
         WorkItem workItem = new WorkItem();
 
@@ -78,6 +85,11 @@ public class WorkItemService {
 
         WorkItem workItem = getWorkItemEntity(weeklyReportId, workItemId);
 
+        validateDatesAndStatus(
+                request.getStatus(),
+                request.getPlannedDate(),
+                request.getCompletedDate());
+
         workItem.setTitle(request.getTitle());
         workItem.setDescription(request.getDescription());
         workItem.setResponsible(request.getResponsible());
@@ -113,6 +125,29 @@ public class WorkItemService {
                                 + workItemId
                                 + " for weekly report id: "
                                 + weeklyReportId));
+    }
+
+    private void validateDatesAndStatus(
+            WorkItemStatus status,
+            LocalDate plannedDate,
+            LocalDate completedDate) {
+
+        if (completedDate != null && status != WorkItemStatus.COMPLETED) {
+            throw new IllegalArgumentException(
+                    "Tamamlanma tarihi girildiğinde iş kalemi durumu Tamamlandı olmalıdır.");
+        }
+
+        if (status == WorkItemStatus.COMPLETED && completedDate == null) {
+            throw new IllegalArgumentException(
+                    "Durum Tamamlandı olduğunda tamamlanma tarihi zorunludur.");
+        }
+
+        if (plannedDate != null
+                && completedDate != null
+                && completedDate.isBefore(plannedDate)) {
+            throw new IllegalArgumentException(
+                    "Tamamlanma tarihi planlanan tarihten önce olamaz.");
+        }
     }
 
     private WorkItemResponse toResponse(WorkItem workItem) {

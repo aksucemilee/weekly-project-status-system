@@ -1,9 +1,10 @@
 export const layoutTokens = {
   page: {
     maxWidth: "xl",
+    contentMaxWidth: 1440,
 
     paddingX: {
-      xs: 1.5,
+      xs: 2,
       sm: 2.5,
       md: 3,
       lg: 4,
@@ -11,15 +12,20 @@ export const layoutTokens = {
 
     paddingY: {
       xs: 2,
-      sm: 3,
-      md: 4,
+      sm: 2.5,
+      md: 3,
     },
   },
 
   spacing: {
+    pageHeader: {
+      xs: 2,
+      md: 2.5,
+    },
+
     section: {
       xs: 2,
-      md: 3,
+      md: 2.5,
     },
 
     cardGrid: {
@@ -44,6 +50,7 @@ export const layoutTokens = {
       xs: "1fr",
       sm: "repeat(2, minmax(0, 1fr))",
       lg: "repeat(3, minmax(0, 1fr))",
+      xl: "repeat(5, minmax(0, 1fr))",
     },
 
     summary: {

@@ -10,7 +10,6 @@ type DashboardSummaryCardsProps = {
 type Metric = {
   label: string;
   value: number;
-  description: string;
   valueColor: string;
   accentColor: string;
   highlighted: boolean;
@@ -24,21 +23,21 @@ const periodFormatter = new Intl.DateTimeFormat("tr-TR", {
 
 function formatPeriod(weekStart: string): string {
   if (!weekStart) {
-    return "Projelerin en güncel raporları";
+    return "En güncel raporlar";
   }
 
   const startDate = new Date(`${weekStart}T00:00:00`);
 
   if (Number.isNaN(startDate.getTime())) {
-    return "Seçili rapor dönemi";
+    return "Seçili dönem";
   }
 
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 6);
 
-  return `${periodFormatter.format(
-    startDate,
-  )} – ${periodFormatter.format(endDate)}`;
+  return `${periodFormatter.format(startDate)} – ${periodFormatter.format(
+    endDate,
+  )}`;
 }
 
 function DashboardSummaryCards({
@@ -54,7 +53,6 @@ function DashboardSummaryCards({
     {
       label: "Aktif proje",
       value: summary.totalProjects,
-      description: "Seçili filtrelerle eşleşen aktif projeler",
       valueColor: "text.primary",
       accentColor: "primary.main",
       highlighted: false,
@@ -62,7 +60,6 @@ function DashboardSummaryCards({
     {
       label: "Rapor bekleyen",
       value: missingReportCount,
-      description: "Seçili dönemde henüz raporu bulunmayan projeler",
       valueColor: missingReportCount > 0 ? "warning.main" : "text.primary",
       accentColor: missingReportCount > 0 ? "warning.main" : "divider",
       highlighted: missingReportCount > 0,
@@ -70,7 +67,6 @@ function DashboardSummaryCards({
     {
       label: "Yüksek riskli",
       value: summary.highRiskProjects,
-      description: "Yüksek risk seviyesinde raporlanan projeler",
       valueColor: summary.highRiskProjects > 0 ? "error.main" : "text.primary",
       accentColor: summary.highRiskProjects > 0 ? "error.main" : "divider",
       highlighted: summary.highRiskProjects > 0,
@@ -78,7 +74,6 @@ function DashboardSummaryCards({
     {
       label: "Geciken",
       value: summary.delayedProjects,
-      description: "Takvim durumu gecikmiş olan projeler",
       valueColor: summary.delayedProjects > 0 ? "warning.main" : "text.primary",
       accentColor: summary.delayedProjects > 0 ? "warning.main" : "divider",
       highlighted: summary.delayedProjects > 0,
@@ -86,7 +81,6 @@ function DashboardSummaryCards({
     {
       label: "Bloke",
       value: summary.blockedProjects,
-      description: "Proje durumu bloke olarak işaretlenen projeler",
       valueColor: summary.blockedProjects > 0 ? "error.main" : "text.primary",
       accentColor: summary.blockedProjects > 0 ? "error.main" : "divider",
       highlighted: summary.blockedProjects > 0,
@@ -97,33 +91,30 @@ function DashboardSummaryCards({
     <Box component="section" aria-labelledby="dashboard-summary-title">
       <Stack
         sx={{
-          mb: 1.5,
+          mb: 1.25,
           flexDirection: {
             xs: "column",
             sm: "row",
           },
           alignItems: {
             xs: "flex-start",
-            sm: "flex-end",
+            sm: "center",
           },
           justifyContent: "space-between",
           gap: 0.75,
         }}
       >
-        <Box>
-          <Typography id="dashboard-summary-title" variant="h5" component="h2">
-            Portföy özeti
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-            Seçili dönemde müdahale veya takip gerektiren proje durumları
-          </Typography>
-        </Box>
+        <Typography id="dashboard-summary-title" variant="h6" component="h2">
+          Portföy özeti
+        </Typography>
 
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ fontWeight: 700 }}
+          sx={{
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
         >
           {formatPeriod(weekStart)}
         </Typography>
@@ -135,10 +126,13 @@ function DashboardSummaryCards({
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, minmax(0, 1fr))",
-            lg: "repeat(3, minmax(0, 1fr))",
-            xl: "repeat(5, minmax(0, 1fr))",
+            md: "repeat(3, minmax(0, 1fr))",
+            lg: "repeat(5, minmax(0, 1fr))",
           },
-          gap: 2,
+          gap: {
+            xs: 1.25,
+            md: 1.5,
+          },
         }}
       >
         {metrics.map((metric) => (
@@ -148,31 +142,30 @@ function DashboardSummaryCards({
             sx={{
               position: "relative",
               minWidth: 0,
-              height: "100%",
+              minHeight: 104,
               overflow: "hidden",
               p: {
-                xs: 2,
-                md: 2.25,
+                xs: 1.5,
+                md: 1.75,
               },
               borderColor: metric.highlighted ? metric.accentColor : "divider",
-              boxShadow: "none",
 
               "&::before": {
                 content: '""',
                 position: "absolute",
                 top: 0,
                 left: 0,
-                right: 0,
-                height: 3,
+                bottom: 0,
+                width: 3,
                 backgroundColor: metric.accentColor,
               },
             }}
           >
             <Typography
-              variant="caption"
+              variant="body2"
               color="text.secondary"
               sx={{
-                fontWeight: 800,
+                fontWeight: 700,
               }}
             >
               {metric.label}
@@ -182,25 +175,15 @@ function DashboardSummaryCards({
               variant="h4"
               color={metric.valueColor}
               sx={{
-                mt: 0.5,
-                mb: 0.75,
+                mt: 1,
                 fontSize: {
                   xs: "1.65rem",
-                  md: "2rem",
+                  md: "1.85rem",
                 },
+                lineHeight: 1,
               }}
             >
               {metric.value}
-            </Typography>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                lineHeight: 1.55,
-              }}
-            >
-              {metric.description}
             </Typography>
           </Paper>
         ))}

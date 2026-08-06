@@ -1,52 +1,30 @@
-import { Box, Paper, Stack, Typography } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { Box, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
+
+import { layoutTokens } from "../../theme/layoutTokens";
 
 type PageHeaderProps = {
   title: string;
-  description: string;
+  description?: string;
+  meta?: ReactNode;
   action?: ReactNode;
 };
 
-function PageHeader({ title, description, action }: PageHeaderProps) {
+function PageHeader({
+  title,
+  description,
+  meta,
+  action,
+}: PageHeaderProps) {
   return (
-    <Paper
+    <Box
       component="header"
-      sx={(theme) => ({
-        position: "relative",
-        overflow: "hidden",
-        mb: 3,
-        p: {
-          xs: 2.5,
-          md: 3.25,
-        },
-        background: `linear-gradient(135deg, ${alpha(
-          theme.palette.primary.main,
-          theme.palette.mode === "light" ? 0.1 : 0.16,
-        )} 0%, ${alpha(
-          theme.palette.secondary.main,
-          theme.palette.mode === "light" ? 0.06 : 0.12,
-        )} 100%)`,
-      })}
+      sx={{
+        mb: layoutTokens.spacing.pageHeader,
+      }}
     >
-      <Box
-        aria-hidden="true"
-        sx={(theme) => ({
-          position: "absolute",
-          width: 180,
-          height: 180,
-          right: -70,
-          top: -100,
-          borderRadius: "50%",
-          backgroundColor: alpha(theme.palette.primary.main, 0.08),
-        })}
-      />
-
       <Stack
-        spacing={2}
         sx={{
-          position: "relative",
-          zIndex: 1,
           flexDirection: {
             xs: "column",
             sm: "row",
@@ -56,63 +34,75 @@ function PageHeader({ title, description, action }: PageHeaderProps) {
             sm: "center",
           },
           justifyContent: "space-between",
-          gap: 2,
+          gap: 1.5,
         }}
       >
-        <Box sx={{ maxWidth: 720 }}>
-          <Typography
-            variant="overline"
-            color="primary.main"
-            sx={{
-              display: "block",
-              mb: 0.25,
-              fontWeight: 900,
-              letterSpacing: "0.08em",
-            }}
-          >
-            Proje Yönetimi
-          </Typography>
-
+        <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="h4"
             component="h1"
             sx={{
-              mb: 1,
-              fontSize: {
-                xs: "1.75rem",
-                sm: "2.125rem",
-              },
+              overflowWrap: "anywhere",
             }}
           >
             {title}
           </Typography>
 
-          <Typography
-            color="text.secondary"
-            sx={{
-              maxWidth: 650,
-              lineHeight: 1.65,
-            }}
-          >
-            {description}
-          </Typography>
+          {description ? (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mt: 0.5,
+                maxWidth: 720,
+                lineHeight: 1.6,
+              }}
+            >
+              {description}
+            </Typography>
+          ) : null}
         </Box>
 
-        {action ? (
-          <Box
+        {meta || action ? (
+          <Stack
+            direction={{
+              xs: "column",
+              sm: "row",
+            }}
             sx={{
               width: {
                 xs: "100%",
                 sm: "auto",
               },
+              alignItems: {
+                xs: "stretch",
+                sm: "center",
+              },
+              gap: 1,
               flexShrink: 0,
             }}
           >
+            {meta ? (
+              <Typography
+                component="div"
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontWeight: 700,
+                  whiteSpace: {
+                    sm: "nowrap",
+                  },
+                }}
+              >
+                {meta}
+              </Typography>
+            ) : null}
+
             {action}
-          </Box>
+          </Stack>
         ) : null}
       </Stack>
-    </Paper>
+    </Box>
   );
 }
 

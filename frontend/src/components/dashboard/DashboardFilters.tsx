@@ -41,9 +41,10 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 });
 
 function countActiveFilters(filters: DashboardFilterForm) {
-  return Object.values(filters).filter(Boolean).length;
+  return [filters.projectId, filters.generalStatus, filters.riskLevel].filter(
+    Boolean,
+  ).length;
 }
-
 function getWeekHelperText(weekStart: string) {
   if (!weekStart) {
     return "Tarih seçilmezse her projenin en güncel raporu gösterilir.";
@@ -107,13 +108,14 @@ function DashboardFilters({
       aria-busy={isLoading}
       sx={{
         p: {
-          xs: 2,
-          md: 2.5,
+          xs: 1.75,
+          md: 2,
         },
       }}
     >
       <Stack
         sx={{
+          mb: 1.5,
           flexDirection: {
             xs: "column",
             sm: "row",
@@ -123,20 +125,12 @@ function DashboardFilters({
             sm: "center",
           },
           justifyContent: "space-between",
-          gap: 1.5,
-          mb: 2.25,
+          gap: 1,
         }}
       >
-        <Box>
-          <Typography variant="h6" component="h2">
-            Dashboard filtreleri
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-            Projeleri hafta, proje, genel durum ve risk seviyesine göre
-            daraltın.
-          </Typography>
-        </Box>
+        <Typography variant="h6" component="h2">
+          Filtreler
+        </Typography>
 
         {hasUnappliedChanges ? (
           <Chip
@@ -153,7 +147,7 @@ function DashboardFilters({
             variant="outlined"
           />
         ) : (
-          <Chip label="Tüm projeler" size="small" variant="outlined" />
+          <Chip label="Güncel hafta" size="small" variant="outlined" />
         )}
       </Stack>
 
@@ -163,9 +157,12 @@ function DashboardFilters({
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, minmax(0, 1fr))",
-            xl: "repeat(4, minmax(0, 1fr))",
+            lg: "1.1fr 1.45fr 1fr 1fr",
           },
-          gap: 2,
+          gap: {
+            xs: 1.25,
+            md: 1.5,
+          },
         }}
       >
         <TextField
@@ -178,7 +175,6 @@ function DashboardFilters({
               shrink: true,
             },
           }}
-          helperText={getWeekHelperText(filters.weekStart)}
           fullWidth
         />
 
@@ -240,7 +236,33 @@ function DashboardFilters({
 
       <Stack
         sx={{
-          mt: 2.25,
+          mt: 1,
+          flexDirection: {
+            xs: "column",
+            sm: "row",
+          },
+          alignItems: {
+            xs: "flex-start",
+            sm: "center",
+          },
+          justifyContent: "space-between",
+          gap: 1,
+        }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          {getWeekHelperText(filters.weekStart)}
+        </Typography>
+
+        {selectedFilterCount > 0 && hasUnappliedChanges ? (
+          <Typography variant="caption" color="warning.main">
+            {selectedFilterCount} seçim uygulanmayı bekliyor
+          </Typography>
+        ) : null}
+      </Stack>
+
+      <Stack
+        sx={{
+          mt: 1.5,
           flexDirection: {
             xs: "column",
             sm: "row",
@@ -256,11 +278,8 @@ function DashboardFilters({
           type="submit"
           variant="contained"
           disabled={isLoading || !hasUnappliedChanges}
-          sx={{
-            minWidth: 150,
-          }}
         >
-          {isLoading ? "Uygulanıyor..." : "Filtreleri uygula"}
+          {isLoading ? "Uygulanıyor..." : "Uygula"}
         </Button>
 
         <Button
@@ -269,22 +288,8 @@ function DashboardFilters({
           disabled={isLoading || !hasAnyFilter}
           onClick={onClear}
         >
-          Filtreleri temizle
+          Temizle
         </Button>
-
-        {selectedFilterCount > 0 && hasUnappliedChanges && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              ml: {
-                sm: "auto",
-              },
-            }}
-          >
-            {selectedFilterCount} seçim uygulanmayı bekliyor
-          </Typography>
-        )}
       </Stack>
     </Paper>
   );

@@ -195,7 +195,10 @@ function DashboardWorkItemList({ weeklyReportId }: DashboardWorkItemListProps) {
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              md: "repeat(2, minmax(0, 1fr))",
+              md:
+                sortedWorkItems.length === 1
+                  ? "minmax(0, 1fr)"
+                  : "repeat(2, minmax(0, 1fr))",
             },
             gap: 1.5,
           }}
@@ -211,12 +214,16 @@ function DashboardWorkItemList({ weeklyReportId }: DashboardWorkItemListProps) {
                 variant="outlined"
                 component="article"
                 sx={{
-                  p: 2,
+                  p: {
+                    xs: 1.75,
+                    md: 2,
+                  },
                   minWidth: 0,
-                  boxShadow: "none",
+                  borderColor:
+                    workItem.status === "BLOCKED" ? "error.main" : "divider",
                 }}
               >
-                <Stack spacing={1.5}>
+                <Stack spacing={1.25}>
                   <Stack
                     direction="row"
                     sx={{
@@ -262,6 +269,9 @@ function DashboardWorkItemList({ weeklyReportId }: DashboardWorkItemListProps) {
                       gridTemplateColumns: {
                         xs: "1fr",
                         sm: "repeat(2, minmax(0, 1fr))",
+                        md: completedDate
+                          ? "repeat(3, minmax(0, 1fr))"
+                          : "repeat(2, minmax(0, 1fr))",
                       },
                       gap: 1,
                     }}

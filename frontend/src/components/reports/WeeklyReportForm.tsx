@@ -198,11 +198,11 @@ function WeeklyReportForm({
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Stack spacing={2.5}>
+      <Stack spacing={2}>
         <Box
           sx={{
-            p: 2,
-            borderRadius: 2.5,
+            p: 1.5,
+            borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
             backgroundColor: "action.hover",
@@ -217,7 +217,7 @@ function WeeklyReportForm({
               fontWeight: 800,
             }}
           >
-            Rapor oluşturulan proje
+            Proje
           </Typography>
 
           <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
@@ -233,8 +233,9 @@ function WeeklyReportForm({
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2, minmax(0, 1fr))",
+              md: "repeat(6, minmax(0, 1fr))",
             },
-            gap: 2,
+            gap: 1.5,
           }}
         >
           <TextField
@@ -253,6 +254,11 @@ function WeeklyReportForm({
             }}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           />
 
           <TextField
@@ -266,6 +272,11 @@ function WeeklyReportForm({
               )
             }
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           >
             {Object.entries(generalStatusLabels).map(([status, label]) => (
               <MenuItem key={status} value={status}>
@@ -292,6 +303,11 @@ function WeeklyReportForm({
             }}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           />
 
           <TextField
@@ -312,6 +328,11 @@ function WeeklyReportForm({
             }}
             required
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           />
 
           <TextField
@@ -325,6 +346,11 @@ function WeeklyReportForm({
               )
             }
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           >
             {Object.entries(scheduleStatusLabels).map(([status, label]) => (
               <MenuItem key={status} value={status}>
@@ -341,6 +367,11 @@ function WeeklyReportForm({
               updateFormField("riskLevel", event.target.value as RiskLevel)
             }
             fullWidth
+            sx={{
+              gridColumn: {
+                md: "span 2",
+              },
+            }}
           >
             {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
               <MenuItem key={riskLevel} value={riskLevel}>
@@ -357,7 +388,7 @@ function WeeklyReportForm({
               xs: "1fr",
               md: "repeat(2, minmax(0, 1fr))",
             },
-            gap: 2,
+            gap: 1.5,
           }}
         >
           <TextField
@@ -369,7 +400,7 @@ function WeeklyReportForm({
             error={Boolean(fieldErrors.completedSummary)}
             helperText={fieldErrors.completedSummary}
             multiline
-            minRows={3}
+            minRows={2}
             required
             fullWidth
           />
@@ -431,7 +462,7 @@ function WeeklyReportForm({
           </Button>
 
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? "Kaydediliyor..." : "Rapor Oluştur"}
+            {isSubmitting ? "Kaydediliyor..." : "Rapor oluştur"}
           </Button>
         </Stack>
       </Stack>
