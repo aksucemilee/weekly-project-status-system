@@ -3,6 +3,7 @@ package com.kolaysoft.weeklyprojectstatus.controller;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectResponse;
 import com.kolaysoft.weeklyprojectstatus.service.ProjectService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class ProjectController {
 
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(
-            @RequestBody ProjectCreateRequest request
+            @Valid @RequestBody ProjectCreateRequest request
     ) {
         ProjectResponse createdProject =
                 projectService.createProject(request);
