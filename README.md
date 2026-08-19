@@ -55,6 +55,10 @@ Mevcut sürümde aşağıdaki temel akışlar bulunmaktadır:
 
 - PostgreSQL
 
+### Teknik Karar Notu
+
+Backend için Java + Spring Boot, frontend için React; Kolaysoft staj yönetmeliğinde önerilen teknolojiler olduğu ve ekip içinde en yaygın kullanılan yığın olduğu için tercih edilmiştir. Veritabanı olarak PostgreSQL, Spring Data JPA ile doğrudan uyumlu, ilişkisel ve açık kaynak olması nedeniyle seçilmiştir. API dokümantasyonu için springdoc-openapi (Swagger UI) kullanılmıştır; bu sayede backend endpointleri ayrı bir Postman koleksiyonu tutmaya gerek kalmadan doğrudan tarayıcı üzerinden incelenip test edilebilmektedir.
+
 ---
 
 ## Proje Yapısı
@@ -237,7 +241,27 @@ Swagger üzerinden backend endpointleri incelenebilir ve API istekleri doğrudan
 
 ---
 
-## 4. Frontend Yapılandırması
+## 4. CORS Yapılandırması
+
+Backend, `/api/**` altındaki tüm endpointler için CORS izinlerini `CorsConfig` sınıfı üzerinden tanımlar.
+
+Varsayılan yapılandırma:
+
+```text
+allowedOrigins : http://localhost:5173
+allowedMethods : GET, POST, PUT, PATCH, DELETE, OPTIONS
+allowedHeaders : *
+```
+
+Bu yapılandırma, frontend'in varsayılan Vite geliştirme portu (`5173`) ile birebir uyumludur; standart `npm run dev` ile çalıştırıldığında ek bir işlem gerekmez.
+
+Frontend farklı bir portta veya farklı bir origin üzerinden çalıştırılırsa (örneğin `5173` portu meşgulse Vite otomatik olarak `5174` gibi başka bir porta geçer), backend bu isteği CORS hatasıyla reddeder. Bu durumda `backend/src/main/java/com/kolaysoft/weeklyprojectstatus/config/CorsConfig.java` dosyasındaki `allowedOrigins` değeri, frontend'in gerçekte çalıştığı adresle güncellenmelidir.
+
+Tarayıcı konsolunda `CORS policy` veya `No 'Access-Control-Allow-Origin' header` şeklinde bir hata görülmesi, genellikle frontend portunun `CorsConfig` içindeki izinli origin ile eşleşmediğini gösterir.
+
+---
+
+## 5. Frontend Yapılandırması
 
 Frontend'in backend API'ye bağlanabilmesi için `frontend/.env.local` dosyası oluşturulabilir.
 
@@ -259,7 +283,7 @@ Backend farklı bir adres veya port üzerinden çalıştırılırsa `VITE_API_BA
 
 ---
 
-## 5. Frontend'i Çalıştırma
+## 6. Frontend'i Çalıştırma
 
 Yeni bir terminal açılarak projenin ana klasöründen:
 
@@ -474,11 +498,24 @@ Dashboard üzerinde:
 
 bulunmaktadır.
 
-Dashboard verileri backend API üzerinden alınmaktadır.
+Dashboard verileri backend API üzerinden alınmaktadır. Proje tablosundaki aktif iş sayısı, o projenin son haftalık raporuna bağlı iş kalemlerinden `IN_PROGRESS`, `IN_TEST` veya `BLOCKED` durumunda olanlar sayılarak backend tarafında hesaplanır; ayrıca girilen bir alan değildir.
 
 ---
 
 # Validasyon ve Hata Yönetimi
+
+## Proje Validasyonları
+
+Proje oluşturulurken backend tarafında aşağıdaki kontroller uygulanmaktadır:
+
+- Proje adı zorunludur ve boş/whitespace değer kabul edilmez.
+- Proje adı en fazla 150 karakter olabilir.
+- Müşteri adı zorunludur ve boş/whitespace değer kabul edilmez.
+- Müşteri adı en fazla 150 karakter olabilir.
+
+Bu kontroller `ProjectCreateRequest` içinde Bean Validation ile tanımlanmış olup `ProjectController` üzerinde `@Valid` ile çalıştırılmaktadır.
+
+---
 
 ## Haftalık Rapor Validasyonları
 
@@ -519,12 +556,14 @@ Backend tarafında merkezi exception yönetimi kullanılmaktadır.
 Temel olarak aşağıdaki HTTP hata durumları yönetilmektedir:
 
 ```text
-400 Bad Request
-404 Not Found
-409 Conflict
+400 Bad Request         - validasyon hatası, geçersiz JSON, geçersiz path/query değeri
+404 Not Found            - kayıt bulunamadı, bilinmeyen endpoint
+405 Method Not Allowed    - endpoint var ama desteklenmeyen HTTP metodu kullanıldı
+409 Conflict              - aynı proje ve haftaya ait tekrar rapor oluşturma, veri çakışması
+500 Internal Server Error - beklenmeyen/öngörülemeyen hata (genel fallback)
 ```
 
-Validasyon hataları ve geçersiz JSON istekleri kullanıcıya anlamlı hata mesajları döndürecek şekilde ele alınmaktadır.
+Validasyon hataları, geçersiz JSON istekleri, geçersiz path/query parametre değerleri (örn. sayısal olması gereken bir ID yerine metin gönderilmesi) ve bilinmeyen endpoint/metot istekleri kullanıcıya anlamlı hata mesajları döndürecek şekilde ele alınmaktadır. `500` yalnızca gerçekten beklenmeyen durumlar için bir güvenlik ağı olarak kullanılır; istemciye hiçbir zaman stack trace veya iç teknik detay döndürülmez.
 
 Örnek hata cevabı:
 
@@ -555,6 +594,8 @@ cd backend
 $env:DB_PASSWORD='POSTGRESQL_PAROLANIZ'
 .\mvnw.cmd test
 ```
+
+Şu anda bu komut, Spring uygulama bağlamının (application context) hatasız yüklendiğini kontrol eden tek bir testi (`WeeklyProjectStatusApplicationTests`) çalıştırır. İş kuralları ve servis/controller katmanları için ayrı birim testleri henüz yazılmamıştır; API'ler manuel olarak (Swagger, Postman veya tarayıcı üzerinden) doğrulanmaktadır.
 
 Daha kapsamlı Maven doğrulaması için:
 
@@ -716,6 +757,7 @@ Tamamlanan ana teknik parçalar:
 - Swagger / OpenAPI
 - Frontend production build
 - Manuel MVP testleri
+- Proje (Project) alan validasyonları (ad ve müşteri adı zorunluluğu, uzunluk sınırı)
 
 ---
 
@@ -723,11 +765,11 @@ Tamamlanan ana teknik parçalar:
 
 Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
-- Gerçek kullanıcı authentication yapısı uygulanmamıştır.
-- Rol bazlı yetkilendirme (RBAC) uygulanmamıştır.
+- Gerçek kullanıcı authentication yapısı uygulanmamıştır. Kullanıcı, rol ve yetkilendirme için gerekli veri modeli (`User`, `Role` gibi varlıklar) backend'de henüz bulunmamaktadır.
+- Rol bazlı yetkilendirme (RBAC) uygulanmamıştır. Giriş, oturum ve admin işlemleri için API endpointleri henüz geliştirilmemiştir.
 - Proje yöneticisi, CTO ve admin rollerine göre erişim sınırları henüz bulunmamaktadır.
 - `401 Unauthorized` ve `403 Forbidden` senaryoları authentication/RBAC aşamasında tamamlanacaktır.
-- Login ekranı mevcut olsa da gerçek oturum yönetimine bağlı değildir.
+- Login ekranı mevcut olsa da yalnızca görsel bir taslaktır; herhangi bir API çağrısı veya oturum yönetimine bağlı değildir.
 - Admin ekranı mevcut olsa da rol bazlı yönetim özellikleri henüz tamamlanmamıştır.
 - Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
 - WeeklyReport API üzerinde güncelleme ve silme endpointleri mevcut değildir.
@@ -741,14 +783,13 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
 # Geliştirme Planı
 
-MVP sonrasında planlanan ana geliştirmeler:
+MVP'nin çalışan sürümü hazır; backend ve frontend, PostgreSQL ile birlikte yerel ortamda doğrulanmış durumdadır.
 
-1. Hata düzeltmeleri ve regresyon testleri
-2. README ve teslim dokümantasyonunun son doğrulaması
-3. Production build ve lokal/deployment smoke testleri
-4. Dashboard filtreleme yapısının geliştirilmesi
-5. Authentication ve rol bazlı yetkilendirme
-6. Yetkili ve yetkisiz kullanıcı senaryolarının test edilmesi
+Sıradaki planlanan geliştirmeler:
+
+1. Dashboard filtrelerinin genişletilmesi (ek filtre seçenekleri, sayfalama)
+2. Authentication ve rol bazlı yetkilendirme
+3. Yetkili ve yetkisiz kullanıcı senaryolarının test edilmesi
 
 Daha sonraki aşamalarda ihtiyaç ve süreye bağlı olarak:
 
@@ -788,6 +829,17 @@ Projeyi temiz bir yerel ortamda çalıştırmak için önerilen sıra:
         ↓
 9. Proje → Rapor → İş Kalemi / Risk → Dashboard akışını doğrula
 ```
+
+Frontend, backend'e istek atarken tarayıcı konsolunda CORS hatası alırsa "CORS Yapılandırması" bölümüne bakın.
+
+Backend, frontend ve PostgreSQL bu sırayla birlikte çalıştırılarak aşağıdaki noktalar doğrulanmıştır:
+
+- Backend derlemesi ve frontend production build'i hatasız tamamlanıyor.
+- Backend, PostgreSQL'e bağlanıyor; `/api/health` ve Swagger arayüzü erişilebilir.
+- CORS yapılandırması `http://localhost:5173` origin'inden gelen istekleri kabul ediyor, farklı bir origin'den gelen isteği reddediyor.
+- Proje oluşturma, haftalık rapor oluşturma, iş kalemi ve risk/engel ekleme, dashboard'da görüntüleme ve filtreleme akışı uçtan uca çalışıyor.
+- Aynı proje ve aynı haftaya ikinci bir rapor oluşturma isteği `409 Conflict` ile engelleniyor; farklı bir haftaya (geçmiş tarihli dahil) rapor oluşturma çalışıyor.
+- Geçersiz istek senaryolarında (`400`, `404`, `405`) beklenen hata kodları dönüyor.
 
 ---
 

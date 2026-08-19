@@ -288,7 +288,7 @@ function ProjectsPage() {
             gap: 2,
           }}
         >
-          <Typography variant="h6" component="h2">
+          <Typography variant="h6" component="span">
             Yeni proje
           </Typography>
 

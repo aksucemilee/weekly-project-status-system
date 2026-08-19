@@ -209,7 +209,7 @@ function DashboardReportDetailDialog({
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="h6"
-              component="h2"
+              component="span"
               sx={{
                 overflowWrap: "anywhere",
               }}
