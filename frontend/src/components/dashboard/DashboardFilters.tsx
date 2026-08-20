@@ -11,10 +11,15 @@ import {
 import type { FormEvent } from "react";
 
 import type { Project } from "../../types/project";
-import type { GeneralStatus, RiskLevel } from "../../types/weeklyReport";
+import type {
+  GeneralStatus,
+  RiskLevel,
+  ScheduleStatus,
+} from "../../types/weeklyReport";
 import {
   generalStatusLabels,
   riskLevelLabels,
+  scheduleStatusLabels,
 } from "../reports/reportPresentation";
 
 export type DashboardFilterForm = {
@@ -22,6 +27,7 @@ export type DashboardFilterForm = {
   projectId: string;
   generalStatus: "" | GeneralStatus;
   riskLevel: "" | RiskLevel;
+  scheduleStatus: "" | ScheduleStatus;
 };
 
 type DashboardFiltersProps = {
@@ -41,9 +47,12 @@ const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
 });
 
 function countActiveFilters(filters: DashboardFilterForm) {
-  return [filters.projectId, filters.generalStatus, filters.riskLevel].filter(
-    Boolean,
-  ).length;
+  return [
+    filters.projectId,
+    filters.generalStatus,
+    filters.riskLevel,
+    filters.scheduleStatus,
+  ].filter(Boolean).length;
 }
 function getWeekHelperText(weekStart: string) {
   if (!weekStart) {
@@ -157,7 +166,7 @@ function DashboardFilters({
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, minmax(0, 1fr))",
-            lg: "1.1fr 1.45fr 1fr 1fr",
+            lg: "repeat(5, minmax(0, 1fr))",
           },
           gap: {
             xs: 1.25,
@@ -228,6 +237,27 @@ function DashboardFilters({
 
           {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
             <MenuItem key={riskLevel} value={riskLevel}>
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="Takvim durumu"
+          value={filters.scheduleStatus}
+          onChange={(event) =>
+            updateField(
+              "scheduleStatus",
+              event.target.value as "" | ScheduleStatus,
+            )
+          }
+          fullWidth
+        >
+          <MenuItem value="">Tüm takvim durumları</MenuItem>
+
+          {Object.entries(scheduleStatusLabels).map(([scheduleStatus, label]) => (
+            <MenuItem key={scheduleStatus} value={scheduleStatus}>
               {label}
             </MenuItem>
           ))}

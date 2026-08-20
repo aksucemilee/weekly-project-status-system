@@ -26,16 +26,20 @@ import PageHeader from "../components/common/PageHeader";
 import { layoutTokens } from "../theme/layoutTokens";
 import { useNotification } from "../components/feedback/NotificationProvider";
 import RiskIssueManager from "../components/risk-issues/RiskIssueManager";
+import ReportFilters from "../components/reports/ReportFilters";
 import WeeklyReportForm from "../components/reports/WeeklyReportForm";
 import WeeklyReportList from "../components/reports/WeeklyReportList";
 import {
+  emptyReportFilterForm,
   generalStatusColors,
   generalStatusLabels,
+  hasActiveReportFilters,
   riskLevelColors,
   riskLevelLabels,
   scheduleStatusColors,
   scheduleStatusLabels,
 } from "../components/reports/reportPresentation";
+import type { ReportFilterForm } from "../components/reports/reportPresentation";
 import WorkItemManager from "../components/work-items/WorkItemManager";
 import { getProjects } from "../services/projectService";
 import { getWeeklyReportsByProject } from "../services/weeklyReportService";
@@ -125,6 +129,10 @@ function ReportsPage() {
     null,
   );
 
+  const [reportFilters, setReportFilters] = useState<ReportFilterForm>(
+    emptyReportFilterForm,
+  );
+
   const [selectedDetailTab, setSelectedDetailTab] =
     useState<ReportDetailTab>("overview");
 
@@ -195,6 +203,12 @@ function ReportsPage() {
     try {
       const reportList = await getWeeklyReportsByProject(
         Number(selectedProjectId),
+        {
+          weekStart: reportFilters.weekStart || undefined,
+          generalStatus: reportFilters.generalStatus || undefined,
+          riskLevel: reportFilters.riskLevel || undefined,
+          scheduleStatus: reportFilters.scheduleStatus || undefined,
+        },
       );
 
       setReports(reportList);
@@ -205,7 +219,7 @@ function ReportsPage() {
     } finally {
       setIsReportsLoading(false);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, reportFilters]);
 
   useEffect(() => {
     void loadReports();
@@ -248,6 +262,7 @@ function ReportsPage() {
     setSelectedProjectId(projectId);
     setSelectedReport(null);
     setSelectedDetailTab("overview");
+    setReportFilters(emptyReportFilterForm);
   };
 
   const handleReportCreated = (createdReport: WeeklyReport) => {
@@ -389,11 +404,18 @@ function ReportsPage() {
             </Stack>
           </Paper>
 
+          <ReportFilters
+            filters={reportFilters}
+            isLoading={isReportsLoading}
+            onChange={setReportFilters}
+          />
+
           <WeeklyReportList
             reports={reports}
             isLoading={isReportsLoading}
             errorMessage={reportListErrorMessage}
             selectedReportId={selectedReport?.id ?? null}
+            hasActiveFilters={hasActiveReportFilters(reportFilters)}
             onManageReportDetails={handleManageReport}
             onRetry={() => void loadReports()}
           />

@@ -1,14 +1,28 @@
 import apiClient from "../api/apiClient";
 import type {
+  GeneralStatus,
+  RiskLevel,
+  ScheduleStatus,
   WeeklyReport,
   WeeklyReportCreateRequest,
 } from "../types/weeklyReport";
 
+export type WeeklyReportListFilters = {
+  weekStart?: string;
+  generalStatus?: GeneralStatus;
+  riskLevel?: RiskLevel;
+  scheduleStatus?: ScheduleStatus;
+};
+
 export async function getWeeklyReportsByProject(
   projectId: number,
+  filters: WeeklyReportListFilters = {},
 ): Promise<WeeklyReport[]> {
   const response = await apiClient.get<WeeklyReport[]>(
     `/projects/${projectId}/weekly-reports`,
+    {
+      params: filters,
+    },
   );
 
   return response.data;

@@ -49,6 +49,7 @@ const defaultFilters: DashboardFilterForm = {
   projectId: "",
   generalStatus: "",
   riskLevel: "",
+  scheduleStatus: "",
 };
 
 function DashboardPage() {
@@ -99,6 +100,8 @@ function DashboardPage() {
           generalStatus: appliedFilters.generalStatus || undefined,
 
           riskLevel: appliedFilters.riskLevel || undefined,
+
+          scheduleStatus: appliedFilters.scheduleStatus || undefined,
         }),
 
         getProjects(),
@@ -146,6 +149,7 @@ function DashboardPage() {
       projectId: "",
       generalStatus: "",
       riskLevel: "",
+      scheduleStatus: "",
     };
 
     setFilterForm(resetFilters);

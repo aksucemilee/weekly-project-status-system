@@ -75,3 +75,26 @@ export const formatReportDate = (date: string) =>
     month: "2-digit",
     year: "numeric",
   }).format(new Date(`${date}T00:00:00`));
+
+export type ReportFilterForm = {
+  weekStart: string;
+  generalStatus: "" | GeneralStatus;
+  riskLevel: "" | RiskLevel;
+  scheduleStatus: "" | ScheduleStatus;
+};
+
+export const emptyReportFilterForm: ReportFilterForm = {
+  weekStart: "",
+  generalStatus: "",
+  riskLevel: "",
+  scheduleStatus: "",
+};
+
+export function hasActiveReportFilters(filters: ReportFilterForm) {
+  return Boolean(
+    filters.weekStart ||
+      filters.generalStatus ||
+      filters.riskLevel ||
+      filters.scheduleStatus,
+  );
+}

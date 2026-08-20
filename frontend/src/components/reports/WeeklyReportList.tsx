@@ -28,6 +28,7 @@ type WeeklyReportListProps = {
   isLoading: boolean;
   errorMessage: string;
   selectedReportId: number | null;
+  hasActiveFilters: boolean;
   onManageReportDetails: (report: WeeklyReport) => void;
   onRetry: () => void;
 };
@@ -81,6 +82,7 @@ function WeeklyReportList({
   isLoading,
   errorMessage,
   selectedReportId,
+  hasActiveFilters,
   onManageReportDetails,
   onRetry,
 }: WeeklyReportListProps) {
@@ -119,6 +121,16 @@ function WeeklyReportList({
           {errorMessage}
         </Alert>
       </Paper>
+    );
+  }
+
+  if (reports.length === 0 && hasActiveFilters) {
+    return (
+      <EmptyState
+        label="Sonuç bulunamadı"
+        title="Seçilen filtrelerle eşleşen rapor yok"
+        description="Filtreleri değiştirerek veya temizleyerek tekrar deneyin."
+      />
     );
   }
 

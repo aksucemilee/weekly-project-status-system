@@ -34,4 +34,5 @@ export type DashboardFilters = {
   projectId?: number;
   generalStatus?: GeneralStatus;
   riskLevel?: RiskLevel;
+  scheduleStatus?: ScheduleStatus;
 };
