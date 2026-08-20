@@ -353,6 +353,15 @@ Swagger arayüzü mevcut API sözleşmesini incelemek ve test etmek için kullan
 | `GET`  | `/api/projects/{projectId}/weekly-reports`                  | Projeye ait haftalık raporları listeler      |
 | `GET`  | `/api/projects/{projectId}/weekly-reports/{weeklyReportId}` | Belirtilen haftalık raporun detayını getirir |
 
+Rapor listeleme isteği aşağıdaki isteğe bağlı filtre parametrelerini destekler:
+
+| Parametre       | Açıklama                                          |
+| --------------- | -------------------------------------------------- |
+| `weekStart`     | Rapor haftasına göre filtreleme (tam eşleşme)      |
+| `generalStatus` | Genel duruma göre filtreleme                       |
+| `riskLevel`     | Risk seviyesine göre filtreleme                    |
+| `scheduleStatus`| Takvim durumuna (gecikme) göre filtreleme          |
+
 ---
 
 ## Work Item
@@ -387,12 +396,13 @@ Swagger arayüzü mevcut API sözleşmesini incelemek ve test etmek için kullan
 
 Dashboard aşağıdaki isteğe bağlı filtre parametrelerini desteklemektedir:
 
-| Parametre       | Açıklama                             |
-| --------------- | ------------------------------------ |
-| `weekStart`     | Rapor haftasına göre filtreleme      |
-| `projectId`     | Projeye göre filtreleme              |
-| `generalStatus` | Genel proje durumuna göre filtreleme |
-| `riskLevel`     | Risk seviyesine göre filtreleme      |
+| Parametre        | Açıklama                              |
+| ---------------- | -------------------------------------- |
+| `weekStart`      | Rapor haftasına göre filtreleme (pencere: `weekStart` .. `weekStart + 6 gün`) |
+| `projectId`      | Projeye göre filtreleme               |
+| `generalStatus`  | Genel proje durumuna göre filtreleme  |
+| `riskLevel`      | Risk seviyesine göre filtreleme       |
+| `scheduleStatus` | Takvim durumuna (gecikme) göre filtreleme |
 
 Örnek istek:
 
@@ -435,7 +445,7 @@ Haftalık raporlarda temel olarak aşağıdaki bilgiler tutulmaktadır:
 - Engeller
 - Genel durum notu
 
-Seçilen projeye ait geçmiş haftalık raporlar listelenebilir ve rapor detayları görüntülenebilir.
+Seçilen projeye ait geçmiş haftalık raporlar listelenebilir ve rapor detayları görüntülenebilir. Rapor listesi; hafta, genel durum, risk seviyesi ve takvim durumuna göre filtrelenebilir. Bu filtreler seçim yapıldığı anda uygulanır (Dashboard'daki "Uygula" adımının aksine); "Temizle" ile sıfırlanır.
 
 ---
 
@@ -492,6 +502,7 @@ Dashboard üzerinde:
 - Proje filtresi
 - Genel durum filtresi
 - Risk seviyesi filtresi
+- Takvim durumu (gecikme) filtresi
 - Loading durumu
 - Empty durumu
 - Error durumu
@@ -758,6 +769,8 @@ Tamamlanan ana teknik parçalar:
 - Frontend production build
 - Manuel MVP testleri
 - Proje (Project) alan validasyonları (ad ve müşteri adı zorunluluğu, uzunluk sınırı)
+- Dashboard takvim durumu (gecikme) filtresi
+- Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu)
 
 ---
 
@@ -773,6 +786,8 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Admin ekranı mevcut olsa da rol bazlı yönetim özellikleri henüz tamamlanmamıştır.
 - Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
 - WeeklyReport API üzerinde güncelleme ve silme endpointleri mevcut değildir.
+- Dashboard ve rapor listesinde "sorumlu" filtresi yoktur; proje sorumlusu kavramı kullanıcı/yetkilendirme veri modeline bağlıdır ve bu model henüz kurulmamıştır.
+- Dashboard ve rapor listesi sayfalama/sıralama parametresi desteklemez; mevcut veri hacmi için gerekli görülmemiştir.
 - Otomatik backend test kapsamı genişletilecektir.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
 - Kontrollü migration ve seed yapısı henüz bulunmamaktadır.
