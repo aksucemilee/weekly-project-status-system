@@ -6,10 +6,14 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCrea
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
+import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
+import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
+import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -65,12 +69,24 @@ public class WeeklyReportService {
 
         @Transactional(readOnly = true)
         public List<WeeklyReportResponse> getReportsByProject(
-                        Long projectId) {
+                        Long projectId,
+                        LocalDate weekStart,
+                        GeneralStatus generalStatus,
+                        RiskLevel riskLevel,
+                        ScheduleStatus scheduleStatus) {
                 projectService.getProjectEntity(projectId);
 
                 return weeklyReportRepository
                                 .findByProjectIdOrderByReportWeekStartDesc(projectId)
                                 .stream()
+                                .filter(report -> weekStart == null
+                                                || report.getReportWeekStart().equals(weekStart))
+                                .filter(report -> generalStatus == null
+                                                || report.getGeneralStatus() == generalStatus)
+                                .filter(report -> riskLevel == null
+                                                || report.getRiskLevel() == riskLevel)
+                                .filter(report -> scheduleStatus == null
+                                                || report.getScheduleStatus() == scheduleStatus)
                                 .map(this::toResponse)
                                 .toList();
         }

@@ -45,7 +45,8 @@ public class DashboardService {
                         LocalDate weekStart,
                         Long projectId,
                         GeneralStatus generalStatus,
-                        RiskLevel riskLevel) {
+                        RiskLevel riskLevel,
+                        ScheduleStatus scheduleStatus) {
                 LocalDate weekEnd = weekStart == null ? null : weekStart.plusDays(6);
 
                 List<DashboardProjectSummaryResponse> projectSummaries = projectRepository
@@ -61,6 +62,8 @@ public class DashboardService {
                                                 || summary.generalStatus() == generalStatus)
                                 .filter(summary -> riskLevel == null
                                                 || summary.riskLevel() == riskLevel)
+                                .filter(summary -> scheduleStatus == null
+                                                || summary.scheduleStatus() == scheduleStatus)
                                 .toList();
 
                 long projectsWithReports = projectSummaries.stream()

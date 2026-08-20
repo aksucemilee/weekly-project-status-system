@@ -3,6 +3,7 @@ package com.kolaysoft.weeklyprojectstatus.controller;
 import com.kolaysoft.weeklyprojectstatus.model.dto.dashboard.DashboardSummaryResponse;
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
+import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,11 +31,14 @@ public class DashboardController {
 
             @RequestParam(required = false) GeneralStatus generalStatus,
 
-            @RequestParam(required = false) RiskLevel riskLevel) {
+            @RequestParam(required = false) RiskLevel riskLevel,
+
+            @RequestParam(required = false) ScheduleStatus scheduleStatus) {
         return dashboardService.getDashboardSummary(
                 weekStart,
                 projectId,
                 generalStatus,
-                riskLevel);
+                riskLevel,
+                scheduleStatus);
     }
 }
