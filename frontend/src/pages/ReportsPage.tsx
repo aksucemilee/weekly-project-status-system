@@ -10,6 +10,7 @@ import {
   IconButton,
   LinearProgress,
   MenuItem,
+  Pagination,
   Paper,
   Stack,
   Tab,
@@ -48,6 +49,8 @@ import type { WeeklyReport } from "../types/weeklyReport";
 import { formatDisplayDate } from "../utils/dateFormat";
 
 type ReportDetailTab = "overview" | "workItems" | "riskIssues";
+
+const REPORTS_PAGE_SIZE = 10;
 
 type ProjectStatusChipColor =
   | "default"
@@ -133,6 +136,10 @@ function ReportsPage() {
     emptyReportFilterForm,
   );
 
+  const [reportPage, setReportPage] = useState(0);
+  const [reportTotalElements, setReportTotalElements] = useState(0);
+  const [reportTotalPages, setReportTotalPages] = useState(0);
+
   const [selectedDetailTab, setSelectedDetailTab] =
     useState<ReportDetailTab>("overview");
 
@@ -190,6 +197,8 @@ function ReportsPage() {
       setReports([]);
       setSelectedReport(null);
       setSelectedDetailTab("overview");
+      setReportTotalElements(0);
+      setReportTotalPages(0);
       setIsReportsLoading(false);
       return;
     }
@@ -201,25 +210,31 @@ function ReportsPage() {
     setSelectedDetailTab("overview");
 
     try {
-      const reportList = await getWeeklyReportsByProject(
+      const reportPageResult = await getWeeklyReportsByProject(
         Number(selectedProjectId),
         {
           weekStart: reportFilters.weekStart || undefined,
           generalStatus: reportFilters.generalStatus || undefined,
           riskLevel: reportFilters.riskLevel || undefined,
           scheduleStatus: reportFilters.scheduleStatus || undefined,
+          page: reportPage,
+          size: REPORTS_PAGE_SIZE,
         },
       );
 
-      setReports(reportList);
+      setReports(reportPageResult.content);
+      setReportTotalElements(reportPageResult.totalElements);
+      setReportTotalPages(reportPageResult.totalPages);
     } catch {
       setReportListErrorMessage(
         "Haftalık raporlar yüklenirken bir hata oluştu.",
       );
+      setReportTotalElements(0);
+      setReportTotalPages(0);
     } finally {
       setIsReportsLoading(false);
     }
-  }, [selectedProjectId, reportFilters]);
+  }, [selectedProjectId, reportFilters, reportPage]);
 
   useEffect(() => {
     void loadReports();
@@ -263,6 +278,12 @@ function ReportsPage() {
     setSelectedReport(null);
     setSelectedDetailTab("overview");
     setReportFilters(emptyReportFilterForm);
+    setReportPage(0);
+  };
+
+  const handleReportFiltersChange = (filters: ReportFilterForm) => {
+    setReportFilters(filters);
+    setReportPage(0);
   };
 
   const handleReportCreated = (createdReport: WeeklyReport) => {
@@ -407,11 +428,12 @@ function ReportsPage() {
           <ReportFilters
             filters={reportFilters}
             isLoading={isReportsLoading}
-            onChange={setReportFilters}
+            onChange={handleReportFiltersChange}
           />
 
           <WeeklyReportList
             reports={reports}
+            totalCount={reportTotalElements}
             isLoading={isReportsLoading}
             errorMessage={reportListErrorMessage}
             selectedReportId={selectedReport?.id ?? null}
@@ -419,6 +441,22 @@ function ReportsPage() {
             onManageReportDetails={handleManageReport}
             onRetry={() => void loadReports()}
           />
+
+          {!isReportsLoading && !reportListErrorMessage && reportTotalPages > 1 && (
+            <Stack
+              sx={{
+                alignItems: "center",
+              }}
+            >
+              <Pagination
+                count={reportTotalPages}
+                page={reportPage + 1}
+                onChange={(_event, newPage) => setReportPage(newPage - 1)}
+                color="primary"
+                shape="rounded"
+              />
+            </Stack>
+          )}
 
           {selectedReport && (
             <Box

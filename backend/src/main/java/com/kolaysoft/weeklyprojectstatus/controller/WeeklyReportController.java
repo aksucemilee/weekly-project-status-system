@@ -1,5 +1,6 @@
 package com.kolaysoft.weeklyprojectstatus.controller;
 
+import com.kolaysoft.weeklyprojectstatus.model.dto.common.PagedResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/weekly-reports")
@@ -46,7 +46,7 @@ public class WeeklyReportController {
         }
 
         @GetMapping
-        public ResponseEntity<List<WeeklyReportResponse>> getReportsByProject(
+        public ResponseEntity<PagedResponse<WeeklyReportResponse>> getReportsByProject(
                         @PathVariable Long projectId,
 
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
@@ -55,14 +55,23 @@ public class WeeklyReportController {
 
                         @RequestParam(required = false) RiskLevel riskLevel,
 
-                        @RequestParam(required = false) ScheduleStatus scheduleStatus) {
+                        @RequestParam(required = false) ScheduleStatus scheduleStatus,
+
+                        @RequestParam(defaultValue = "0") int page,
+
+                        @RequestParam(defaultValue = "20") int size,
+
+                        @RequestParam(required = false) String sort) {
                 return ResponseEntity.ok(
                                 weeklyReportService.getReportsByProject(
                                                 projectId,
                                                 weekStart,
                                                 generalStatus,
                                                 riskLevel,
-                                                scheduleStatus));
+                                                scheduleStatus,
+                                                page,
+                                                size,
+                                                sort));
         }
 
         @GetMapping("/{weeklyReportId}")

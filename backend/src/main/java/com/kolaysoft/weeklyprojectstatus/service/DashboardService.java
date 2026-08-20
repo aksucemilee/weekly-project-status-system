@@ -11,13 +11,17 @@ import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.WorkItemStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.ProjectRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
+import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportSpecifications;
 import com.kolaysoft.weeklyprojectstatus.repository.WorkItemRepository;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -49,15 +53,23 @@ public class DashboardService {
                         ScheduleStatus scheduleStatus) {
                 LocalDate weekEnd = weekStart == null ? null : weekStart.plusDays(6);
 
-                List<DashboardProjectSummaryResponse> projectSummaries = projectRepository
+                List<Project> activeProjects = projectRepository
                                 .findByActiveTrueOrderByNameAsc()
                                 .stream()
                                 .filter(project -> projectId == null
                                                 || project.getId().equals(projectId))
+                                .toList();
+
+                Map<Long, WeeklyReport> latestMatchingReportByProjectId = findLatestReportsForProjects(
+                                activeProjects,
+                                weekStart,
+                                weekEnd);
+
+                List<DashboardProjectSummaryResponse> projectSummaries = activeProjects
+                                .stream()
                                 .map(project -> createProjectSummary(
                                                 project,
-                                                weekStart,
-                                                weekEnd))
+                                                latestMatchingReportByProjectId.get(project.getId())))
                                 .filter(summary -> generalStatus == null
                                                 || summary.generalStatus() == generalStatus)
                                 .filter(summary -> riskLevel == null
@@ -91,29 +103,59 @@ public class DashboardService {
                                 projectSummaries);
         }
 
-        private DashboardProjectSummaryResponse createProjectSummary(
-                        Project project,
+        /**
+         * projectId ve weekStart (varsa) icin Specification tabanli TEK bir
+         * sorgu ile, verilen projelere ait tum aday raporlari (aktif proje
+         * kumesiyle sinirli, varsa hafta penceresiyle sinirli) ceker; sonucu
+         * reportWeekStart DESC sirali doner. Bu sirada her proje icin ILK
+         * gorulen kayit (Map.putIfAbsent), o projenin bu aday kume icindeki
+         * EN GUNCEL raporudur - yani sonuc, projeler icin ayri ayri yapilan
+         * "findFirst...OrderByReportWeekStartDesc" cagrilariyla birebir
+         * ayni raporu secer, ama tek bir veritabani sorgusuyla.
+         *
+         * generalStatus/riskLevel/scheduleStatus buraya dahil edilmez: bu
+         * alanlar projenin SECILEN raporuna uygulanir, ham WeeklyReport
+         * satirlarina degil. Bu filtreleri sorgu seviyesine tasimak, bir
+         * projenin en guncel raporu filtreye uymasa bile gecmiste uyan bir
+         * raporu varsa projeyi yanlislikla dahil edebilir - bu da mevcut
+         * davranisi degistirir. Bu nedenle bu ucu, secim yapildiktan sonra
+         * (createProjectSummary sonrasi) Java'da uygulanmaya devam eder.
+         */
+        private Map<Long, WeeklyReport> findLatestReportsForProjects(
+                        List<Project> projects,
                         LocalDate weekStart,
                         LocalDate weekEnd) {
-                Optional<WeeklyReport> selectedReport;
-
-                if (weekStart == null) {
-                        selectedReport = weeklyReportRepository
-                                        .findFirstByProjectIdOrderByReportWeekStartDesc(
-                                                        project.getId());
-                } else {
-                        selectedReport = weeklyReportRepository
-                                        .findFirstByProjectIdAndReportWeekStartBetweenOrderByReportWeekStartDesc(
-                                                        project.getId(),
-                                                        weekStart,
-                                                        weekEnd);
+                if (projects.isEmpty()) {
+                        return Map.of();
                 }
 
-                if (selectedReport.isEmpty()) {
+                List<Long> projectIds = projects.stream()
+                                .map(Project::getId)
+                                .toList();
+
+                Specification<WeeklyReport> specification = Specification
+                                .<WeeklyReport>where(WeeklyReportSpecifications.projectIdIn(projectIds))
+                                .and(WeeklyReportSpecifications.weekStartBetween(weekStart, weekEnd));
+
+                List<WeeklyReport> candidateReports = weeklyReportRepository.findAll(
+                                specification,
+                                Sort.by(Sort.Direction.DESC, "reportWeekStart"));
+
+                Map<Long, WeeklyReport> latestByProjectId = new LinkedHashMap<>();
+
+                for (WeeklyReport report : candidateReports) {
+                        latestByProjectId.putIfAbsent(report.getProject().getId(), report);
+                }
+
+                return latestByProjectId;
+        }
+
+        private DashboardProjectSummaryResponse createProjectSummary(
+                        Project project,
+                        WeeklyReport report) {
+                if (report == null) {
                         return createSummaryWithoutReport(project);
                 }
-
-                WeeklyReport report = selectedReport.get();
 
                 long activeWorkItemCount = workItemRepository.countByWeeklyReport_IdAndStatusIn(
                                 report.getId(),

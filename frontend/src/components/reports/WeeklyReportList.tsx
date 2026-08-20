@@ -25,6 +25,7 @@ import {
 
 type WeeklyReportListProps = {
   reports: WeeklyReport[];
+  totalCount: number;
   isLoading: boolean;
   errorMessage: string;
   selectedReportId: number | null;
@@ -79,6 +80,7 @@ function ProgressSummary({ label, value }: ProgressSummaryProps) {
 
 function WeeklyReportList({
   reports,
+  totalCount,
   isLoading,
   errorMessage,
   selectedReportId,
@@ -167,7 +169,7 @@ function WeeklyReportList({
         </Typography>
 
         <Chip
-          label={`${reports.length} rapor`}
+          label={`${totalCount} rapor`}
           color="primary"
           variant="outlined"
           size="small"

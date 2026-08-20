@@ -14,14 +14,28 @@ export type WeeklyReportListFilters = {
   scheduleStatus?: ScheduleStatus;
 };
 
+export type WeeklyReportListParams = WeeklyReportListFilters & {
+  page?: number;
+  size?: number;
+  sort?: string;
+};
+
+export type PagedResponse<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
 export async function getWeeklyReportsByProject(
   projectId: number,
-  filters: WeeklyReportListFilters = {},
-): Promise<WeeklyReport[]> {
-  const response = await apiClient.get<WeeklyReport[]>(
+  params: WeeklyReportListParams = {},
+): Promise<PagedResponse<WeeklyReport>> {
+  const response = await apiClient.get<PagedResponse<WeeklyReport>>(
     `/projects/${projectId}/weekly-reports`,
     {
-      params: filters,
+      params,
     },
   );
 

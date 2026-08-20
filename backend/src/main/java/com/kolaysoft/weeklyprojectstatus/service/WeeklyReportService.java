@@ -2,6 +2,7 @@ package com.kolaysoft.weeklyprojectstatus.service;
 
 import com.kolaysoft.weeklyprojectstatus.exception.DuplicateResourceException;
 import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
+import com.kolaysoft.weeklyprojectstatus.model.dto.common.PagedResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
@@ -10,11 +11,17 @@ import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
+import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportSpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -67,28 +74,73 @@ public class WeeklyReportService {
                 return toResponse(savedReport);
         }
 
+        private static final Set<String> SORTABLE_FIELDS = Set.of(
+                        "reportWeekStart",
+                        "targetProgress",
+                        "actualProgress");
+
+        private static final String DEFAULT_SORT_FIELD = "reportWeekStart";
+
         @Transactional(readOnly = true)
-        public List<WeeklyReportResponse> getReportsByProject(
+        public PagedResponse<WeeklyReportResponse> getReportsByProject(
                         Long projectId,
                         LocalDate weekStart,
                         GeneralStatus generalStatus,
                         RiskLevel riskLevel,
-                        ScheduleStatus scheduleStatus) {
+                        ScheduleStatus scheduleStatus,
+                        int page,
+                        int size,
+                        String sort) {
                 projectService.getProjectEntity(projectId);
 
-                return weeklyReportRepository
-                                .findByProjectIdOrderByReportWeekStartDesc(projectId)
-                                .stream()
-                                .filter(report -> weekStart == null
-                                                || report.getReportWeekStart().equals(weekStart))
-                                .filter(report -> generalStatus == null
-                                                || report.getGeneralStatus() == generalStatus)
-                                .filter(report -> riskLevel == null
-                                                || report.getRiskLevel() == riskLevel)
-                                .filter(report -> scheduleStatus == null
-                                                || report.getScheduleStatus() == scheduleStatus)
-                                .map(this::toResponse)
-                                .toList();
+                Specification<WeeklyReport> specification = Specification
+                                .<WeeklyReport>where(WeeklyReportSpecifications.hasProjectId(projectId))
+                                .and(WeeklyReportSpecifications.hasWeekStart(weekStart))
+                                .and(WeeklyReportSpecifications.hasGeneralStatus(generalStatus))
+                                .and(WeeklyReportSpecifications.hasRiskLevel(riskLevel))
+                                .and(WeeklyReportSpecifications.hasScheduleStatus(scheduleStatus));
+
+                Pageable pageable = PageRequest.of(page, size, resolveSort(sort));
+
+                Page<WeeklyReportResponse> responsePage = weeklyReportRepository
+                                .findAll(specification, pageable)
+                                .map(this::toResponse);
+
+                return PagedResponse.of(responsePage);
+        }
+
+        private Sort resolveSort(String sort) {
+                if (sort == null || sort.isBlank()) {
+                        return Sort.by(Sort.Direction.DESC, DEFAULT_SORT_FIELD);
+                }
+
+                String[] parts = sort.split(",");
+                String field = parts[0].trim();
+
+                if (!SORTABLE_FIELDS.contains(field)) {
+                        throw new IllegalArgumentException(
+                                        "Geçersiz sıralama alanı: '" + field
+                                                        + "'. Kullanılabilir alanlar: "
+                                                        + String.join(", ", SORTABLE_FIELDS));
+                }
+
+                Sort.Direction direction = Sort.Direction.DESC;
+
+                if (parts.length > 1) {
+                        String rawDirection = parts[1].trim();
+
+                        if (rawDirection.equalsIgnoreCase("asc")) {
+                                direction = Sort.Direction.ASC;
+                        } else if (rawDirection.equalsIgnoreCase("desc")) {
+                                direction = Sort.Direction.DESC;
+                        } else {
+                                throw new IllegalArgumentException(
+                                                "Geçersiz sıralama yönü: '" + rawDirection
+                                                                + "'. 'asc' veya 'desc' olmalıdır.");
+                        }
+                }
+
+                return Sort.by(direction, field);
         }
 
         @Transactional(readOnly = true)

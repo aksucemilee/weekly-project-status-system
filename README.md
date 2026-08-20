@@ -353,14 +353,31 @@ Swagger arayüzü mevcut API sözleşmesini incelemek ve test etmek için kullan
 | `GET`  | `/api/projects/{projectId}/weekly-reports`                  | Projeye ait haftalık raporları listeler      |
 | `GET`  | `/api/projects/{projectId}/weekly-reports/{weeklyReportId}` | Belirtilen haftalık raporun detayını getirir |
 
-Rapor listeleme isteği aşağıdaki isteğe bağlı filtre parametrelerini destekler:
+Rapor listeleme isteği aşağıdaki isteğe bağlı filtre, sayfalama ve sıralama parametrelerini destekler:
 
-| Parametre       | Açıklama                                          |
-| --------------- | -------------------------------------------------- |
-| `weekStart`     | Rapor haftasına göre filtreleme (tam eşleşme)      |
-| `generalStatus` | Genel duruma göre filtreleme                       |
-| `riskLevel`     | Risk seviyesine göre filtreleme                    |
-| `scheduleStatus`| Takvim durumuna (gecikme) göre filtreleme          |
+| Parametre       | Açıklama                                                              |
+| --------------- | ---------------------------------------------------------------------- |
+| `weekStart`     | Rapor haftasına göre filtreleme (tam eşleşme)                        |
+| `generalStatus` | Genel duruma göre filtreleme                                          |
+| `riskLevel`     | Risk seviyesine göre filtreleme                                       |
+| `scheduleStatus`| Takvim durumuna (gecikme) göre filtreleme                             |
+| `page`          | Sayfa numarası (0 tabanlı), varsayılan `0`                            |
+| `size`          | Sayfa boyutu, varsayılan `20`                                         |
+| `sort`          | `alan,yön` biçiminde sıralama (`reportWeekStart`, `targetProgress`, `actualProgress`; `asc`/`desc`), varsayılan `reportWeekStart,desc` |
+
+Filtreleme ve sıralama Spring Data JPA `Specification` ile veritabanı seviyesinde uygulanır; yanıt gövdesi düz bir dizi değil, sayfalanmış bir yapıdır:
+
+```json
+{
+  "content": [ /* haftalık rapor listesi */ ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 4,
+  "totalPages": 1
+}
+```
+
+Geçersiz bir `sort` alanı veya yönü gönderilirse `400 Bad Request` döner. Detaylar için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
 
 ---
 
@@ -770,7 +787,7 @@ Tamamlanan ana teknik parçalar:
 - Manuel MVP testleri
 - Proje (Project) alan validasyonları (ad ve müşteri adı zorunluluğu, uzunluk sınırı)
 - Dashboard takvim durumu (gecikme) filtresi
-- Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu)
+- Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu), Specification tabanlı dinamik sorgu, sayfalama ve sıralama
 
 ---
 
@@ -787,7 +804,7 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
 - WeeklyReport API üzerinde güncelleme ve silme endpointleri mevcut değildir.
 - Dashboard ve rapor listesinde "sorumlu" filtresi yoktur; proje sorumlusu kavramı kullanıcı/yetkilendirme veri modeline bağlıdır ve bu model henüz kurulmamıştır.
-- Dashboard ve rapor listesi sayfalama/sıralama parametresi desteklemez; mevcut veri hacmi için gerekli görülmemiştir.
+- Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
 - Otomatik backend test kapsamı genişletilecektir.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
 - Kontrollü migration ve seed yapısı henüz bulunmamaktadır.
@@ -802,14 +819,13 @@ MVP'nin çalışan sürümü hazır; backend ve frontend, PostgreSQL ile birlikt
 
 Sıradaki planlanan geliştirmeler:
 
-1. Dashboard filtrelerinin genişletilmesi (ek filtre seçenekleri, sayfalama)
+1. Dashboard filtrelerinin genişletilmesi (ek filtre seçenekleri; Dashboard'a özel sayfalama, portföy görünümü gerektirdiği için kasıtlı olarak eklenmedi)
 2. Authentication ve rol bazlı yetkilendirme
 3. Yetkili ve yetkisiz kullanıcı senaryolarının test edilmesi
 
 Daha sonraki aşamalarda ihtiyaç ve süreye bağlı olarak:
 
 - Gelişmiş raporlama
-- Sayfalama ve sıralama
 - Gelişmiş risk takibi
 - Audit log
 - PDF / Excel çıktısı
