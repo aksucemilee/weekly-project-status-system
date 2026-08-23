@@ -4,6 +4,7 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectResponse;
 import com.kolaysoft.weeklyprojectstatus.service.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ public class ProjectController {
         this.projectService = projectService;
     }
 
+    @PreAuthorize("hasAuthority('PROJECT_MANAGE')")
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody ProjectCreateRequest request
@@ -37,6 +39,7 @@ public class ProjectController {
                 .body(createdProject);
     }
 
+    @PreAuthorize("hasAuthority('PROJECT_VIEW')")
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(
@@ -44,6 +47,7 @@ public class ProjectController {
         );
     }
 
+    @PreAuthorize("hasAuthority('PROJECT_VIEW')")
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> getProjectById(
             @PathVariable Long projectId

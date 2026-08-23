@@ -4,6 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -126,6 +129,51 @@ public class GlobalExceptionHandler {
                                 HttpStatus.METHOD_NOT_ALLOWED,
                                 "Bu istek için '" + exception.getMethod()
                                                 + "' HTTP metodu desteklenmiyor.",
+                                request.getRequestURI());
+        }
+
+        /*
+         * Asagidaki iki handler, alttaki genel Exception fallback'inin
+         * Spring Security'nin yetki hatalarini 500'e cevirmesini engeller.
+         * @PreAuthorize veya kapsam kontrolu tarafindan firlatilan hata
+         * controller cagrisi icinde olustugu icin filtre zincirindeki
+         * ExceptionTranslationFilter'a ulasmadan buraya duser.
+         */
+
+        /**
+         * Basarisiz giris. Mesaj AuthService tarafindan uretilir ve hangi
+         * alanin yanlis oldugunu ACIKLAMAZ (On Analiz 7.1, is kurali 4).
+         */
+        @ExceptionHandler(BadCredentialsException.class)
+        public ResponseEntity<ApiErrorResponse> handleBadCredentials(
+                        BadCredentialsException exception,
+                        HttpServletRequest request) {
+                return buildErrorResponse(
+                                HttpStatus.UNAUTHORIZED,
+                                exception.getMessage(),
+                                request.getRequestURI());
+        }
+
+        @ExceptionHandler(AuthenticationException.class)
+        public ResponseEntity<ApiErrorResponse> handleAuthentication(
+                        AuthenticationException exception,
+                        HttpServletRequest request) {
+                return buildErrorResponse(
+                                HttpStatus.UNAUTHORIZED,
+                                "Bu işlem için oturum açmanız gerekir.",
+                                request.getRequestURI());
+        }
+
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+                        AccessDeniedException exception,
+                        HttpServletRequest request) {
+                return buildErrorResponse(
+                                HttpStatus.FORBIDDEN,
+                                exception.getMessage() == null
+                                                || exception.getMessage().isBlank()
+                                                                ? "Bu işlem için yetkiniz bulunmuyor."
+                                                                : exception.getMessage(),
                                 request.getRequestURI());
         }
 

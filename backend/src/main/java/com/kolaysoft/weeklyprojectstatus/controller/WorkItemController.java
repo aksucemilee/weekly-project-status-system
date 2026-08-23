@@ -5,6 +5,7 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.workitem.WorkItemUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.service.WorkItemService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +29,7 @@ public class WorkItemController {
         this.workItemService = workItemService;
     }
 
+    @PreAuthorize("hasAuthority('WORKITEM_MANAGE')")
     @PostMapping
     public ResponseEntity<WorkItemResponse> createWorkItem(
             @PathVariable Long weeklyReportId,
@@ -42,6 +44,7 @@ public class WorkItemController {
                 .body(createdWorkItem);
     }
 
+    @PreAuthorize("hasAuthority('WORKITEM_VIEW')")
     @GetMapping
     public ResponseEntity<List<WorkItemResponse>> getWorkItemsByWeeklyReport(
             @PathVariable Long weeklyReportId) {
@@ -51,6 +54,7 @@ public class WorkItemController {
                         weeklyReportId));
     }
 
+    @PreAuthorize("hasAuthority('WORKITEM_VIEW')")
     @GetMapping("/{workItemId}")
     public ResponseEntity<WorkItemResponse> getWorkItem(
             @PathVariable Long weeklyReportId,
@@ -62,6 +66,7 @@ public class WorkItemController {
                         workItemId));
     }
 
+    @PreAuthorize("hasAuthority('WORKITEM_MANAGE')")
     @PutMapping("/{workItemId}")
     public ResponseEntity<WorkItemResponse> updateWorkItem(
             @PathVariable Long weeklyReportId,
@@ -75,6 +80,7 @@ public class WorkItemController {
                         request));
     }
 
+    @PreAuthorize("hasAuthority('WORKITEM_MANAGE')")
     @DeleteMapping("/{workItemId}")
     public ResponseEntity<Void> deleteWorkItem(
             @PathVariable Long weeklyReportId,
