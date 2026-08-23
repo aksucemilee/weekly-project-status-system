@@ -5,6 +5,7 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.riskissue.RiskIssueResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.riskissue.RiskIssueUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.service.RiskIssueService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +29,7 @@ public class RiskIssueController {
         this.riskIssueService = riskIssueService;
     }
 
+    @PreAuthorize("hasAuthority('RISK_MANAGE')")
     @PostMapping
     public ResponseEntity<RiskIssueResponse> createRiskIssue(
             @PathVariable Long weeklyReportId,
@@ -42,6 +44,7 @@ public class RiskIssueController {
                 .body(createdRiskIssue);
     }
 
+    @PreAuthorize("hasAuthority('RISK_VIEW')")
     @GetMapping
     public ResponseEntity<List<RiskIssueResponse>> getRiskIssuesByWeeklyReport(
             @PathVariable Long weeklyReportId) {
@@ -51,6 +54,7 @@ public class RiskIssueController {
                         weeklyReportId));
     }
 
+    @PreAuthorize("hasAuthority('RISK_VIEW')")
     @GetMapping("/{riskIssueId}")
     public ResponseEntity<RiskIssueResponse> getRiskIssue(
             @PathVariable Long weeklyReportId,
@@ -62,6 +66,7 @@ public class RiskIssueController {
                         riskIssueId));
     }
 
+    @PreAuthorize("hasAuthority('RISK_MANAGE')")
     @PutMapping("/{riskIssueId}")
     public ResponseEntity<RiskIssueResponse> updateRiskIssue(
             @PathVariable Long weeklyReportId,
@@ -75,6 +80,7 @@ public class RiskIssueController {
                         request));
     }
 
+    @PreAuthorize("hasAuthority('RISK_MANAGE')")
     @DeleteMapping("/{riskIssueId}")
     public ResponseEntity<Void> deleteRiskIssue(
             @PathVariable Long weeklyReportId,

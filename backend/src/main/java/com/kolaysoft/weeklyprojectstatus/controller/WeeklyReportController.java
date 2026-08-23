@@ -8,6 +8,7 @@ import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.service.WeeklyReportService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,7 @@ public class WeeklyReportController {
                 this.weeklyReportService = weeklyReportService;
         }
 
+        @PreAuthorize("hasAuthority('REPORT_CREATE')")
         @PostMapping
         public ResponseEntity<WeeklyReportResponse> createWeeklyReport(
                         @PathVariable Long projectId,
@@ -45,6 +47,7 @@ public class WeeklyReportController {
                                 .body(createdReport);
         }
 
+        @PreAuthorize("hasAuthority('REPORT_VIEW')")
         @GetMapping
         public ResponseEntity<PagedResponse<WeeklyReportResponse>> getReportsByProject(
                         @PathVariable Long projectId,
@@ -74,6 +77,7 @@ public class WeeklyReportController {
                                                 sort));
         }
 
+        @PreAuthorize("hasAuthority('REPORT_VIEW')")
         @GetMapping("/{weeklyReportId}")
         public ResponseEntity<WeeklyReportResponse> getReportById(
                         @PathVariable Long projectId,

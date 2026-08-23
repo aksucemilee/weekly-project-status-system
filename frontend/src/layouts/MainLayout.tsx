@@ -17,32 +17,45 @@ import {
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 
+import type { PermissionCode } from "../types/auth";
+
+import { useAuth } from "../auth/authContext";
 import { useColorMode } from "../theme/ColorModeProvider";
 import { layoutTokens } from "../theme/layoutTokens";
 
 type NavigationItem = {
   label: string;
   path: string;
+  permission: PermissionCode;
 };
 
+/**
+ * Menude yalnizca kullanicinin yetkili oldugu ekranlar gosterilir.
+ * Gizleme bir guvenlik kontrolu degildir; ayni kural route guard ve
+ * backend tarafinda da uygulanir.
+ */
 const navigationItems: NavigationItem[] = [
   {
     label: "Dashboard",
     path: "/dashboard",
+    permission: "DASHBOARD_VIEW",
   },
   {
     label: "Projeler",
     path: "/projects",
+    permission: "PROJECT_VIEW",
   },
   {
     label: "Raporlar",
     path: "/reports",
+    permission: "REPORT_VIEW",
   },
   {
     label: "Admin",
     path: "/admin",
+    permission: "USER_MANAGE",
   },
 ];
 
@@ -50,6 +63,19 @@ function MainLayout() {
   const theme = useTheme();
   const location = useLocation();
   const { mode, toggleColorMode } = useColorMode();
+  const { user, hasPermission, signOut } = useAuth();
+
+  const navigate = useNavigate();
+
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    hasPermission(item.permission),
+  );
+
+  const handleSignOut = async () => {
+    await signOut();
+
+    navigate("/login", { replace: true });
+  };
 
   const isMobileNavigation = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -218,7 +244,7 @@ function MainLayout() {
                   alignItems: "center",
                 }}
               >
-                {navigationItems.map((navigationItem) => {
+                {visibleNavigationItems.map((navigationItem) => {
                   const isActive = isNavigationItemActive(navigationItem.path);
 
                   return (
@@ -256,14 +282,50 @@ function MainLayout() {
             )}
 
             <Stack
-              spacing={1}
+              useFlexGap
               sx={{
+                // spacing yerine gap: flexDirection sx uzerinden
+                // verildigi icin Stack'in spacing prop'u satir yonunde
+                // bosluk uretmiyor ve ogeler birbirine yapisiyordu.
                 ml: "auto",
                 flexDirection: "row",
                 alignItems: "center",
                 flexShrink: 0,
+                gap: 1,
               }}
             >
+              {user && !isMobileNavigation && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    maxWidth: 220,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {user.email}
+                </Typography>
+              )}
+
+              {/*
+                Tooltip kullanilmiyor: MUI Tooltip cocuk ogeye aria-label
+                ekleyerek erisilebilir adi "Oturumu kapat" yapiyor ve
+                gorunen "Çıkış" metniyle uyusmuyordu. Buton metni zaten
+                acik oldugu icin tooltip gereksiz.
+              */}
+              {user && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => void handleSignOut()}
+                >
+                  Çıkış
+                </Button>
+              )}
+
               {renderThemeButton()}
 
               {isMobileNavigation && (
@@ -356,7 +418,7 @@ function MainLayout() {
         <Divider sx={{ mb: 1.5 }} />
 
         <List disablePadding>
-          {navigationItems.map((navigationItem) => {
+          {visibleNavigationItems.map((navigationItem) => {
             const isActive = isNavigationItemActive(navigationItem.path);
 
             return (

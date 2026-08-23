@@ -6,6 +6,7 @@ import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,6 +24,7 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
+    @PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
     @GetMapping
     public DashboardSummaryResponse getDashboardSummary(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,

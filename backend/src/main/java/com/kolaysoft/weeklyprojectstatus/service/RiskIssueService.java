@@ -106,6 +106,9 @@ public class RiskIssueService {
             Long weeklyReportId,
             Long riskIssueId) {
 
+        // Kapsam kontrolu icin: rapor erisilebilir degilse burada 403 doner.
+        weeklyReportService.getWeeklyReportEntity(weeklyReportId);
+
         return riskIssueRepository
                 .findByIdAndWeeklyReport_Id(
                         riskIssueId,

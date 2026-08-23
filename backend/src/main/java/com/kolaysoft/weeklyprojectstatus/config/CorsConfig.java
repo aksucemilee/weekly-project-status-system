@@ -18,6 +18,10 @@ public class CorsConfig implements WebMvcConfigurer {
                         "PATCH",
                         "DELETE",
                         "OPTIONS")
-                .allowedHeaders("*");
+                .allowedHeaders("*")
+                // Oturum cerezi ve CSRF token'i cross-origin gonderilebilsin
+                // diye gereklidir; kapali oldugunda tarayici cerezi hic
+                // gondermez ve her istek 401 doner.
+                .allowCredentials(true);
     }
 }

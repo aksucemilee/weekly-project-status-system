@@ -32,6 +32,7 @@ import type {
   WorkItemCreateRequest,
   WorkItemStatus,
 } from "../../types/workItem";
+import { useAuth } from "../../auth/authContext";
 import { formatDisplayDate } from "../../utils/dateFormat";
 
 type WorkItemManagerProps = {
@@ -91,6 +92,10 @@ const getStatusColor = (status: WorkItemStatus): WorkItemChipColor => {
 };
 
 function WorkItemManager({ report }: WorkItemManagerProps) {
+  const { hasPermission } = useAuth();
+
+  const canManage = hasPermission("WORKITEM_MANAGE");
+
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
 
   const [workItemForm, setWorkItemForm] =
@@ -449,14 +454,16 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
             )}
           </Stack>
 
-          <Button
-            type="button"
-            variant={isFormOpen ? "outlined" : "contained"}
-            onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
-            aria-expanded={isFormOpen}
-          >
-            {isFormOpen ? "Formu kapat" : "Yeni iş kalemi"}
-          </Button>
+          {canManage && (
+            <Button
+              type="button"
+              variant={isFormOpen ? "outlined" : "contained"}
+              onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
+              aria-expanded={isFormOpen}
+            >
+              {isFormOpen ? "Formu kapat" : "Yeni iş kalemi"}
+            </Button>
+          )}
         </Stack>
 
         {errorMessage && (
@@ -891,25 +898,29 @@ function WorkItemManager({ report }: WorkItemManagerProps) {
                       gap: 0.75,
                     }}
                   >
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleEdit(workItem)}
-                    >
-                      Düzenle
-                    </Button>
+                    {canManage && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleEdit(workItem)}
+                        >
+                          Düzenle
+                        </Button>
 
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      disabled={deletingWorkItemId !== null}
-                      onClick={() => handleOpenDeleteDialog(workItem)}
-                    >
-                      Sil
-                    </Button>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          disabled={deletingWorkItemId !== null}
+                          onClick={() => handleOpenDeleteDialog(workItem)}
+                        >
+                          Sil
+                        </Button>
+                      </>
+                    )}
                   </Stack>
                 </Stack>
               </Paper>
