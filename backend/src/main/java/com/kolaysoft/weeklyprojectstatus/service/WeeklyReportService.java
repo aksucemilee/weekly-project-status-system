@@ -12,6 +12,7 @@ import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportSpecifications;
+import com.kolaysoft.weeklyprojectstatus.security.CurrentUserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,17 +30,22 @@ public class WeeklyReportService {
 
         private final WeeklyReportRepository weeklyReportRepository;
         private final ProjectService projectService;
+        private final CurrentUserService currentUserService;
 
         public WeeklyReportService(
                         WeeklyReportRepository weeklyReportRepository,
-                        ProjectService projectService) {
+                        ProjectService projectService,
+                        CurrentUserService currentUserService) {
                 this.weeklyReportRepository = weeklyReportRepository;
                 this.projectService = projectService;
+                this.currentUserService = currentUserService;
         }
 
         public WeeklyReportResponse createWeeklyReport(
                         Long projectId,
                         WeeklyReportCreateRequest request) {
+                currentUserService.checkProjectAccess(projectId);
+
                 Project project = projectService.getProjectEntity(projectId);
 
                 boolean reportAlreadyExists = weeklyReportRepository
@@ -91,6 +97,8 @@ public class WeeklyReportService {
                         int page,
                         int size,
                         String sort) {
+                currentUserService.checkProjectAccess(projectId);
+
                 projectService.getProjectEntity(projectId);
 
                 Specification<WeeklyReport> specification = Specification
@@ -147,6 +155,8 @@ public class WeeklyReportService {
         public WeeklyReportResponse getReportById(
                         Long projectId,
                         Long weeklyReportId) {
+                currentUserService.checkProjectAccess(projectId);
+
                 WeeklyReport weeklyReport = weeklyReportRepository
                                 .findByIdAndProject_Id(
                                                 weeklyReportId,
@@ -161,13 +171,24 @@ public class WeeklyReportService {
         }
 
         @Transactional(readOnly = true)
+        /**
+         * Rapor kimliginden rapor varligini getirir. WorkItem ve RiskIssue
+         * servisleri de bu metodu kullandigi icin kapsam (sahiplik)
+         * kontrolu burada uygulanir; boylece rapora bagli alt kayitlar
+         * ayri ayri kontrol edilmek zorunda kalmaz.
+         */
         public WeeklyReport getWeeklyReportEntity(
                         Long weeklyReportId) {
-                return weeklyReportRepository
+                WeeklyReport weeklyReport = weeklyReportRepository
                                 .findById(weeklyReportId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Weekly report not found with id: "
                                                                 + weeklyReportId));
+
+                currentUserService.checkProjectAccess(
+                                weeklyReport.getProject().getId());
+
+                return weeklyReport;
         }
 
         private WeeklyReportResponse toResponse(

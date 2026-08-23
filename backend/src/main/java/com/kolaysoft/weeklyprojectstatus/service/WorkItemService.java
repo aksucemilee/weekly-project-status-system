@@ -116,6 +116,9 @@ public class WorkItemService {
             Long weeklyReportId,
             Long workItemId) {
 
+        // Kapsam kontrolu icin: rapor erisilebilir degilse burada 403 doner.
+        weeklyReportService.getWeeklyReportEntity(weeklyReportId);
+
         return workItemRepository
                 .findByIdAndWeeklyReport_Id(
                         workItemId,
