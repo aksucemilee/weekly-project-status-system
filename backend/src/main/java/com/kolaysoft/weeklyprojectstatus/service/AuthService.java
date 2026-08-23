@@ -52,7 +52,8 @@ public class AuthService {
     @Transactional(readOnly = true)
     public CurrentUserResponse login(
             LoginRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         Authentication authentication;
 
         try {
@@ -65,9 +66,15 @@ public class AuthService {
                     "E-posta veya parola hatalı.");
         }
 
-        // Oturum sabitleme (session fixation) saldirisina karsi mevcut
-        // oturum kimligi yenilenir.
-        httpRequest.changeSessionId();
+        // Oturum sabitleme (session fixation) saldirisina karsi, istemcinin
+        // ELINDE ZATEN bir oturum varsa kimligi yenilenir. CSRF token'i
+        // cerez tabanli tutuldugu icin giris aninda cogu zaman henuz oturum
+        // yoktur; changeSessionId() oturumsuz istekte hata firlattigindan
+        // once varlik kontrolu yapilir. Oturum yoksa saveContext zaten
+        // yenisini olusturur.
+        if (httpRequest.getSession(false) != null) {
+            httpRequest.changeSessionId();
+        }
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
@@ -76,7 +83,7 @@ public class AuthService {
         securityContextRepository.saveContext(
                 context,
                 httpRequest,
-                null);
+                httpResponse);
 
         AppUserPrincipal principal =
                 (AppUserPrincipal) authentication.getPrincipal();

@@ -282,12 +282,16 @@ function MainLayout() {
             )}
 
             <Stack
-              spacing={1}
+              useFlexGap
               sx={{
+                // spacing yerine gap: flexDirection sx uzerinden
+                // verildigi icin Stack'in spacing prop'u satir yonunde
+                // bosluk uretmiyor ve ogeler birbirine yapisiyordu.
                 ml: "auto",
                 flexDirection: "row",
                 alignItems: "center",
                 flexShrink: 0,
+                gap: 1,
               }}
             >
               {user && !isMobileNavigation && (
@@ -305,17 +309,21 @@ function MainLayout() {
                 </Typography>
               )}
 
+              {/*
+                Tooltip kullanilmiyor: MUI Tooltip cocuk ogeye aria-label
+                ekleyerek erisilebilir adi "Oturumu kapat" yapiyor ve
+                gorunen "Çıkış" metniyle uyusmuyordu. Buton metni zaten
+                acik oldugu icin tooltip gereksiz.
+              */}
               {user && (
-                <Tooltip title="Oturumu kapat">
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    onClick={() => void handleSignOut()}
-                  >
-                    Çıkış
-                  </Button>
-                </Tooltip>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => void handleSignOut()}
+                >
+                  Çıkış
+                </Button>
               )}
 
               {renderThemeButton()}
