@@ -23,6 +23,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useAuth } from "../auth/authContext";
 import PageHeader from "../components/common/PageHeader";
 import { layoutTokens } from "../theme/layoutTokens";
 import { useNotification } from "../components/feedback/NotificationProvider";
@@ -123,6 +124,10 @@ function ReportsPage() {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const isTabletOrSmaller = useMediaQuery(theme.breakpoints.down("md"));
+
+  const { hasPermission } = useAuth();
+
+  const canCreateReport = hasPermission("REPORT_CREATE");
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -300,14 +305,16 @@ function ReportsPage() {
       <PageHeader
         title="Haftalık raporlar"
         action={
-          <Button
-            variant="contained"
-            onClick={() => setIsReportDialogOpen(true)}
-            disabled={!selectedProject}
-            fullWidth={isSmallScreen}
-          >
-            + Yeni rapor
-          </Button>
+          canCreateReport ? (
+            <Button
+              variant="contained"
+              onClick={() => setIsReportDialogOpen(true)}
+              disabled={!selectedProject}
+              fullWidth={isSmallScreen}
+            >
+              + Yeni rapor
+            </Button>
+          ) : null
         }
       />
 

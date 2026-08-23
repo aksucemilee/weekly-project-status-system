@@ -15,6 +15,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useAuth } from "../auth/authContext";
 import PageHeader from "../components/common/PageHeader";
 import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
 import { useNotification } from "../components/feedback/NotificationProvider";
@@ -29,6 +30,10 @@ function ProjectsPage() {
   const { showNotification } = useNotification();
 
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const { hasPermission } = useAuth();
+
+  const canManageProjects = hasPermission("PROJECT_MANAGE");
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,13 +83,15 @@ function ProjectsPage() {
       <PageHeader
         title="Projeler"
         action={
-          <Button
-            variant="contained"
-            onClick={() => setIsCreateDialogOpen(true)}
-            fullWidth={isSmallScreen}
-          >
-            + Yeni proje
-          </Button>
+          canManageProjects ? (
+            <Button
+              variant="contained"
+              onClick={() => setIsCreateDialogOpen(true)}
+              fullWidth={isSmallScreen}
+            >
+              + Yeni proje
+            </Button>
+          ) : null
         }
       />
 

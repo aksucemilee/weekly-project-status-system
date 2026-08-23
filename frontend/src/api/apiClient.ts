@@ -7,6 +7,15 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 10_000,
+
+  // Oturum cerezinin ve CSRF token cerezinin backend'e gonderilmesi
+  // icin gereklidir; backend farkli bir origin'de calisiyor.
+  withCredentials: true,
+
+  // Backend CSRF token'i XSRF-TOKEN cerezine yaziyor, X-XSRF-TOKEN
+  // basliginda bekliyor.
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
 });
 
 export default apiClient;

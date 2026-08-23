@@ -1,13 +1,53 @@
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router";
+
+import { useAuth } from "../auth/authContext";
+import { getLandingPath } from "../types/auth";
 
 function LoginPage() {
+  const { user, isLoading, signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Oturum acikken giris ekranina gelinirse rolun baslangic ekranina
+  // yonlendirilir.
+  if (!isLoading && user) {
+    return <Navigate to={getLandingPath(user)} replace />;
+  }
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const signedInUser = await signIn(email.trim(), password);
+
+      navigate(getLandingPath(signedInUser), { replace: true });
+    } catch {
+      // Backend hangi alanin yanlis oldugunu bilerek acikliyor degil;
+      // arayuz de ayni sekilde genel bir mesaj gosterir.
+      setErrorMessage("E-posta veya parola hatalı.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Box
       component="main"
@@ -33,7 +73,7 @@ function LoginPage() {
           },
         }}
       >
-        <Stack spacing={3}>
+        <Stack component="form" spacing={3} onSubmit={handleSubmit}>
           <Box>
             <Box
               sx={{
@@ -68,19 +108,46 @@ function LoginPage() {
 
             <Typography color="text.secondary" sx={{ lineHeight: 1.65 }}>
               Haftalık proje durum takip sistemine erişmek için e-posta
-              adresinizi girin.
+              adresinizi ve parolanızı girin.
             </Typography>
           </Box>
+
+          {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
           <TextField
             label="E-posta"
             type="email"
             autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={isSubmitting}
+            required
             fullWidth
           />
 
-          <Button type="button" variant="contained" size="large" fullWidth>
-            Giriş Yap
+          <TextField
+            label="Parola"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={isSubmitting}
+            required
+            fullWidth
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={isSubmitting || !email || !password}
+            fullWidth
+          >
+            {isSubmitting ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Giriş Yap"
+            )}
           </Button>
         </Stack>
       </Paper>

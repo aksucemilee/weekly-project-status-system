@@ -33,6 +33,7 @@ import type {
   RiskIssueType,
 } from "../../types/riskIssue";
 import type { RiskLevel, WeeklyReport } from "../../types/weeklyReport";
+import { useAuth } from "../../auth/authContext";
 import { formatDisplayDate } from "../../utils/dateFormat";
 
 type RiskIssueManagerProps = {
@@ -95,6 +96,10 @@ const riskLevelColors: Record<RiskLevel, ChipColor> = {
 };
 
 function RiskIssueManager({ report }: RiskIssueManagerProps) {
+  const { hasPermission } = useAuth();
+
+  const canManage = hasPermission("RISK_MANAGE");
+
   const [riskIssues, setRiskIssues] = useState<RiskIssue[]>([]);
 
   const [riskIssueForm, setRiskIssueForm] =
@@ -408,14 +413,16 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
             )}
           </Stack>
 
-          <Button
-            type="button"
-            variant={isFormOpen ? "outlined" : "contained"}
-            onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
-            aria-expanded={isFormOpen}
-          >
-            {isFormOpen ? "Formu kapat" : "Yeni risk veya engel"}
-          </Button>
+          {canManage && (
+            <Button
+              type="button"
+              variant={isFormOpen ? "outlined" : "contained"}
+              onClick={isFormOpen ? handleCancelEdit : handleOpenCreateForm}
+              aria-expanded={isFormOpen}
+            >
+              {isFormOpen ? "Formu kapat" : "Yeni risk veya engel"}
+            </Button>
+          )}
         </Stack>
 
         {errorMessage && (
@@ -890,25 +897,29 @@ function RiskIssueManager({ report }: RiskIssueManagerProps) {
                       gap: 0.75,
                     }}
                   >
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleEdit(riskIssue)}
-                    >
-                      Düzenle
-                    </Button>
+                    {canManage && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleEdit(riskIssue)}
+                        >
+                          Düzenle
+                        </Button>
 
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      disabled={deletingRiskIssueId !== null}
-                      onClick={() => handleOpenDeleteDialog(riskIssue)}
-                    >
-                      Sil
-                    </Button>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          disabled={deletingRiskIssueId !== null}
+                          onClick={() => handleOpenDeleteDialog(riskIssue)}
+                        >
+                          Sil
+                        </Button>
+                      </>
+                    )}
                   </Stack>
                 </Stack>
               </Paper>
