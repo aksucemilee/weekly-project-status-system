@@ -35,6 +35,7 @@ Mevcut sürümde aşağıdaki temel akışlar bulunmaktadır:
 - Spring Boot 4.1.0
 - Spring Web MVC
 - Spring Data JPA
+- Spring Security
 - Bean Validation
 - PostgreSQL
 - Swagger / OpenAPI
@@ -155,6 +156,7 @@ DB_URL
 DB_USERNAME
 DB_PASSWORD
 JPA_DDL_AUTO
+SEED_USER_PASSWORD
 ```
 
 Varsayılan değerler:
@@ -166,6 +168,21 @@ JPA_DDL_AUTO=update
 ```
 
 `DB_PASSWORD` için varsayılan bir parola bulunmamaktadır ve yerel ortamda tanımlanması gerekir.
+
+`SEED_USER_PASSWORD`, demo kullanıcılarının parolasını belirler. Bu değişken tanımlı değilse demo kullanıcıları **oluşturulmaz** ve sisteme giriş yapılamaz; uygulama başlangıçta bunu uyarı olarak loglar. Parola kaynak kodda tutulmadığı için yerel ortamda tanımlanması gerekir:
+
+```powershell
+$env:SEED_USER_PASSWORD='YEREL_DEMO_PAROLANIZ'
+```
+
+Tanımlandığında aşağıdaki demo kullanıcıları oluşturulur ve proje yöneticisi ile ekip liderine örnek proje ataması yapılır:
+
+| E-posta | Rol |
+| --- | --- |
+| `pm@demo.local` | Proje Yöneticisi |
+| `cto@demo.local` | CTO |
+| `admin@demo.local` | Admin |
+| `lider@demo.local` | Ekip Lideri |
 
 ### PowerShell
 
@@ -307,17 +324,17 @@ adresinde çalışır.
 
 Uygulamada mevcut temel route yapısı aşağıdaki şekildedir:
 
-| Route        | Açıklama                    |
-| ------------ | --------------------------- |
-| `/login`     | Giriş ekranı                |
-| `/dashboard` | CTO proje durum dashboard'u |
-| `/projects`  | Proje yönetimi              |
-| `/reports`   | Haftalık rapor yönetimi     |
-| `/admin`     | Admin ekranı                |
+| Route        | Açıklama                    | Gerekli yetki     |
+| ------------ | --------------------------- | ----------------- |
+| `/login`     | Giriş ekranı                | -                 |
+| `/dashboard` | CTO proje durum dashboard'u | `DASHBOARD_VIEW`  |
+| `/projects`  | Proje yönetimi              | `PROJECT_VIEW`    |
+| `/reports`   | Haftalık rapor yönetimi     | `REPORT_VIEW`     |
+| `/admin`     | Admin ekranı                | `USER_MANAGE`     |
 
-Ana adres `/` otomatik olarak `/dashboard` sayfasına yönlendirilir.
+Oturum açılmamışsa korumalı route'lar `/login` sayfasına yönlendirir. Oturum var ancak gerekli yetki yoksa yönlendirme yapılmaz, erişim reddi mesajı gösterilir.
 
-> Giriş ekranı ve admin route'u mevcut olmakla birlikte gerçek authentication ve rol bazlı yetkilendirme henüz uygulanmamıştır.
+Ana adres `/` kullanıcının rolüne uygun başlangıç ekranına yönlendirir: CTO için `/dashboard`, admin için `/admin`, proje yöneticisi ve ekip lideri için `/reports`.
 
 ---
 
@@ -332,6 +349,35 @@ Swagger arayüzü mevcut API sözleşmesini incelemek ve test etmek için kullan
 | Metot | Endpoint      | Açıklama                             |
 | ----- | ------------- | ------------------------------------ |
 | `GET` | `/api/health` | Backend servis durumunu kontrol eder |
+
+---
+
+## Auth
+
+| Metot  | Endpoint            | Açıklama                                                | Gerekli yetki |
+| ------ | ------------------- | ------------------------------------------------------- | ------------- |
+| `POST` | `/api/auth/login`   | E-posta ve parola ile giriş yapar, oturum çerezi üretir  | -             |
+| `POST` | `/api/auth/logout`  | Oturumu sonlandırır                                     | Oturum        |
+| `GET`  | `/api/me`           | Giriş yapan kullanıcının kimlik, rol ve yetki listesi    | Oturum        |
+
+Hatalı girişte hangi alanın yanlış olduğu açıklanmaz; kullanıcının bulunamaması, parolanın yanlış olması ve kullanıcının pasif olması aynı genel mesajla `401` döner.
+
+Oturum sunucu tarafında tutulur ve `HttpOnly` çerez ile taşınır. Çerez tabanlı oturum kullanıldığı için CSRF koruması açıktır: `POST`, `PUT` ve `DELETE` istekleri `X-XSRF-TOKEN` başlığı bekler. Token, herhangi bir `GET` isteğinden sonra `XSRF-TOKEN` çerezine yazılır.
+
+---
+
+## Admin
+
+| Metot  | Endpoint                             | Açıklama                          | Gerekli yetki       |
+| ------ | ------------------------------------ | --------------------------------- | ------------------- |
+| `POST` | `/api/admin/users`                   | Kullanıcı oluşturur               | `USER_MANAGE`       |
+| `GET`  | `/api/admin/users`                   | Kullanıcıları listeler            | `USER_MANAGE`       |
+| `PUT`  | `/api/admin/users/{userId}`          | Kullanıcı ve aktiflik bilgilerini günceller | `USER_MANAGE` |
+| `POST` | `/api/admin/assignments`             | Kullanıcıyı projeye atar          | `ASSIGNMENT_MANAGE` |
+| `GET`  | `/api/admin/assignments?userId=`     | Kullanıcının atamalarını listeler | `ASSIGNMENT_MANAGE` |
+| `PUT`  | `/api/admin/assignments/{id}`        | Atamayı günceller veya pasife alır | `ASSIGNMENT_MANAGE` |
+
+Parola veya parola hash'i hiçbir yanıtta dönmez. Aynı kullanıcı-proje ikilisi için ikinci bir aktif atama `409 Conflict` ile engellenir.
 
 ---
 
@@ -585,6 +631,8 @@ Temel olarak aşağıdaki HTTP hata durumları yönetilmektedir:
 
 ```text
 400 Bad Request         - validasyon hatası, geçersiz JSON, geçersiz path/query değeri
+401 Unauthorized          - oturum yok, süresi dolmuş veya giriş bilgileri hatalı
+403 Forbidden             - oturum var ancak işlem için yetki yok ya da kayıt kullanıcının kapsamı dışında
 404 Not Found            - kayıt bulunamadı, bilinmeyen endpoint
 405 Method Not Allowed    - endpoint var ama desteklenmeyen HTTP metodu kullanıldı
 409 Conflict              - aynı proje ve haftaya ait tekrar rapor oluşturma, veri çakışması
@@ -710,7 +758,7 @@ Negatif ve validasyon testlerinde ayrıca aşağıdaki durumlar kontrol edilmiş
 - Loading, empty ve error ekran durumları
 - Dashboard filtrelerinin beklenen sonucu vermesi
 
-Rol bazlı test senaryoları authentication ve RBAC henüz uygulanmadığı için mevcut sürümde kapsam dışındadır.
+Rol bazlı yetkilendirme senaryoları da test edilmektedir: yetkisiz endpoint erişimi (`403`), oturumsuz erişim (`401`), kullanıcının atanmadığı projeye erişimi (`403`), rol bazlı başlangıç ekranı yönlendirmesi ve arayüzde aksiyon görünürlüğü. Ayrıntılı yetki matrisi ve senaryo listesi için [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md) dosyasına bakınız.
 
 ---
 
@@ -788,6 +836,11 @@ Tamamlanan ana teknik parçalar:
 - Proje (Project) alan validasyonları (ad ve müşteri adı zorunluluğu, uzunluk sınırı)
 - Dashboard takvim durumu (gecikme) filtresi
 - Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu), Specification tabanlı dinamik sorgu, sayfalama ve sıralama
+- Kullanıcı, rol, yetki ve proje atama veri modeli
+- Oturum tabanlı kimlik doğrulama (BCrypt parola hash'i, CSRF koruması)
+- Yetki bazlı erişim kontrolü (rol adına değil yetkiye dayanan kontroller)
+- Proje sahipliği kontrolü (kullanıcı yalnızca atandığı projelerde işlem yapabilir)
+- Rol bazlı arayüz: route koruması, menü ve aksiyon görünürlüğü
 
 ---
 
@@ -795,15 +848,13 @@ Tamamlanan ana teknik parçalar:
 
 Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
-- Gerçek kullanıcı authentication yapısı uygulanmamıştır. Kullanıcı, rol ve yetkilendirme için gerekli veri modeli (`User`, `Role` gibi varlıklar) backend'de henüz bulunmamaktadır.
-- Rol bazlı yetkilendirme (RBAC) uygulanmamıştır. Giriş, oturum ve admin işlemleri için API endpointleri henüz geliştirilmemiştir.
-- Proje yöneticisi, CTO ve admin rollerine göre erişim sınırları henüz bulunmamaktadır.
-- `401 Unauthorized` ve `403 Forbidden` senaryoları authentication/RBAC aşamasında tamamlanacaktır.
-- Login ekranı mevcut olsa da yalnızca görsel bir taslaktır; herhangi bir API çağrısı veya oturum yönetimine bağlı değildir.
-- Admin ekranı mevcut olsa da rol bazlı yönetim özellikleri henüz tamamlanmamıştır.
+- Admin ekranı henüz backend'deki kullanıcı ve proje atama endpointlerine bağlanmamıştır; bu endpointler mevcut ve test edilmiş durumdadır, arayüz bağlantısı sonraki adımdadır.
+- Parola sıfırlama, parola değiştirme ve kullanıcı silme akışları bulunmamaktadır.
+- Kullanıcıya rolünün dışında doğrudan ek yetki verme (`User.additionalPermissions`) veri modelinde desteklenmekte, ancak bunu yöneten bir arayüz bulunmamaktadır.
+- Yetki demetleri (hangi rolün hangi yetkilere sahip olduğu) uygulama açılışında sabit seed verisi olarak yüklenir; çalışma zamanında arayüzden yönetilemez.
 - Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
 - WeeklyReport API üzerinde güncelleme ve silme endpointleri mevcut değildir.
-- Dashboard ve rapor listesinde "sorumlu" filtresi yoktur; proje sorumlusu kavramı kullanıcı/yetkilendirme veri modeline bağlıdır ve bu model henüz kurulmamıştır.
+- Dashboard ve rapor listesinde "sorumlu" filtresi henüz yoktur. Gerekli `ProjectAssignment` veri modeli artık mevcuttur; filtre parametresinin eklenmesi sonraki adımdadır.
 - Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
 - Otomatik backend test kapsamı genişletilecektir.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.

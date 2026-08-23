@@ -2,7 +2,7 @@
 
 Bu doküman, 25-28. gün (T14: Rol bazlı yetki) kapsamında uygulanacak yetkilendirme kurallarını tanımlar. Hem API (endpoint) hem arayüz (ekran/aksiyon) seviyesini kapsar; her kuralın karşısında beklenen yetkisiz davranış da yazılıdır, bu sayede 28. günün test listesi doğrudan bu dokümandan çıkar.
 
-Doküman yazıldığı sırada projede henüz authentication/authorization bulunmuyordu; aşağıdaki kurallar uygulanacak hedef durumu tanımlar.
+> **Durum:** Bu matris 25. günde tanımlanmış, 26-27. günlerde uygulanmış ve 28. günde test edilmiştir. Aşağıdaki kurallar artık uygulanmış durumdadır; test sonuçları bölüm 10'un sonundadır.
 
 ---
 
@@ -307,9 +307,31 @@ Aşağıdaki senaryolar yukarıdaki matristen türetilmiştir. 28. günde hem AP
 
 ## 11. Günlere Dağılım
 
-| Gün | İş |
-| --- | --- |
-| 25 | Bu doküman: yetki matrisi, API/UI kuralları, veri modeli ve auth kararı |
-| 26 | `User`/`Role`/`Permission`/`ProjectAssignment` modeli, Spring Security kurulumu, yetki kontrolleri |
-| 27 | Proje sahipliği (kapsam) kontrolleri, 401/403 davranışları, arayüz route guard ve aksiyon görünürlüğü |
-| 28 | Bölüm 10'daki senaryoların uçtan uca çalıştırılması, bulunan hataların düzeltilip tekrar test edilmesi |
+| Gün | İş | Durum |
+| --- | --- | --- |
+| 25 | Bu doküman: yetki matrisi, API/UI kuralları, veri modeli ve auth kararı | Tamamlandı |
+| 26 | `User`/`Role`/`Permission`/`ProjectAssignment` modeli, Spring Security kurulumu, yetki kontrolleri | Tamamlandı |
+| 27 | Proje sahipliği (kapsam) kontrolleri, 401/403 davranışları, arayüz route guard ve aksiyon görünürlüğü | Tamamlandı |
+| 28 | Bölüm 10'daki senaryoların uçtan uca çalıştırılması, bulunan hataların düzeltilip tekrar test edilmesi | Tamamlandı |
+
+## 12. Uygulama Sonucu ve Test Kayıtları
+
+### Test sonucu
+
+28. günde 39 senaryo çalıştırıldı: **24 API senaryosu** (curl, oturum çerezi ve CSRF token'ı ile) ve **15 tarayıcı senaryosu** (Playwright, dört rol için ayrı oturumlarla). Düzeltmeler sonrası tamamı geçti; tarayıcı konsolunda uygulama kaynaklı hata yok (görülen `401` kayıtları, giriş öncesi `/api/me` çağrısının beklenen yanıtıdır).
+
+### Testte bulunan ve düzeltilen hatalar
+
+| # | Bulgu | Kök neden | Düzeltme |
+| --- | --- | --- | --- |
+| 1 | Giriş `500` dönüyordu | `changeSessionId()` koşulsuz çağrılıyordu; CSRF token'ı çerez tabanlı olduğu için giriş anında henüz oturum yok ve Tomcat oturumsuz istekte hata fırlatıyor | Oturum varlık kontrolü eklendi; oturum yoksa `saveContext` yenisini oluşturuyor |
+| 2 | Hata sunucuda hiç loglanmıyordu | Genel `Exception` fallback'i hatayı yutup `500` dönüyordu | Fallback'e `log.error` eklendi; istemciye hâlâ teknik detay verilmiyor |
+| 3 | Tarayıcıdan giriş `403` dönüyordu (API'den çalışırken) | Axios'un yerleşik XSRF desteği yalnızca same-origin isteklerde çalışıyor; `:5173 → :8080` cross-origin olduğu için `X-XSRF-TOKEN` başlığı eklenmiyordu | Token'ı çerezden okuyup başlığa yazan request interceptor eklendi |
+| 4 | Çıkış butonunun erişilebilir adı görünen metniyle uyuşmuyordu | MUI `Tooltip` çocuk ögeye `aria-label` ekliyor (WCAG "Label in Name") | Tooltip kaldırıldı; buton metni zaten açık |
+| 5 | Başlıktaki e-posta ve çıkış butonu birbirine yapışıktı | `Stack`'in `spacing` prop'u, `flexDirection` `sx` üzerinden verildiği için satır yönünde boşluk üretmiyordu | `gap` kullanıldı |
+
+### Matristen sapmalar
+
+Uygulama sırasında matristen bilinçli olarak sapılan tek nokta, tüm projelere erişim yetkisinin belirlenme biçimidir. Matris bunu rol bazında tanımlıyordu (CTO ve Admin sınırsız). Uygulamada bu, rol adına değil **yetkiye** bağlandı: `DASHBOARD_VIEW` veya `ASSIGNMENT_MANAGE` yetkisine sahip kullanıcı kapsam kısıtına tabi değildir. Sonuç aynı, ancak bu sayede rol adı kodda hiçbir yerde geçmiyor ve dokümanın 1. bölümündeki ilke tutarlı kalıyor.
+
+Bunun dışında tüm kurallar matriste yazıldığı gibi uygulanmıştır.
