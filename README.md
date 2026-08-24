@@ -157,6 +157,7 @@ DB_USERNAME
 DB_PASSWORD
 JPA_DDL_AUTO
 SEED_USER_PASSWORD
+SEED_DEMO_DATA
 ```
 
 Varsayılan değerler:
@@ -183,6 +184,31 @@ Tanımlandığında aşağıdaki demo kullanıcıları oluşturulur ve proje yö
 | `cto@demo.local` | CTO |
 | `admin@demo.local` | Admin |
 | `lider@demo.local` | Ekip Lideri |
+
+### Demo / Sunum Verisi
+
+`SEED_DEMO_DATA=true` tanımlandığında uygulama açılışta örnek proje, haftalık rapor, iş kalemi, risk/engel ve proje ataması kayıtları oluşturur:
+
+```powershell
+$env:SEED_DEMO_DATA='true'
+```
+
+Veri seti, geliştirilen özelliklerin demo sırasında görünür olması için tasarlanmıştır:
+
+| Özellik | Demo verisindeki karşılığı |
+| --- | --- |
+| Rapor listesi sayfalaması | `e-Fatura Entegrasyon Modülü` projesinde 12 haftalık rapor bulunur; sayfa boyutu 10 olduğu için liste 2 sayfaya bölünür |
+| Dashboard sayaçları | 6 aktif proje; 2 yüksek riskli, 2 geciken ve 1 bloke proje |
+| Dashboard ve rapor filtreleri | Altı farklı genel durum (`PLANNED`, `IN_PROGRESS`, `IN_TEST`, `COMPLETED`, `DELAYED`, `AT_RISK`, `BLOCKED`), üç risk seviyesi ve iki takvim durumu |
+| Aktif iş sayacı | `IN_PROGRESS`, `IN_TEST` ve `BLOCKED` durumunda iş kalemleri |
+| Rol bazlı kapsam | Proje yöneticisi 3, ekip lideri 2, CTO ise 6 projenin tamamını görür |
+| Boş durum davranışı | Tamamlanmış proje güncel hafta için rapor içermez; dashboard bunu "rapor bekleniyor" olarak gösterir |
+
+Rapor haftaları uygulamanın çalıştırıldığı tarihe göre hesaplanır; bu nedenle veri ne zaman yüklenirse yüklensin en güncel raporlar dashboard'un varsayılan "güncel hafta" filtresine düşer.
+
+Seeder **idempotent**tir: veritabanında zaten proje kaydı varsa hiçbir şey oluşturmaz, dolayısıyla uygulama her açıldığında veri çoğalmaz. Demo verisini sıfırlamak için ilgili tablolar temizlenip uygulama yeniden başlatılmalıdır.
+
+Kullanılan müşteri adları gerçek müşteri verisi değildir; tamamı demo amaçlı üretilmiştir.
 
 ### PowerShell
 
