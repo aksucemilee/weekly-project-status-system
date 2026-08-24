@@ -837,6 +837,7 @@ Tamamlanan ana teknik parçalar:
 - Dashboard takvim durumu (gecikme) filtresi
 - Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu), Specification tabanlı dinamik sorgu, sayfalama ve sıralama
 - Kullanıcı, rol, yetki ve proje atama veri modeli
+- Admin ekranı: kullanıcı oluşturma/düzenleme ve proje ataması yönetimi
 - Oturum tabanlı kimlik doğrulama (BCrypt parola hash'i, CSRF koruması)
 - Yetki bazlı erişim kontrolü (rol adına değil yetkiye dayanan kontroller)
 - Proje sahipliği kontrolü (kullanıcı yalnızca atandığı projelerde işlem yapabilir)
@@ -848,8 +849,8 @@ Tamamlanan ana teknik parçalar:
 
 Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
-- Admin ekranı henüz backend'deki kullanıcı ve proje atama endpointlerine bağlanmamıştır; bu endpointler mevcut ve test edilmiş durumdadır, arayüz bağlantısı sonraki adımdadır.
-- Parola sıfırlama, parola değiştirme ve kullanıcı silme akışları bulunmamaktadır.
+- Kullanıcı silme işlemi bulunmamaktadır; erişim, silme yerine kullanıcı pasife alınarak kapatılır. Böylece geçmiş kayıtlardaki kullanıcı izleri korunur.
+- Parola sıfırlama ve parola değiştirme akışları bulunmamaktadır; parola yalnızca kullanıcı oluşturulurken belirlenir.
 - Kullanıcıya rolünün dışında doğrudan ek yetki verme (`User.additionalPermissions`) veri modelinde desteklenmekte, ancak bunu yöneten bir arayüz bulunmamaktadır.
 - Yetki demetleri (hangi rolün hangi yetkilere sahip olduğu) uygulama açılışında sabit seed verisi olarak yüklenir; çalışma zamanında arayüzden yönetilemez.
 - Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
