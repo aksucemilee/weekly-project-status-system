@@ -1,119 +1,353 @@
-import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useEffect, useRef, useState } from "react";
 
+import AssignmentManager from "../components/admin/AssignmentManager";
+import UserFormDialog from "../components/admin/UserFormDialog";
 import PageHeader from "../components/common/PageHeader";
 import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
 import EmptyState from "../components/feedback/EmptyState";
+import { useNotification } from "../components/feedback/NotificationProvider";
+import { getUsers } from "../services/adminService";
 import { layoutTokens } from "../theme/layoutTokens";
-
-type PlannedAdminModule = {
-  title: string;
-  description: string;
-};
-
-const plannedAdminModules: PlannedAdminModule[] = [
-  {
-    title: "Kullanıcı Yönetimi",
-    description:
-      "Kullanıcı oluşturma, kullanıcı bilgilerini görüntüleme ve aktiflik durumunu yönetme işlemleri.",
-  },
-  {
-    title: "Rol Yönetimi",
-    description:
-      "Admin, proje yöneticisi ve CTO rollerinin tanımlanması ve kullanıcılara atanması.",
-  },
-  {
-    title: "Proje Atamaları",
-    description:
-      "Projelerin sorumlu proje yöneticileriyle eşleştirilmesi ve atamaların takip edilmesi.",
-  },
-];
+import type { AdminUser } from "../types/admin";
+import { roleLabels } from "../types/admin";
 
 function AdminPage() {
+  const theme = useTheme();
+  const { showNotification } = useNotification();
+
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+
+  const assignmentSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const userList = await getUsers();
+
+        if (!cancelled) {
+          setUsers(userList);
+
+          // Secili kullanici guncellendiyse karti tazele.
+          setSelectedUser((current) =>
+            current
+              ? userList.find((user) => user.id === current.id) ?? null
+              : null,
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setErrorMessage("Kullanıcılar yüklenirken bir hata oluştu.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
+
+  const handleOpenCreate = () => {
+    setEditingUser(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEdit = (user: AdminUser) => {
+    setEditingUser(user);
+    setIsDialogOpen(true);
+  };
+
+  const handleSaved = (user: AdminUser, isNew: boolean) => {
+    setIsDialogOpen(false);
+    setEditingUser(null);
+    setReloadToken((token) => token + 1);
+
+    showNotification(
+      isNew
+        ? "Kullanıcı başarıyla oluşturuldu."
+        : "Kullanıcı bilgileri güncellendi.",
+    );
+
+    if (isNew) {
+      setSelectedUser(user);
+    }
+  };
+
+  const handleManageAssignments = (user: AdminUser) => {
+    if (selectedUser?.id === user.id) {
+      setSelectedUser(null);
+      return;
+    }
+
+    setSelectedUser(user);
+
+    window.setTimeout(() => {
+      assignmentSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
   return (
     <Box>
       <PageHeader
         title="Admin Yönetimi"
-        description="Kullanıcı, rol ve proje atama işlemlerinin yönetileceği merkezi alan."
+        description="Kullanıcı tanımlama ve proje atama işlemleri."
+        action={
+          <Button
+            variant="contained"
+            onClick={handleOpenCreate}
+            fullWidth={isSmallScreen}
+          >
+            + Yeni kullanıcı
+          </Button>
+        }
       />
 
-      <EmptyState
-        label="Geliştirme planında"
-        title="Admin özellikleri hazırlanıyor"
-        description="Admin modülü sonraki geliştirme aşamalarında kullanıcı, rol ve proje atama işlevleriyle tamamlanacaktır."
-      />
-
-      <Box
-        component="section"
-        aria-labelledby="planned-admin-modules-title"
-        sx={{
-          mt: layoutTokens.spacing.section,
-        }}
-      >
-        <Typography
-          id="planned-admin-modules-title"
-          variant="overline"
-          color="text.secondary"
+      {isLoading && (
+        <Paper
           sx={{
-            display: "block",
-            mb: 0.5,
-            fontWeight: 800,
+            minHeight: 220,
+            display: "grid",
+            placeItems: "center",
+            p: 3,
           }}
         >
-          Planlanan Modüller
-        </Typography>
+          <Stack spacing={2} sx={{ alignItems: "center" }}>
+            <CircularProgress size={30} />
 
-        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
-          Admin kapsamı
-        </Typography>
+            <Typography color="text.secondary">
+              Kullanıcılar yükleniyor...
+            </Typography>
+          </Stack>
+        </Paper>
+      )}
 
-        <ResponsiveCardGrid variant="compact">
-          {plannedAdminModules.map((module) => (
-            <Paper
-              key={module.title}
+      {!isLoading && errorMessage && (
+        <Paper sx={{ p: 3 }}>
+          <Alert
+            severity="error"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => setReloadToken((token) => token + 1)}
+              >
+                Tekrar dene
+              </Button>
+            }
+          >
+            {errorMessage}
+          </Alert>
+        </Paper>
+      )}
+
+      {!isLoading && !errorMessage && users.length === 0 && (
+        <EmptyState
+          label="Kullanıcı yok"
+          title="Henüz kullanıcı tanımlanmamış"
+          description="Sisteme giriş yapabilecek kullanıcıları buradan tanımlayabilirsiniz."
+        />
+      )}
+
+      {!isLoading && !errorMessage && users.length > 0 && (
+        <Stack sx={{ gap: layoutTokens.spacing.section }}>
+          <Box component="section">
+            <Box
               sx={{
-                height: "100%",
-                p: {
-                  xs: 2.25,
-                  md: 2.75,
-                },
-                boxShadow: "none",
-                transition:
-                  "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
-
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  borderColor: "primary.main",
-                  boxShadow: 4,
-                },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1.5,
+                mb: 1.5,
               }}
             >
-              <Stack spacing={1.75}>
-                <Chip
-                  label="Planlandı"
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    alignSelf: "flex-start",
-                  }}
-                />
+              <Typography variant="h6" component="h2">
+                Kullanıcılar
+              </Typography>
 
-                <Typography variant="h6" component="h3">
-                  {module.title}
-                </Typography>
+              <Chip
+                label={`${users.length} kullanıcı`}
+                color="primary"
+                variant="outlined"
+                size="small"
+              />
+            </Box>
 
-                <Typography
-                  color="text.secondary"
-                  sx={{
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {module.description}
-                </Typography>
-              </Stack>
-            </Paper>
-          ))}
-        </ResponsiveCardGrid>
-      </Box>
+            <ResponsiveCardGrid variant="standard">
+              {users.map((user) => {
+                const isSelected = selectedUser?.id === user.id;
+
+                return (
+                  <Paper
+                    key={user.id}
+                    component="article"
+                    variant="outlined"
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      minWidth: 0,
+                      p: {
+                        xs: 1.75,
+                        md: 2,
+                      },
+                      borderColor: isSelected ? "primary.main" : "divider",
+                      backgroundColor: isSelected
+                        ? "action.selected"
+                        : "background.paper",
+                      transition:
+                        "border-color 160ms ease, background-color 160ms ease",
+
+                      "&:hover": {
+                        borderColor: "primary.main",
+                      },
+                    }}
+                  >
+                    <Stack spacing={1.5} sx={{ height: "100%" }}>
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          component="h3"
+                          sx={{
+                            fontWeight: 800,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {user.firstName} {user.lastName}
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ overflowWrap: "anywhere" }}
+                        >
+                          {user.email}
+                        </Typography>
+                      </Box>
+
+                      <Stack
+                        direction="row"
+                        useFlexGap
+                        sx={{
+                          flexWrap: "wrap",
+                          gap: 0.75,
+                        }}
+                      >
+                        <Chip
+                          label={roleLabels[user.role]}
+                          color="primary"
+                          size="small"
+                          variant="outlined"
+                        />
+
+                        <Chip
+                          label={user.active ? "Aktif" : "Pasif"}
+                          color={user.active ? "success" : "default"}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Stack>
+
+                      <Box sx={{ flexGrow: 1 }} />
+
+                      <Stack
+                        direction="row"
+                        useFlexGap
+                        sx={{
+                          flexWrap: "wrap",
+                          gap: 0.75,
+                        }}
+                      >
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleOpenEdit(user)}
+                        >
+                          Düzenle
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant={isSelected ? "contained" : "outlined"}
+                          size="small"
+                          onClick={() => handleManageAssignments(user)}
+                        >
+                          {isSelected ? "Atamaları kapat" : "Atamalar"}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                );
+              })}
+            </ResponsiveCardGrid>
+          </Box>
+
+          {selectedUser && (
+            <Box
+              ref={assignmentSectionRef}
+              sx={{
+                scrollMarginTop: 88,
+              }}
+            >
+              <AssignmentManager
+                key={`assignments-${selectedUser.id}`}
+                user={selectedUser}
+                onNotify={showNotification}
+              />
+            </Box>
+          )}
+        </Stack>
+      )}
+
+      {/*
+        Dialog yalnizca acikken mount ediliyor: boylece form durumu her
+        acilista sifirdan kurulur ve UserFormDialog icinde sifirlama
+        amacli bir useEffect tutmaya gerek kalmaz.
+      */}
+      {isDialogOpen && (
+        <UserFormDialog
+          key={editingUser?.id ?? "new"}
+          open
+          user={editingUser}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setEditingUser(null);
+          }}
+          onSaved={handleSaved}
+        />
+      )}
     </Box>
   );
 }

@@ -198,6 +198,7 @@ Kapsam sütunu: **Atanmış** = yalnızca kullanıcının atandığı projeler, 
 | Haftalık rapor güncelleme/silme | Projede bu endpointler **hiç yok**. T14 yetkilendirmeye odaklandığı için yeni CRUD endpoint'i eklenmez. Bu, Ön Analiz'deki 3. açık soruyu (*geçmiş raporlar düzenlenebilir mi*) T14 kapsamında açık bırakır. |
 | Proje güncelleme/silme | Aynı şekilde endpoint yok, T14'te eklenmez. |
 | Yetki demetlerinin arayüzden yönetimi | Seed verisi olarak sabittir (bkz. bölüm 3). |
+| Kullanıcı silme | Uygulanmadı. Erişim, silme yerine kullanıcının pasife alınmasıyla kapatılır; böylece geçmiş raporlardaki `oluşturan kullanıcı` izleri korunur. |
 
 ---
 
@@ -319,6 +320,8 @@ Aşağıdaki senaryolar yukarıdaki matristen türetilmiştir. 28. günde hem AP
 ### Test sonucu
 
 28. günde 39 senaryo çalıştırıldı: **24 API senaryosu** (curl, oturum çerezi ve CSRF token'ı ile) ve **15 tarayıcı senaryosu** (Playwright, dört rol için ayrı oturumlarla). Düzeltmeler sonrası tamamı geçti; tarayıcı konsolunda uygulama kaynaklı hata yok (görülen `401` kayıtları, giriş öncesi `/api/me` çağrısının beklenen yanıtıdır).
+
+Admin ekranı arayüze bağlandıktan sonra **14 senaryoluk ek bir tarayıcı turu** daha çalıştırıldı: kullanıcı listeleme, kullanıcı oluşturma, tekrarlı e-posta çakışması (`409` mesajının arayüzde gösterilmesi), atama panelinin açılması, boş durum, atama oluşturma, atamayı pasife alma, düzenlemede e-posta alanının kilitli olması, kullanıcıyı pasife alma, yetkisiz rolün `/admin` erişimi ve **pasife alınan kullanıcının giriş yapamaması**. Tamamı geçti.
 
 ### Testte bulunan ve düzeltilen hatalar
 
