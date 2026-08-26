@@ -2,6 +2,7 @@ package com.kolaysoft.weeklyprojectstatus.controller;
 
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectResponse;
+import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.service.ProjectService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,6 +56,17 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(
                 projectService.getProjectById(projectId)
+        );
+    }
+
+    @PreAuthorize("hasAuthority('PROJECT_MANAGE')")
+    @PutMapping("/{projectId}")
+    public ResponseEntity<ProjectResponse> updateProject(
+            @PathVariable Long projectId,
+            @Valid @RequestBody ProjectUpdateRequest request
+    ) {
+        return ResponseEntity.ok(
+                projectService.updateProject(projectId, request)
         );
     }
 }

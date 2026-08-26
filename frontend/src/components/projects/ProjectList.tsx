@@ -1,4 +1,4 @@
-import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 
 import type { Project } from "../../types/project";
 import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
@@ -11,9 +11,11 @@ import {
 
 type ProjectListProps = {
   projects: Project[];
+  /** Yalnizca PROJECT_MANAGE yetkisi olan kullaniciya verilir. */
+  onEditProject?: (project: Project) => void;
 };
 
-function ProjectList({ projects }: ProjectListProps) {
+function ProjectList({ projects, onEditProject }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <EmptyState
@@ -109,15 +111,25 @@ function ProjectList({ projects }: ProjectListProps) {
                   </Typography>
                 </Box>
 
-                <Chip
-                  label={projectStatusLabels[project.status]}
-                  color={projectStatusColors[project.status]}
-                  size="small"
-                  variant="outlined"
+                <Stack
+                  useFlexGap
                   sx={{
+                    alignItems: "flex-end",
                     flexShrink: 0,
+                    gap: 0.5,
                   }}
-                />
+                >
+                  <Chip
+                    label={projectStatusLabels[project.status]}
+                    color={projectStatusColors[project.status]}
+                    size="small"
+                    variant="outlined"
+                  />
+
+                  {!project.active && (
+                    <Chip label="Pasif" size="small" variant="outlined" />
+                  )}
+                </Stack>
               </Stack>
 
               <Typography
@@ -147,6 +159,18 @@ function ProjectList({ projects }: ProjectListProps) {
                 {project.description?.trim() ||
                   "Bu proje için açıklama girilmemiş."}
               </Typography>
+
+              {onEditProject && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => onEditProject(project)}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  Düzenle
+                </Button>
+              )}
             </Stack>
           </Paper>
         ))}

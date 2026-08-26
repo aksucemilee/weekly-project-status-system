@@ -40,6 +40,11 @@ function ProjectsPage() {
   const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
+  // null => olusturma modu, dolu => o projenin duzenleme modu.
+  const [projectBeingEdited, setProjectBeingEdited] = useState<Project | null>(
+    null,
+  );
+
   const loadProjects = useCallback(async () => {
     setIsLoading(true);
     setLoadErrorMessage("");
@@ -71,11 +76,42 @@ function ProjectsPage() {
     [projects],
   );
 
-  const handleProjectCreated = (createdProject: Project) => {
-    setProjects((previousProjects) => [createdProject, ...previousProjects]);
+  const handleOpenCreateDialog = () => {
+    setProjectBeingEdited(null);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleOpenEditDialog = (project: Project) => {
+    setProjectBeingEdited(project);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsCreateDialogOpen(false);
+    setProjectBeingEdited(null);
+  };
+
+  const handleProjectSaved = (savedProject: Project) => {
+    const wasEditing = projectBeingEdited !== null;
+
+    if (wasEditing) {
+      setProjects((previousProjects) =>
+        previousProjects.map((project) =>
+          project.id === savedProject.id ? savedProject : project,
+        ),
+      );
+    } else {
+      setProjects((previousProjects) => [savedProject, ...previousProjects]);
+    }
 
     setIsCreateDialogOpen(false);
-    showNotification("Proje başarıyla oluşturuldu.");
+    setProjectBeingEdited(null);
+
+    showNotification(
+      wasEditing
+        ? "Proje başarıyla güncellendi."
+        : "Proje başarıyla oluşturuldu.",
+    );
   };
 
   return (
@@ -86,7 +122,7 @@ function ProjectsPage() {
           canManageProjects ? (
             <Button
               variant="contained"
-              onClick={() => setIsCreateDialogOpen(true)}
+              onClick={handleOpenCreateDialog}
               fullWidth={isSmallScreen}
             >
               + Yeni proje
@@ -276,13 +312,18 @@ function ProjectsPage() {
             </Paper>
           </ResponsiveCardGrid>
 
-          <ProjectList projects={projects} />
+          <ProjectList
+            projects={projects}
+            onEditProject={
+              canManageProjects ? handleOpenEditDialog : undefined
+            }
+          />
         </Stack>
       )}
 
       <Dialog
         open={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        onClose={handleCloseDialog}
         fullWidth
         maxWidth={layoutTokens.dialog.formMaxWidth}
         fullScreen={isSmallScreen}
@@ -296,13 +337,13 @@ function ProjectsPage() {
           }}
         >
           <Typography variant="h6" component="span">
-            Yeni proje
+            {projectBeingEdited ? "Projeyi düzenle" : "Yeni proje"}
           </Typography>
 
           <IconButton
             type="button"
             aria-label="Proje formunu kapat"
-            onClick={() => setIsCreateDialogOpen(false)}
+            onClick={handleCloseDialog}
             sx={{ flexShrink: 0 }}
           >
             <Typography
@@ -320,8 +361,11 @@ function ProjectsPage() {
 
         <DialogContent dividers>
           <ProjectCreateForm
-            onProjectCreated={handleProjectCreated}
-            onCancel={() => setIsCreateDialogOpen(false)}
+            // Duzenlenen proje degistiginde form durumu bastan kurulur.
+            key={projectBeingEdited?.id ?? "create"}
+            project={projectBeingEdited}
+            onProjectSaved={handleProjectSaved}
+            onCancel={handleCloseDialog}
           />
         </DialogContent>
       </Dialog>

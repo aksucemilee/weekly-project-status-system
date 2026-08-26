@@ -3,6 +3,7 @@ package com.kolaysoft.weeklyprojectstatus.service;
 import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectResponse;
+import com.kolaysoft.weeklyprojectstatus.model.dto.project.ProjectUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ProjectStatus;
 import com.kolaysoft.weeklyprojectstatus.repository.ProjectRepository;
@@ -45,6 +46,30 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
 
         return toResponse(savedProject);
+    }
+
+    /**
+     * Proje temel bilgilerini gunceller (On Analiz 12.2).
+     *
+     * Durum ve aktiflik yalnizca olusturmada belirlenebildigi surece bir
+     * proje tamamlandi/bloke olarak isaretlenemiyor ve portfoyden
+     * cikarilamiyordu; dashboard "bloke proje" sayaci ile aktif proje
+     * listesi bu iki alana dayandigi icin guncelleme bu akisi tamamlar.
+     */
+    public ProjectResponse updateProject(
+            Long projectId,
+            ProjectUpdateRequest request) {
+        Project project = getProjectEntity(projectId);
+
+        project.setName(request.getName());
+        project.setCustomerName(request.getCustomerName());
+        project.setDescription(request.getDescription());
+        project.setStartDate(request.getStartDate());
+        project.setTargetEndDate(request.getTargetEndDate());
+        project.setStatus(request.getStatus());
+        project.setActive(request.getActive());
+
+        return toResponse(projectRepository.save(project));
     }
 
     /**
