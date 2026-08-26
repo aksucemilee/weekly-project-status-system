@@ -46,3 +46,5 @@ export type WeeklyReportCreateRequest = {
   blockers: string;
   generalNote: string;
 };
+
+export type WeeklyReportUpdateRequest = WeeklyReportCreateRequest;

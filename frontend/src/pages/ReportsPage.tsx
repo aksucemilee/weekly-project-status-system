@@ -105,6 +105,7 @@ function ReportsPage() {
   const { hasPermission } = useAuth();
 
   const canCreateReport = hasPermission("REPORT_CREATE");
+  const canUpdateReport = hasPermission("REPORT_UPDATE");
 
   // Admin rolunun REPORT_VIEW yetkisi var ancak WORKITEM_VIEW/RISK_VIEW
   // yetkisi yok (bkz. docs/t14-authorization-matrix.md bolum 3). Sekmeler
@@ -133,6 +134,10 @@ function ReportsPage() {
     useState<ReportDetailTab>("overview");
 
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+
+  // null => olusturma modu, dolu => o raporun duzenleme modu.
+  const [reportBeingEdited, setReportBeingEdited] =
+    useState<WeeklyReport | null>(null);
 
   const [isProjectsLoading, setIsProjectsLoading] = useState(true);
 
@@ -275,13 +280,44 @@ function ReportsPage() {
     setReportPage(0);
   };
 
-  const handleReportCreated = (createdReport: WeeklyReport) => {
-    setReports((previousReports) => [createdReport, ...previousReports]);
+  const handleOpenCreateDialog = () => {
+    setReportBeingEdited(null);
+    setIsReportDialogOpen(true);
+  };
 
-    setSelectedReport(createdReport);
+  const handleOpenEditDialog = (report: WeeklyReport) => {
+    setReportBeingEdited(report);
+    setIsReportDialogOpen(true);
+  };
+
+  const handleCloseReportDialog = () => {
+    setIsReportDialogOpen(false);
+    setReportBeingEdited(null);
+  };
+
+  const handleReportSaved = (savedReport: WeeklyReport) => {
+    const wasEditing = reportBeingEdited !== null;
+
+    if (wasEditing) {
+      setReports((previousReports) =>
+        previousReports.map((report) =>
+          report.id === savedReport.id ? savedReport : report,
+        ),
+      );
+    } else {
+      setReports((previousReports) => [savedReport, ...previousReports]);
+    }
+
+    setSelectedReport(savedReport);
     setSelectedDetailTab("overview");
     setIsReportDialogOpen(false);
-    showNotification("Haftalık rapor başarıyla oluşturuldu.");
+    setReportBeingEdited(null);
+
+    showNotification(
+      wasEditing
+        ? "Haftalık rapor başarıyla güncellendi."
+        : "Haftalık rapor başarıyla oluşturuldu.",
+    );
   };
 
   return (
@@ -292,7 +328,7 @@ function ReportsPage() {
           canCreateReport ? (
             <Button
               variant="contained"
-              onClick={() => setIsReportDialogOpen(true)}
+              onClick={handleOpenCreateDialog}
               disabled={!selectedProject}
               fullWidth={isSmallScreen}
             >
@@ -548,21 +584,42 @@ function ReportsPage() {
                         />
                       </Stack>
 
-                      <Tooltip title="Rapor detaylarını kapat">
-                        <Button
-                          type="button"
-                          variant="text"
-                          size="small"
-                          onClick={handleCloseReportDetails}
-                          sx={{
-                            minHeight: 32,
-                            px: 1,
-                            color: "text.secondary",
-                          }}
-                        >
-                          Detayları kapat
-                        </Button>
-                      </Tooltip>
+                      <Stack
+                        direction="row"
+                        useFlexGap
+                        sx={{
+                          flexWrap: "wrap",
+                          gap: 0.75,
+                        }}
+                      >
+                        {canUpdateReport && (
+                          <Button
+                            type="button"
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleOpenEditDialog(selectedReport)}
+                            sx={{ minHeight: 32 }}
+                          >
+                            Raporu düzenle
+                          </Button>
+                        )}
+
+                        <Tooltip title="Rapor detaylarını kapat">
+                          <Button
+                            type="button"
+                            variant="text"
+                            size="small"
+                            onClick={handleCloseReportDetails}
+                            sx={{
+                              minHeight: 32,
+                              px: 1,
+                              color: "text.secondary",
+                            }}
+                          >
+                            Detayları kapat
+                          </Button>
+                        </Tooltip>
+                      </Stack>
                     </Stack>
                   </Stack>
                 </Box>
@@ -752,7 +809,7 @@ function ReportsPage() {
 
       <Dialog
         open={isReportDialogOpen && selectedProject !== null}
-        onClose={() => setIsReportDialogOpen(false)}
+        onClose={handleCloseReportDialog}
         fullWidth
         maxWidth={layoutTokens.dialog.formMaxWidth}
         fullScreen={isSmallScreen}
@@ -766,13 +823,15 @@ function ReportsPage() {
           }}
         >
           <Typography variant="h6" component="span">
-            Yeni haftalık rapor
+            {reportBeingEdited
+              ? "Haftalık raporu düzenle"
+              : "Yeni haftalık rapor"}
           </Typography>
 
           <IconButton
             type="button"
             aria-label="Rapor formunu kapat"
-            onClick={() => setIsReportDialogOpen(false)}
+            onClick={handleCloseReportDialog}
           >
             <Typography
               component="span"
@@ -787,9 +846,12 @@ function ReportsPage() {
         <DialogContent dividers>
           {selectedProject && (
             <WeeklyReportForm
+              // Duzenlenen rapor degistiginde form durumu bastan kurulur.
+              key={reportBeingEdited?.id ?? "create"}
               project={selectedProject}
-              onReportCreated={handleReportCreated}
-              onCancel={() => setIsReportDialogOpen(false)}
+              report={reportBeingEdited}
+              onReportSaved={handleReportSaved}
+              onCancel={handleCloseReportDialog}
             />
           )}
         </DialogContent>

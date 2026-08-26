@@ -10,6 +10,7 @@ public enum PermissionCode {
     PROJECT_MANAGE,
     REPORT_VIEW,
     REPORT_CREATE,
+    REPORT_UPDATE,
     WORKITEM_VIEW,
     WORKITEM_MANAGE,
     RISK_VIEW,

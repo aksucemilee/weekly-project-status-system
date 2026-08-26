@@ -47,6 +47,7 @@ public class AuthorizationDataInitializer implements CommandLineRunner {
                     PermissionCode.PROJECT_VIEW,
                     PermissionCode.REPORT_VIEW,
                     PermissionCode.REPORT_CREATE,
+                    PermissionCode.REPORT_UPDATE,
                     PermissionCode.WORKITEM_VIEW,
                     PermissionCode.WORKITEM_MANAGE,
                     PermissionCode.RISK_VIEW,

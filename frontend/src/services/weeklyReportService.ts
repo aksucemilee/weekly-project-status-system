@@ -5,6 +5,7 @@ import type {
   ScheduleStatus,
   WeeklyReport,
   WeeklyReportCreateRequest,
+  WeeklyReportUpdateRequest,
 } from "../types/weeklyReport";
 
 export type WeeklyReportListFilters = {
@@ -59,6 +60,19 @@ export async function createWeeklyReport(
 ): Promise<WeeklyReport> {
   const response = await apiClient.post<WeeklyReport>(
     `/projects/${projectId}/weekly-reports`,
+    request,
+  );
+
+  return response.data;
+}
+
+export async function updateWeeklyReport(
+  projectId: number,
+  weeklyReportId: number,
+  request: WeeklyReportUpdateRequest,
+): Promise<WeeklyReport> {
+  const response = await apiClient.put<WeeklyReport>(
+    `/projects/${projectId}/weekly-reports/${weeklyReportId}`,
     request,
   );
 
