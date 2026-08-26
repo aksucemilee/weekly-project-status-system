@@ -45,6 +45,20 @@ Bu satır repository üzerinden doğrulanabilir olduğu için önceden doldurulm
 | **Ne yapıldı** | Bulunan dokümantasyon tutarsızlıkları düzeltildi (commit `e4a6aac`, `bbbf38a`), test raporu oluşturuldu (`018820d`). Lint bulgusu düşük öncelikli olarak açık bırakıldı ve `test-raporu.md`'de H7 olarak kaydedildi |
 | **Kod değişikliği** | Bu denetim kapsamında **uygulama kodu değiştirilmedi**; yalnızca dokümantasyon güncellendi. Değişikliklerin tamamı `feature/final-delivery-docs` dalındaki commit'lerden izlenebilir |
 
+### 2.2 Final MVP kapsam denetimi ve kontrollü tamamlama (26.08.2026)
+
+Bu satır da repository üzerinden doğrulanabilir olduğu için önceden doldurulmuştur.
+
+| Konu | İçerik |
+| --- | --- |
+| **Ne için** | Staj yönetmeliği, Ön Analiz ve kabul kriterleri ile repository'nin karşılaştırılması; MVP kapsamında olduğu hâlde eksik kalan özelliklerin tespit edilip kontrollü şekilde tamamlanması |
+| **Kapsam** | Üç kaynak dokümanın (yönetmelik, Ön Analiz, Teknik Karar Notu) kod ile madde madde karşılaştırılması, kullanılmayan kodun aranması, yetki/validasyon/hata yönetiminin gözden geçirilmesi, eksik özelliklerin uygulanması ve dokümanların gerçekle hizalanması |
+| **Nasıl doğrulandı** | Bulgular varsayıma değil çalıştırılmış komut ve gerçek HTTP isteklerine dayandırıldı. Kullanılmayan kod iddiaları `grep` ile doğrulandı (tahminle dosya silinmedi). Eklenen endpointler backend + PostgreSQL çalışır durumdayken curl ile, oturum çerezi ve CSRF token'ı kullanılarak test edildi; sonuçlar [`test-raporu.md`](test-raporu.md) bölüm 10'da kayıtlıdır |
+| **Ne bulundu** | (1) Rapor ve proje güncelleme endpointlerinin MVP'de zorunlu olduğu — yönetmelik 5.4, Ön Analiz 5 ve 7.4. (2) Marka logosunun tüm rollerde `/dashboard`'a gitmesi nedeniyle üç rolün erişim reddi ekranına düşmesi. (3) Admin'de iş kalemi sekmesinin sürekli hata vermesi. (4) `BackendStatus` bileşeninin hiç kullanılmaması. (5) **H8:** enum'a yeni değer eklendiğinde uygulamanın mevcut veritabanında açılmaması |
+| **Ne yapıldı** | Eksik özellikler mevcut mimariye (Controller → Service → Repository → DTO) uyularak eklendi; yeni katman veya soyutlama oluşturulmadı. Bulunan kusurlar düzeltildi, kullanılmayan kod temizlendi, dokümanlar güncellendi |
+| **Neyin yapılmadığı** | Silme endpointleri (Ön Analiz 12.3 MVP dışı sayıyor), sorumlu filtresi, `npm run lint` düzeltmesi (sekiz sayfanın veri yükleme mantığının yeniden yazılmasını gerektirdiği için) ve otomatik test altyapısı bilinçli olarak kapsam dışı bırakıldı; gerekçeleriyle birlikte kayıtlıdır |
+| **Önemli not** | **H8 yalnızca uygulamayı gerçekten çalıştırarak bulunabildi.** Derleme ve mevcut test paketi bu hatayı yakalamadı. Bu, R1'in (otomatik test kapsamı yok) neden en yüksek risk olduğunun somut kanıtıdır |
+
 ---
 
 ## 3. AI'nın kullanılmadığı yerler
