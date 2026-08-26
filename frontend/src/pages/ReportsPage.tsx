@@ -106,6 +106,13 @@ function ReportsPage() {
 
   const canCreateReport = hasPermission("REPORT_CREATE");
 
+  // Admin rolunun REPORT_VIEW yetkisi var ancak WORKITEM_VIEW/RISK_VIEW
+  // yetkisi yok (bkz. docs/t14-authorization-matrix.md bolum 3). Sekmeler
+  // kosulsuz gosterilirse alt listeler 403 alip genel bir hata mesaji
+  // gosteriyordu; yetkisi olmayan role sekme hic acilmaz.
+  const canViewWorkItems = hasPermission("WORKITEM_VIEW");
+  const canViewRiskIssues = hasPermission("RISK_VIEW");
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
 
@@ -578,8 +585,14 @@ function ReportsPage() {
                   }}
                 >
                   <Tab value="overview" label="Genel Bakış" />
-                  <Tab value="workItems" label="İş Kalemleri" />
-                  <Tab value="riskIssues" label="Risk ve Engeller" />
+
+                  {canViewWorkItems && (
+                    <Tab value="workItems" label="İş Kalemleri" />
+                  )}
+
+                  {canViewRiskIssues && (
+                    <Tab value="riskIssues" label="Risk ve Engeller" />
+                  )}
                 </Tabs>
 
                 {selectedDetailTab === "overview" && (
@@ -700,7 +713,7 @@ function ReportsPage() {
                   </Box>
                 )}
 
-                {selectedDetailTab === "workItems" && (
+                {selectedDetailTab === "workItems" && canViewWorkItems && (
                   <Box
                     sx={{
                       p: {
@@ -716,7 +729,7 @@ function ReportsPage() {
                   </Box>
                 )}
 
-                {selectedDetailTab === "riskIssues" && (
+                {selectedDetailTab === "riskIssues" && canViewRiskIssues && (
                   <Box
                     sx={{
                       p: {
