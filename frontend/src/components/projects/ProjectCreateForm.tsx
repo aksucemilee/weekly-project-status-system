@@ -3,7 +3,10 @@ import { Alert, Box, Button, MenuItem, Stack, TextField } from "@mui/material";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { createProject } from "../../services/projectService";
+import {
+  createProject,
+  updateProject,
+} from "../../services/projectService";
 import type {
   Project,
   ProjectCreateRequest,
@@ -12,7 +15,9 @@ import type {
 import { projectStatusLabels } from "./projectPresentation";
 
 type ProjectCreateFormProps = {
-  onProjectCreated: (project: Project) => void;
+  /** Doluysa form duzenleme modunda acilir (On Analiz 12.2). */
+  project?: Project | null;
+  onProjectSaved: (project: Project) => void;
   onCancel: () => void;
 };
 
@@ -36,12 +41,27 @@ const initialProjectForm: ProjectCreateRequest = {
   status: "PLANNED",
 };
 
+const toFormState = (project: Project): ProjectCreateRequest => ({
+  name: project.name,
+  customerName: project.customerName,
+  description: project.description ?? "",
+  startDate: project.startDate ?? "",
+  targetEndDate: project.targetEndDate ?? "",
+  status: project.status,
+});
+
 function ProjectCreateForm({
-  onProjectCreated,
+  project = null,
+  onProjectSaved,
   onCancel,
 }: ProjectCreateFormProps) {
-  const [projectForm, setProjectForm] =
-    useState<ProjectCreateRequest>(initialProjectForm);
+  const isEditMode = project !== null;
+
+  const [projectForm, setProjectForm] = useState<ProjectCreateRequest>(() =>
+    project ? toFormState(project) : initialProjectForm,
+  );
+
+  const [isActive, setIsActive] = useState(project ? project.active : true);
 
   const [fieldErrors, setFieldErrors] = useState<ProjectFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,7 +135,9 @@ function ProjectCreateForm({
       }
     }
 
-    return "Proje oluşturulurken bir hata oluştu.";
+    return isEditMode
+      ? "Proje güncellenirken bir hata oluştu."
+      : "Proje oluşturulurken bir hata oluştu.";
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -128,16 +150,24 @@ function ProjectCreateForm({
 
     setIsSubmitting(true);
 
-    try {
-      const createdProject = await createProject({
-        ...projectForm,
-        name: projectForm.name.trim(),
-        customerName: projectForm.customerName.trim(),
-        description: projectForm.description.trim(),
-      });
+    const request = {
+      ...projectForm,
+      name: projectForm.name.trim(),
+      customerName: projectForm.customerName.trim(),
+      description: projectForm.description.trim(),
+    };
 
-      onProjectCreated(createdProject);
-      setProjectForm(initialProjectForm);
+    try {
+      const savedProject = project
+        ? await updateProject(project.id, { ...request, active: isActive })
+        : await createProject(request);
+
+      onProjectSaved(savedProject);
+
+      if (!project) {
+        setProjectForm(initialProjectForm);
+      }
+
       setFieldErrors({});
     } catch (error: unknown) {
       setErrorMessage(getBackendErrorMessage(error));
@@ -278,6 +308,25 @@ function ProjectCreateForm({
               </MenuItem>
             ))}
           </TextField>
+
+          {isEditMode && (
+            <TextField
+              select
+              label="Portföy durumu"
+              value={isActive ? "true" : "false"}
+              onChange={(event) => setIsActive(event.target.value === "true")}
+              helperText="Pasif projeler CTO dashboard'unda listelenmez."
+              fullWidth
+              sx={{
+                gridColumn: {
+                  md: "span 2",
+                },
+              }}
+            >
+              <MenuItem value="true">Aktif</MenuItem>
+              <MenuItem value="false">Pasif</MenuItem>
+            </TextField>
+          )}
         </Box>
 
         <Stack
@@ -300,7 +349,11 @@ function ProjectCreateForm({
           </Button>
 
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? "Kaydediliyor..." : "Proje oluştur"}
+            {isSubmitting
+              ? "Kaydediliyor..."
+              : isEditMode
+                ? "Değişiklikleri kaydet"
+                : "Proje oluştur"}
           </Button>
         </Stack>
       </Stack>

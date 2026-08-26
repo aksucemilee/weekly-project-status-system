@@ -25,3 +25,7 @@ export type ProjectCreateRequest = {
   targetEndDate: string;
   status: ProjectStatus;
 };
+
+export type ProjectUpdateRequest = ProjectCreateRequest & {
+  active: boolean;
+};
