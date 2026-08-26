@@ -276,7 +276,7 @@ function ProjectsPage() {
             </Paper>
           </ResponsiveCardGrid>
 
-          <ProjectList projects={projects} isLoading={false} errorMessage="" />
+          <ProjectList projects={projects} />
         </Stack>
       )}
 

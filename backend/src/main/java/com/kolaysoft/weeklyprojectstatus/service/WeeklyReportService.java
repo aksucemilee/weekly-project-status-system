@@ -170,13 +170,13 @@ public class WeeklyReportService {
                 return toResponse(weeklyReport);
         }
 
-        @Transactional(readOnly = true)
         /**
          * Rapor kimliginden rapor varligini getirir. WorkItem ve RiskIssue
          * servisleri de bu metodu kullandigi icin kapsam (sahiplik)
          * kontrolu burada uygulanir; boylece rapora bagli alt kayitlar
          * ayri ayri kontrol edilmek zorunda kalmaz.
          */
+        @Transactional(readOnly = true)
         public WeeklyReport getWeeklyReportEntity(
                         Long weeklyReportId) {
                 WeeklyReport weeklyReport = weeklyReportRepository
