@@ -109,6 +109,14 @@ function ProjectList({ projects, onEditProject }: ProjectListProps) {
                   >
                     {project.customerName}
                   </Typography>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mt: 0.25 }}
+                  >
+                    Sorumlu: {project.responsibleManager ?? "Atanmadı"}
+                  </Typography>
                 </Box>
 
                 <Stack

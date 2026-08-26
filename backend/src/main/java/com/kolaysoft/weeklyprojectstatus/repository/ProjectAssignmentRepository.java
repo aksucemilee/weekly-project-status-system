@@ -1,6 +1,7 @@
 package com.kolaysoft.weeklyprojectstatus.repository;
 
 import com.kolaysoft.weeklyprojectstatus.model.entity.ProjectAssignment;
+import com.kolaysoft.weeklyprojectstatus.model.enums.AssignmentRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -14,6 +15,14 @@ public interface ProjectAssignmentRepository
                         Long userId);
 
         List<ProjectAssignment> findByUser_IdAndActiveTrue(Long userId);
+
+        /**
+         * Verilen projelerin sorumlularini TEK sorguda getirir; proje basina
+         * ayri cagri yapilmamasi icin toplu kullanilir.
+         */
+        List<ProjectAssignment> findByActiveTrueAndAssignmentRoleAndProject_IdIn(
+                        AssignmentRole assignmentRole,
+                        List<Long> projectIds);
 
         /**
          * Kullanicinin erisebildigi proje id kumesi. Kapsam (sahiplik)

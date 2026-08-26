@@ -11,6 +11,7 @@ public record DashboardProjectSummaryResponse(
         Long projectId,
         String projectName,
         String customerName,
+        String responsibleManager,
         ProjectStatus projectStatus,
         Long latestReportId,
         LocalDate reportWeekStart,

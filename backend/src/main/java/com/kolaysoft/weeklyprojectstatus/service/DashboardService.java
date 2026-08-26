@@ -35,14 +35,17 @@ public class DashboardService {
         private final ProjectRepository projectRepository;
         private final WeeklyReportRepository weeklyReportRepository;
         private final WorkItemRepository workItemRepository;
+        private final ProjectAssignmentService projectAssignmentService;
 
         public DashboardService(
                         ProjectRepository projectRepository,
                         WeeklyReportRepository weeklyReportRepository,
-                        WorkItemRepository workItemRepository) {
+                        WorkItemRepository workItemRepository,
+                        ProjectAssignmentService projectAssignmentService) {
                 this.projectRepository = projectRepository;
                 this.weeklyReportRepository = weeklyReportRepository;
                 this.workItemRepository = workItemRepository;
+                this.projectAssignmentService = projectAssignmentService;
         }
 
         public DashboardSummaryResponse getDashboardSummary(
@@ -65,10 +68,16 @@ public class DashboardService {
                                 weekStart,
                                 weekEnd);
 
+                Map<Long, String> responsibleManagers = projectAssignmentService
+                                .findResponsibleManagerNames(activeProjects.stream()
+                                                .map(Project::getId)
+                                                .toList());
+
                 List<DashboardProjectSummaryResponse> projectSummaries = activeProjects
                                 .stream()
                                 .map(project -> createProjectSummary(
                                                 project,
+                                                responsibleManagers.get(project.getId()),
                                                 latestMatchingReportByProjectId.get(project.getId())))
                                 .filter(summary -> generalStatus == null
                                                 || summary.generalStatus() == generalStatus)
@@ -152,9 +161,10 @@ public class DashboardService {
 
         private DashboardProjectSummaryResponse createProjectSummary(
                         Project project,
+                        String responsibleManager,
                         WeeklyReport report) {
                 if (report == null) {
-                        return createSummaryWithoutReport(project);
+                        return createSummaryWithoutReport(project, responsibleManager);
                 }
 
                 long activeWorkItemCount = workItemRepository.countByWeeklyReport_IdAndStatusIn(
@@ -165,6 +175,7 @@ public class DashboardService {
                                 project.getId(),
                                 project.getName(),
                                 project.getCustomerName(),
+                                responsibleManager,
                                 project.getStatus(),
                                 report.getId(),
                                 report.getReportWeekStart(),
@@ -177,11 +188,13 @@ public class DashboardService {
         }
 
         private DashboardProjectSummaryResponse createSummaryWithoutReport(
-                        Project project) {
+                        Project project,
+                        String responsibleManager) {
                 return new DashboardProjectSummaryResponse(
                                 project.getId(),
                                 project.getName(),
                                 project.getCustomerName(),
+                                responsibleManager,
                                 project.getStatus(),
                                 null,
                                 null,

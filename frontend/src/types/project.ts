@@ -8,6 +8,7 @@ export type Project = {
   id: number;
   name: string;
   customerName: string;
+  responsibleManager: string | null;
   description: string;
   startDate: string;
   targetEndDate: string;

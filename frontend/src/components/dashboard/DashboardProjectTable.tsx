@@ -412,6 +412,10 @@ function DashboardProjectTable({
                         {project.customerName}
                       </Typography>
 
+                      <Typography variant="caption" color="text.secondary">
+                        Sorumlu: {project.responsibleManager ?? "Atanmadı"}
+                      </Typography>
+
                       <Chip
                         label={projectStatusLabels[project.projectStatus]}
                         color={projectStatusColors[project.projectStatus]}
@@ -515,6 +519,14 @@ function DashboardProjectTable({
                       sx={{ mt: 0.25 }}
                     >
                       {project.customerName}
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block" }}
+                    >
+                      Sorumlu: {project.responsibleManager ?? "Atanmadı"}
                     </Typography>
                   </Box>
 
