@@ -740,6 +740,8 @@ Frontend tarafında şu anda ayrı bir otomatik test komutu tanımlı değildir.
 
 # Manuel MVP Test Kapsamı
 
+> **Ayrıntılı test kanıtı:** Senaryo listeleri, hata kayıtları (kök neden ve düzeltme commit'leriyle), tekrar test sonuçları ve kalan riskler için [`docs/test-raporu.md`](docs/test-raporu.md) dosyasına bakınız. Aşağıdaki bölüm yalnızca kapsamın özetidir.
+
 Temel Full Stack akışları backend, frontend ve PostgreSQL birlikte çalıştırılarak manuel olarak test edilmiştir.
 
 Kontrol edilen ana akış:
