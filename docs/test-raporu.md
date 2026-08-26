@@ -31,6 +31,17 @@ Aşağıdaki komutlar 26.08.2026 tarihinde temiz working tree üzerinde çalış
 | A4 | Frontend production build | `npm run build` | ✅ `built in 912ms`, `dist/assets/index-*.js 722.22 kB` |
 | A5 | Frontend lint | `npm run lint` | ❌ **10 error** — bkz. Bulgu H7 |
 
+Final kapsam denetimi (26.08.2026, aynı gün, kod değişikliklerinden sonra) tekrar çalıştırıldı:
+
+| # | Kontrol | Komut | Sonuç |
+| --- | --- | --- | --- |
+| A6 | Backend derleme | `mvnw -DskipTests compile` | ✅ `BUILD SUCCESS` |
+| A7 | Backend test | `mvnw test` | ✅ `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` |
+| A8 | Frontend production build | `npm run build` | ✅ `built in 518ms` |
+| A9 | Frontend lint | `npm run lint` | ❌ **10 error** — değişmedi, hâlâ H7 |
+
+A7 hakkındaki dürüst not (aşağıda) geçerliliğini korur: eklenen güncelleme endpointleri için de otomatik test yazılmamıştır, doğrulama bölüm 10'daki manuel API senaryolarıyla yapılmıştır.
+
 **A2 hakkında dürüst not:** Bu komutun `BUILD SUCCESS` dönmesi sistemin test edildiği anlamına gelmez. Çalışan tek test `WeeklyProjectStatusApplicationTests.contextLoads()` olup yalnızca Spring bağlamının hatasız yüklendiğini doğrular. Tek bir iş kuralı, tek bir yetki kontrolü veya tek bir validasyon bu testle doğrulanmamaktadır.
 
 ## 3. MVP fonksiyonel senaryoları (T08 / 15. gün)
@@ -193,6 +204,23 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 | **Önem** | Düşük |
 | **Durum** | **AÇIK.** Düzeltme, sekiz sayfanın veri yükleme mantığının yeniden yazılmasını gerektirdiği için teslim tarihine bu kadar yakın bilinçli olarak ertelenmiştir |
 
+### H8 — Enum'a yeni değer eklendiğinde uygulama mevcut veritabanında açılmıyor
+
+| Alan | İçerik |
+| --- | --- |
+| **Ortam** | Backend + PostgreSQL 18.1 (mevcut, daha önce oluşturulmuş şema) |
+| **Ön koşul** | `ddl-auto=update`; veritabanı önceki enum değerleriyle oluşturulmuş |
+| **Adımlar** | `PermissionCode` enum'una `REPORT_UPDATE` eklendi ve uygulama başlatıldı |
+| **Beklenen** | `AuthorizationDataInitializer` yeni yetkiyi seed eder, uygulama açılır |
+| **Gerçekleşen** | Açılış başarısız: `ERROR: new row for relation "permissions" violates check constraint "permissions_code_check"` (`SQLState: 23514`) |
+| **Kök neden** | Hibernate 6.2+, `@Enumerated(EnumType.STRING)` kolonları için enum değerlerini listeleyen bir `CHECK` constraint üretir. `ddl-auto=update` yalnızca ekleme yapar; **mevcut constraint'i güncellemez.** Sorun `PermissionCode`'a özgü değildir; `GeneralStatus`, `ProjectStatus`, `WorkItemStatus` gibi tüm enum kolonları aynı davranışa sahiptir |
+| **Etki** | Temiz kurulumda **sorun yok** (Hibernate tabloyu güncel enum listesiyle oluşturur). Yalnızca mevcut bir veritabanı etkilenir |
+| **Düzeltme** | Constraint, temiz kurulumun üreteceğiyle birebir aynı olacak şekilde tek seferlik senkronlandı: `ALTER TABLE permissions DROP CONSTRAINT permissions_code_check;` ardından güncel 12 değerle yeniden eklendi |
+| **Önem** | Orta — sessiz veri bozulmasına yol açmaz, uygulama açılışta net bir hatayla durur |
+| **Durum** | Bu değişiklik için kapandı; **yapısal olarak AÇIK** (bkz. R7). Sürümlenmiş migration (Flyway/Liquibase) eklenmediği sürece her yeni enum değeri aynı adımı gerektirir |
+
+**Neden kayda değer:** Bu bulgu R7'nin ("sürümlenmiş migration yok") soyut bir risk olmadığını, ilk şema değişikliğinde somut olarak ortaya çıktığını gösterir. Derleme ve testler bu hatayı yakalamaz; yalnızca uygulamayı mevcut bir veritabanına karşı gerçekten çalıştırmak ortaya çıkarır.
+
 ## 8. Tekrar test
 
 Düzeltmelerden sonra yalnızca ilgili senaryo değil, etkilenen akışların tamamı yeniden çalıştırılmıştır:
@@ -211,14 +239,74 @@ Bu bölüm bilinçli olarak dürüst tutulmuştur; aşağıdakiler projenin bili
 | R1 | **Otomatik test kapsamı pratikte yok.** Çalışan tek test `contextLoads()`. İş kuralları, yetkilendirme, filtreleme ve validasyon davranışlarının hiçbiri otomatik olarak korunmuyor | **Yüksek.** Bir regresyon yalnızca manuel testle yakalanabilir; refactoring riski yüksek | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı ancak uygulanmadı. Teslim tarihine kadar anlamlı bir test paketi yazmak mümkün değildi; aceleyle yazılmış zayıf testler gerçek kapsam yerine yanlış güven üretirdi |
 | R2 | **E2E / tarayıcı testleri repository'de saklanmıyor.** Rol senaryoları tarayıcı üzerinden çalıştırıldı, ancak yeniden koşulabilir bir artefakt yok | Orta. Sonuçlar bu dokümana ve `t14-authorization-matrix.md`'ye dayanıyor, otomatik olarak yeniden üretilemiyor | Otomatik E2E altyapısı kurmak T14 kapsamının dışındaydı |
 | R3 | `npm run lint` 10 hata veriyor (H7) | Düşük. Üretim build'ini etkilemiyor | Bkz. H7 |
-| R4 | **Haftalık rapor ve proje güncelleme endpointleri yok.** Ön Analiz bölüm 7.4 ve 12.2/12.3'te planlanmıştı | Orta. Kullanıcı yanlış girilen bir raporu düzeltemez | Ön Analiz bölüm 14, açık soru 3 ("geçmiş raporlar düzenlenebilir mi") cevaplanmamış olduğu için karar `t14-authorization-matrix.md` bölüm 7'de bilinçli olarak ertelendi |
+| ~~R4~~ | ~~**Haftalık rapor ve proje güncelleme endpointleri yok.**~~ **KAPANDI (26.08.2026).** Her iki endpoint de final kapsam denetiminde eklendi ve bölüm 10'daki senaryolarla doğrulandı. Gerekçe: [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13 | — | **Silme** endpointleri hâlâ yok ve bilinçli olarak kapsam dışı (Ön Analiz 12.3, açık soru 3) |
 | R5 | **İş kalemi ilerleme yüzdesi alanı yok.** Ön Analiz bölüm 7.5 iş kuralı 2'de planlanmıştı | Düşük. İş kalemi durumu (`PLANNED`/`IN_PROGRESS`/`IN_TEST`/`COMPLETED`/`BLOCKED`) MVP için yeterli granülerliği sağlıyor | Kapsam kararı; ayrıca README "Bilinen Eksikler" bölümüne yazıldı |
 | R6 | **Dashboard'da N+1 sorgu.** Her proje için ayrı `countByWeeklyReport_IdAndStatusIn` çağrısı yapılıyor (`DashboardService`) | Düşük. Demo ölçeğinde (6 proje) ölçülemez; proje sayısı arttıkça büyür | Performans optimizasyonu MVP kapsamı dışında bırakıldı |
-| R7 | **Sürümlenmiş migration yok.** Şema `ddl-auto=update` ile yönetiliyor | Orta. Üretim ortamı için uygun değil | MVP kapsamı dışı; yönetmelik bölüm 5.5 bu tür konuları genişletme aşamasına bırakıyor |
+| R7 | **Sürümlenmiş migration yok.** Şema `ddl-auto=update` ile yönetiliyor. **Bu risk 26.08.2026'da somutlaştı:** enum'a yeni bir değer eklendiğinde mevcut veritabanında uygulama açılmıyor (bkz. H8) | Orta → **Yüksek**. Artık teorik değil, gerçekleşmiş bir kusur. Her yeni enum değeri elle SQL gerektiriyor | MVP kapsamı dışı; yönetmelik bölüm 5.5 bu tür konuları genişletme aşamasına bırakıyor. Flyway/Liquibase eklenmesi README "Geliştirme Planı" bölümünde 3. sıraya alındı |
 | R8 | **Deployment yapılmadı.** Proje doğrulanmış lokal ortam üzerinden çalıştırılıyor | Düşük. Yönetmelik bölüm 1.1 lokal demoyu kabul ediyor | Kurulum adımları README'de eksiksiz belgelendi ve temiz ortamda doğrulandı |
 
-## 10. Sonuç
+## 10. Final kapsam denetimi senaryoları (26.08.2026)
 
-Fonksiyonel MVP akışları, negatif/validasyon senaryoları, T13 filtreleme-sayfalama-sıralama davranışları ve T14 yetkilendirme kuralları manuel olarak doğrulanmış; bulunan yedi hatanın altısı düzeltilerek tekrar test edilmiştir. Bir bulgu (H7) düşük öncelikli olarak açık bırakılmıştır.
+Denetimde eklenen üç özellik için aşağıdaki senaryolar, backend ve PostgreSQL çalışır durumdayken **curl ile gerçek HTTP istekleri** gönderilerek çalıştırılmıştır. Her istek oturum çerezi ve `X-XSRF-TOKEN` başlığı ile yapılmış; sonuçlar HTTP durum kodu ve yanıt gövdesiyle doğrulanmıştır.
 
-Projenin en büyük kalan riski R1'dir: **testlerin geçiyor olması, sistemin test edildiği anlamına gelmemektedir.** Otomatik kapsamın oluşturulması bir sonraki adımdır.
+Test için üç geçici kullanıcı (proje yöneticisi, CTO, admin) oluşturulmuş, senaryolar sonrası **veritabanından silinmiştir**; değiştirilen demo kayıtları özgün değerlerine geri yüklenmiştir.
+
+### 10.1 Haftalık rapor güncelleme (`PUT .../weekly-reports/{id}`)
+
+| # | Senaryo | Beklenen | Sonuç |
+| --- | --- | --- | --- |
+| U1 | Proje yöneticisi, atandığı projedeki raporu günceller | `200`, güncel gövde döner | ✅ |
+| U2 | Hedeflenen ilerleme `120` | `400`, "Hedeflenen ilerleme 100 veya daha küçük olmalıdır." | ✅ |
+| U3 | Zorunlu alan boşluk karakteriyle gönderilir | `400`, "Yapılanlar alanı zorunludur." | ✅ |
+| U4 | Rapor haftası, aynı projedeki başka bir raporun haftasına taşınır | `409 Conflict` | ✅ |
+| U5 | CTO aynı isteği gönderir | `403` | ✅ |
+| U6 | Admin aynı isteği gönderir | `403` | ✅ |
+| U7 | Proje yöneticisi, **atanmadığı** projenin raporunu günceller | `403`, "Bu proje üzerinde işlem yapma yetkiniz bulunmuyor." | ✅ |
+| U8 | Oturumsuz istek (geçerli CSRF token ile) | `401` | ✅ |
+| U9 | Var olmayan rapor kimliği | `404` | ✅ |
+| U10 | Güncellemenin veritabanına yazılması | `updated_at` değişir, alanlar kalıcı olur | ✅ (SQL ile doğrulandı) |
+
+**U8 hakkında not:** İlk denemede CSRF token'ı hiç gönderilmediği için `403` alındı. Bu beklenen davranıştır — CSRF filtresi kimlik doğrulamadan önce çalışır. Token gönderilip oturum açılmadığında yanıt doğru şekilde `401` olmaktadır. Bu, mevcut bir davranıştır ve bu denetimde değişmemiştir.
+
+### 10.2 Proje güncelleme (`PUT /api/projects/{id}`)
+
+| # | Senaryo | Beklenen | Sonuç |
+| --- | --- | --- | --- |
+| P1 | Admin proje durumunu `BLOCKED` yapar | `200` | ✅ |
+| P2 | Dashboard "bloke proje" sayacı | `0` → `1` | ✅ |
+| P3 | Proje yöneticisi aynı isteği gönderir | `403` | ✅ |
+| P4 | CTO aynı isteği gönderir | `403` | ✅ |
+| P5 | Proje adı boşluk karakteriyle gönderilir | `400`, "Proje adı zorunludur." | ✅ |
+| P6 | `status` alanı hiç gönderilmez | `400`, "Proje durumu zorunludur." | ✅ |
+| P7 | Var olmayan proje kimliği | `404` | ✅ |
+| P8 | Admin projeyi `active=false` yapar | `200` | ✅ |
+| P9 | Pasife alınan proje dashboard'da | Listeden çıkar, toplam `6` → `5` | ✅ |
+
+### 10.3 Sorumlu proje yöneticisi
+
+| # | Senaryo | Beklenen | Sonuç |
+| --- | --- | --- | --- |
+| S1 | `GET /api/dashboard` yanıtı | Atanmış 3 projede sorumlu adı, diğerlerinde `null` | ✅ |
+| S2 | `GET /api/projects` yanıtı | Aynı sonuç | ✅ |
+| S3 | Sorgu sayısı | Sorumlular proje başına ayrı sorgu yapılmadan tek sorguda okunur | ✅ (toplu sorgu kullanıldı) |
+
+### 10.4 Doğrulanmayanlar — dürüst not
+
+Aşağıdakiler bu denetimde **çalıştırılmamıştır** ve teslim öncesi tarayıcıda manuel doğrulanmalıdır:
+
+- Rapor ve proje düzenleme formlarının tarayıcı üzerinden uçtan uca kullanımı (alan doldurma, gönderme, bildirim, liste yenilenmesi)
+- "Raporu düzenle" ve "Düzenle" butonlarının rol bazlı görünürlüğü
+- Marka logosu düzeltmesinin dört rolde davranışı
+- Admin'de iş kalemi/risk sekmelerinin gizlenmesi
+
+Backend davranışı yukarıdaki API senaryolarıyla, arayüz kodu ise `tsc` tip kontrolü ve production build ile doğrulanmıştır; ancak bunlar tarayıcı testinin yerine geçmez.
+
+## 11. Sonuç
+
+Fonksiyonel MVP akışları, negatif/validasyon senaryoları, T13 filtreleme-sayfalama-sıralama davranışları ve T14 yetkilendirme kuralları manuel olarak doğrulanmış; bulunan sekiz hatanın yedisi düzeltilerek tekrar test edilmiştir. Bir bulgu (H7) düşük öncelikli olarak açık bırakılmıştır.
+
+26.08.2026 tarihli final kapsam denetiminde MVP'de eksik kalan üç konu (rapor güncelleme, proje güncelleme, sorumlu proje yöneticisi gösterimi) tamamlanmış ve bölüm 10'daki 22 API senaryosuyla doğrulanmıştır. Aynı denetimde iki arayüz yetkilendirme kusuru ve bir şema evrimi kusuru (H8) bulunmuştur.
+
+Projenin en büyük kalan riski R1'dir: **testlerin geçiyor olması, sistemin test edildiği anlamına gelmemektedir.** Bu denetimde eklenen özellikler de otomatik testle korunmamaktadır. Otomatik kapsamın oluşturulması bir sonraki adımdır.
+
+İkinci sırada R7 gelir: H8, sürümlenmiş migration eksikliğinin artık teorik bir risk olmadığını göstermiştir.
