@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -20,12 +21,15 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final CurrentUserService currentUserService;
+    private final ProjectAssignmentService projectAssignmentService;
 
     public ProjectService(
             ProjectRepository projectRepository,
-            CurrentUserService currentUserService) {
+            CurrentUserService currentUserService,
+            ProjectAssignmentService projectAssignmentService) {
         this.projectRepository = projectRepository;
         this.currentUserService = currentUserService;
+        this.projectAssignmentService = projectAssignmentService;
     }
 
     public ProjectResponse createProject(ProjectCreateRequest request) {
@@ -88,9 +92,15 @@ public class ProjectService {
                         : projectRepository.findAllById(ids))
                 .orElseGet(projectRepository::findAll);
 
+        Map<Long, String> responsibleManagers = projectAssignmentService
+                .findResponsibleManagerNames(
+                        projects.stream().map(Project::getId).toList());
+
         return projects
                 .stream()
-                .map(this::toResponse)
+                .map(project -> toResponse(
+                        project,
+                        responsibleManagers.get(project.getId())))
                 .toList();
     }
 
@@ -109,11 +119,27 @@ public class ProjectService {
                 ));
     }
 
+    /**
+     * Sorumlu proje yoneticisi ayri bir sorgu gerektirdigi icin, liste
+     * uretirken toplu okunup buraya gecirilir; tekil yanitlarda proje
+     * basina tek bir arama yapilir.
+     */
     private ProjectResponse toResponse(Project project) {
+        return toResponse(
+                project,
+                projectAssignmentService
+                        .findResponsibleManagerNames(List.of(project.getId()))
+                        .get(project.getId()));
+    }
+
+    private ProjectResponse toResponse(
+            Project project,
+            String responsibleManager) {
         return new ProjectResponse(
                 project.getId(),
                 project.getName(),
                 project.getCustomerName(),
+                responsibleManager,
                 project.getDescription(),
                 project.getStartDate(),
                 project.getTargetEndDate(),

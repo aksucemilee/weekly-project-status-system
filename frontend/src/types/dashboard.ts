@@ -9,6 +9,7 @@ export type DashboardProjectSummary = {
   projectId: number;
   projectName: string;
   customerName: string;
+  responsibleManager: string | null;
   projectStatus: ProjectStatus;
   latestReportId: number | null;
   reportWeekStart: string | null;

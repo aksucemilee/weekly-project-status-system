@@ -10,6 +10,7 @@ public class ProjectResponse {
     private Long id;
     private String name;
     private String customerName;
+    private String responsibleManager;
     private String description;
     private LocalDate startDate;
     private LocalDate targetEndDate;
@@ -25,6 +26,7 @@ public class ProjectResponse {
             Long id,
             String name,
             String customerName,
+            String responsibleManager,
             String description,
             LocalDate startDate,
             LocalDate targetEndDate,
@@ -36,6 +38,7 @@ public class ProjectResponse {
         this.id = id;
         this.name = name;
         this.customerName = customerName;
+        this.responsibleManager = responsibleManager;
         this.description = description;
         this.startDate = startDate;
         this.targetEndDate = targetEndDate;
@@ -67,6 +70,14 @@ public class ProjectResponse {
 
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
+    }
+
+    public String getResponsibleManager() {
+        return responsibleManager;
+    }
+
+    public void setResponsibleManager(String responsibleManager) {
+        this.responsibleManager = responsibleManager;
     }
 
     public String getDescription() {

@@ -8,13 +8,16 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.admin.AssignmentUpdateRequest
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.ProjectAssignment;
 import com.kolaysoft.weeklyprojectstatus.model.entity.User;
+import com.kolaysoft.weeklyprojectstatus.model.enums.AssignmentRole;
 import com.kolaysoft.weeklyprojectstatus.repository.ProjectAssignmentRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.ProjectRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -79,6 +82,32 @@ public class ProjectAssignmentService {
         assignment.setActive(request.getActive());
 
         return toResponse(projectAssignmentRepository.save(assignment));
+    }
+
+    /**
+     * Proje id -> sorumlu proje yoneticisinin adi (On Analiz 10.2 ve 10.7).
+     * Sorumlusu olmayan proje haritada yer almaz.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, String> findResponsibleManagerNames(List<Long> projectIds) {
+        if (projectIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, String> namesByProjectId = new LinkedHashMap<>();
+
+        for (ProjectAssignment assignment : projectAssignmentRepository
+                .findByActiveTrueAndAssignmentRoleAndProject_IdIn(
+                        AssignmentRole.PROJE_YONETICISI,
+                        projectIds)) {
+            User user = assignment.getUser();
+
+            namesByProjectId.putIfAbsent(
+                    assignment.getProject().getId(),
+                    (user.getFirstName() + " " + user.getLastName()).trim());
+        }
+
+        return namesByProjectId;
     }
 
     @Transactional(readOnly = true)
