@@ -319,7 +319,9 @@ Aşağıdaki senaryolar yukarıdaki matristen türetilmiştir. 28. günde hem AP
 
 ### Test sonucu
 
-28. günde 39 senaryo çalıştırıldı: **24 API senaryosu** (curl, oturum çerezi ve CSRF token'ı ile) ve **15 tarayıcı senaryosu** (Playwright, dört rol için ayrı oturumlarla). Düzeltmeler sonrası tamamı geçti; tarayıcı konsolunda uygulama kaynaklı hata yok (görülen `401` kayıtları, giriş öncesi `/api/me` çağrısının beklenen yanıtıdır).
+28. günde 39 senaryo çalıştırıldı: **24 API senaryosu** (curl, oturum çerezi ve CSRF token'ı ile) ve **15 tarayıcı senaryosu** (dört rol için ayrı oturumlarla). Düzeltmeler sonrası tamamı geçti; tarayıcı konsolunda uygulama kaynaklı hata yok (görülen `401` kayıtları, giriş öncesi `/api/me` çağrısının beklenen yanıtıdır).
+
+> **Kanıt notu:** Bu senaryolar geliştirme sırasında elle çalıştırılmıştır; repository'de saklanan, yeniden koşulabilir bir otomatik test paketi (Playwright, Vitest vb.) **bulunmamaktadır**. Sonuçların kaydı bu bölüm ile [`test-raporu.md`](test-raporu.md) bölüm 6'dır. Otomatik test altyapısının kurulması, `test-raporu.md` bölüm 9'da R1 ve R2 olarak kalan risk şeklinde kayıtlıdır.
 
 Admin ekranı arayüze bağlandıktan sonra **14 senaryoluk ek bir tarayıcı turu** daha çalıştırıldı: kullanıcı listeleme, kullanıcı oluşturma, tekrarlı e-posta çakışması (`409` mesajının arayüzde gösterilmesi), atama panelinin açılması, boş durum, atama oluşturma, atamayı pasife alma, düzenlemede e-posta alanının kilitli olması, kullanıcıyı pasife alma, yetkisiz rolün `/admin` erişimi ve **pasife alınan kullanıcının giriş yapamaması**. Tamamı geçti.
 
