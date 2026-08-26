@@ -11,7 +11,10 @@ import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { createWeeklyReport } from "../../services/weeklyReportService";
+import {
+  createWeeklyReport,
+  updateWeeklyReport,
+} from "../../services/weeklyReportService";
 import type { Project } from "../../types/project";
 import type {
   GeneralStatus,
@@ -40,7 +43,9 @@ type WeeklyReportFieldErrors = Partial<
 
 type WeeklyReportFormProps = {
   project: Project;
-  onReportCreated: (report: WeeklyReport) => void;
+  /** Doluysa form duzenleme modunda acilir (On Analiz 7.4). */
+  report?: WeeklyReport | null;
+  onReportSaved: (report: WeeklyReport) => void;
   onCancel: () => void;
 };
 
@@ -57,13 +62,30 @@ const initialReportForm: WeeklyReportFormState = {
   generalNote: "",
 };
 
+const toFormState = (report: WeeklyReport): WeeklyReportFormState => ({
+  reportWeekStart: report.reportWeekStart,
+  targetProgress: String(report.targetProgress),
+  actualProgress: String(report.actualProgress),
+  generalStatus: report.generalStatus,
+  scheduleStatus: report.scheduleStatus,
+  riskLevel: report.riskLevel,
+  completedSummary: report.completedSummary ?? "",
+  nextWeekPlan: report.nextWeekPlan ?? "",
+  blockers: report.blockers ?? "",
+  generalNote: report.generalNote ?? "",
+});
+
 function WeeklyReportForm({
   project,
-  onReportCreated,
+  report = null,
+  onReportSaved,
   onCancel,
 }: WeeklyReportFormProps) {
-  const [reportForm, setReportForm] =
-    useState<WeeklyReportFormState>(initialReportForm);
+  const isEditMode = report !== null;
+
+  const [reportForm, setReportForm] = useState<WeeklyReportFormState>(() =>
+    report ? toFormState(report) : initialReportForm,
+  );
 
   const [fieldErrors, setFieldErrors] = useState<WeeklyReportFieldErrors>({});
 
@@ -140,21 +162,27 @@ function WeeklyReportForm({
   };
 
   const getApiErrorMessage = (error: unknown) => {
+    const fallbackMessage = isEditMode
+      ? "Haftalık rapor güncellenirken bir hata oluştu."
+      : "Haftalık rapor oluşturulurken bir hata oluştu.";
+
     if (!axios.isAxiosError(error)) {
-      return "Haftalık rapor oluşturulurken bir hata oluştu.";
+      return fallbackMessage;
     }
 
     if (error.response?.status === 409) {
       return "Bu proje için seçilen haftada zaten bir rapor bulunuyor.";
     }
 
+    if (error.response?.status === 403) {
+      return "Bu rapor üzerinde işlem yapma yetkiniz bulunmuyor.";
+    }
+
     const responseData = error.response?.data as
       | { message?: string }
       | undefined;
 
-    return (
-      responseData?.message ?? "Haftalık rapor oluşturulurken bir hata oluştu."
-    );
+    return responseData?.message ?? fallbackMessage;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -184,10 +212,16 @@ function WeeklyReportForm({
     setIsSubmitting(true);
 
     try {
-      const createdReport = await createWeeklyReport(project.id, request);
+      const savedReport = report
+        ? await updateWeeklyReport(project.id, report.id, request)
+        : await createWeeklyReport(project.id, request);
 
-      onReportCreated(createdReport);
-      setReportForm(initialReportForm);
+      onReportSaved(savedReport);
+
+      if (!report) {
+        setReportForm(initialReportForm);
+      }
+
       setFieldErrors({});
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error));
@@ -462,7 +496,11 @@ function WeeklyReportForm({
           </Button>
 
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? "Kaydediliyor..." : "Rapor oluştur"}
+            {isSubmitting
+              ? "Kaydediliyor..."
+              : isEditMode
+                ? "Değişiklikleri kaydet"
+                : "Rapor oluştur"}
           </Button>
         </Stack>
       </Stack>

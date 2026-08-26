@@ -5,6 +5,7 @@ import com.kolaysoft.weeklyprojectstatus.exception.ResourceNotFoundException;
 import com.kolaysoft.weeklyprojectstatus.model.dto.common.PagedResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
+import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
@@ -78,6 +79,57 @@ public class WeeklyReportService {
                 WeeklyReport savedReport = weeklyReportRepository.save(weeklyReport);
 
                 return toResponse(savedReport);
+        }
+
+        /**
+         * On Analiz 5 (MVP) ve 7.4: proje yoneticisi yetkili oldugu projede
+         * raporu daha sonra guncelleyebilir. On Analiz 14, acik soru 3'te
+         * belirsiz birakilan nokta duzenlemenin SURE SINIRIDIR (bkz. 7.4,
+         * is kurali 2); MVP karari sure siniri koymamaktir, erisim yalnizca
+         * yetki (REPORT_UPDATE) ve kapsam (atama) ile sinirlanir.
+         */
+        public WeeklyReportResponse updateWeeklyReport(
+                        Long projectId,
+                        Long weeklyReportId,
+                        WeeklyReportUpdateRequest request) {
+                currentUserService.checkProjectAccess(projectId);
+
+                WeeklyReport weeklyReport = weeklyReportRepository
+                                .findByIdAndProject_Id(
+                                                weeklyReportId,
+                                                projectId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Weekly report not found with id: "
+                                                                + weeklyReportId
+                                                                + " for project id: "
+                                                                + projectId));
+
+                boolean weekTakenByAnotherReport = weeklyReportRepository
+                                .existsByProjectIdAndReportWeekStartAndIdNot(
+                                                projectId,
+                                                request.getReportWeekStart(),
+                                                weeklyReportId);
+
+                if (weekTakenByAnotherReport) {
+                        throw new DuplicateResourceException(
+                                        "Weekly report already exists for project id "
+                                                        + projectId
+                                                        + " and week "
+                                                        + request.getReportWeekStart());
+                }
+
+                weeklyReport.setReportWeekStart(request.getReportWeekStart());
+                weeklyReport.setTargetProgress(request.getTargetProgress());
+                weeklyReport.setActualProgress(request.getActualProgress());
+                weeklyReport.setGeneralStatus(request.getGeneralStatus());
+                weeklyReport.setScheduleStatus(request.getScheduleStatus());
+                weeklyReport.setRiskLevel(request.getRiskLevel());
+                weeklyReport.setCompletedSummary(request.getCompletedSummary());
+                weeklyReport.setNextWeekPlan(request.getNextWeekPlan());
+                weeklyReport.setBlockers(request.getBlockers());
+                weeklyReport.setGeneralNote(request.getGeneralNote());
+
+                return toResponse(weeklyReportRepository.save(weeklyReport));
         }
 
         private static final Set<String> SORTABLE_FIELDS = Set.of(

@@ -3,6 +3,7 @@ package com.kolaysoft.weeklyprojectstatus.controller;
 import com.kolaysoft.weeklyprojectstatus.model.dto.common.PagedResponse;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportCreateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportResponse;
+import com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport.WeeklyReportUpdateRequest;
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -86,5 +88,18 @@ public class WeeklyReportController {
                                 weeklyReportService.getReportById(
                                                 projectId,
                                                 weeklyReportId));
+        }
+
+        @PreAuthorize("hasAuthority('REPORT_UPDATE')")
+        @PutMapping("/{weeklyReportId}")
+        public ResponseEntity<WeeklyReportResponse> updateWeeklyReport(
+                        @PathVariable Long projectId,
+                        @PathVariable Long weeklyReportId,
+                        @Valid @RequestBody WeeklyReportUpdateRequest request) {
+                return ResponseEntity.ok(
+                                weeklyReportService.updateWeeklyReport(
+                                                projectId,
+                                                weeklyReportId,
+                                                request));
         }
 }

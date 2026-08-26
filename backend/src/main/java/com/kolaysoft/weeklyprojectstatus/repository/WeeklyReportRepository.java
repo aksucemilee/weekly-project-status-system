@@ -18,4 +18,13 @@ public interface WeeklyReportRepository
         boolean existsByProjectIdAndReportWeekStart(
                         Long projectId,
                         LocalDate reportWeekStart);
+
+        /**
+         * Guncelleme sirasinda hafta cakismasi kontrolu icin kullanilir;
+         * raporun kendi kaydi cakisma sayilmamalidir.
+         */
+        boolean existsByProjectIdAndReportWeekStartAndIdNot(
+                        Long projectId,
+                        LocalDate reportWeekStart,
+                        Long id);
 }
