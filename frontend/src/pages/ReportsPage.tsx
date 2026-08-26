@@ -42,6 +42,10 @@ import {
   scheduleStatusLabels,
 } from "../components/reports/reportPresentation";
 import type { ReportFilterForm } from "../components/reports/reportPresentation";
+import {
+  projectStatusColors,
+  projectStatusLabels,
+} from "../components/projects/projectPresentation";
 import WorkItemManager from "../components/work-items/WorkItemManager";
 import { getProjects } from "../services/projectService";
 import { getWeeklyReportsByProject } from "../services/weeklyReportService";
@@ -52,33 +56,6 @@ import { formatDisplayDate } from "../utils/dateFormat";
 type ReportDetailTab = "overview" | "workItems" | "riskIssues";
 
 const REPORTS_PAGE_SIZE = 10;
-
-type ProjectStatusChipColor =
-  | "default"
-  | "primary"
-  | "success"
-  | "warning"
-  | "error";
-
-const projectStatusLabels: Record<string, string> = {
-  PLANNED: "Planlandı",
-  IN_PROGRESS: "Devam Ediyor",
-  COMPLETED: "Tamamlandı",
-  BLOCKED: "Bloke",
-};
-
-const projectStatusColors: Record<string, ProjectStatusChipColor> = {
-  PLANNED: "default",
-  IN_PROGRESS: "primary",
-  COMPLETED: "success",
-  BLOCKED: "error",
-};
-
-const getProjectStatusLabel = (status: string) =>
-  projectStatusLabels[status] ?? status;
-
-const getProjectStatusColor = (status: string): ProjectStatusChipColor =>
-  projectStatusColors[status] ?? "default";
 
 type ReportTextSectionProps = {
   title: string;
@@ -422,8 +399,8 @@ function ReportsPage() {
               >
                 {selectedProject && (
                   <Chip
-                    label={getProjectStatusLabel(selectedProject.status)}
-                    color={getProjectStatusColor(selectedProject.status)}
+                    label={projectStatusLabels[selectedProject.status]}
+                    color={projectStatusColors[selectedProject.status]}
                     variant="outlined"
                     size="small"
                   />

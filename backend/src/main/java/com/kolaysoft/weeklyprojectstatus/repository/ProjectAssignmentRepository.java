@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ProjectAssignmentRepository
                 extends JpaRepository<ProjectAssignment, Long> {
@@ -13,8 +12,6 @@ public interface ProjectAssignmentRepository
         boolean existsByProject_IdAndUser_IdAndActiveTrue(
                         Long projectId,
                         Long userId);
-
-        Optional<ProjectAssignment> findByIdAndActiveTrue(Long id);
 
         List<ProjectAssignment> findByUser_IdAndActiveTrue(Long userId);
 

@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Box,
-  Chip,
-  CircularProgress,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 
 import type { Project } from "../../types/project";
 import ResponsiveCardGrid from "../common/ResponsiveCardGrid";
@@ -19,38 +11,9 @@ import {
 
 type ProjectListProps = {
   projects: Project[];
-  isLoading: boolean;
-  errorMessage: string;
 };
 
-function ProjectList({ projects, isLoading, errorMessage }: ProjectListProps) {
-  if (isLoading) {
-    return (
-      <Paper
-        sx={{
-          minHeight: 220,
-          display: "grid",
-          placeItems: "center",
-          p: 3,
-        }}
-      >
-        <Stack spacing={2} sx={{ alignItems: "center" }}>
-          <CircularProgress size={30} />
-
-          <Typography color="text.secondary">Projeler yükleniyor...</Typography>
-        </Stack>
-      </Paper>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <Paper sx={{ p: 3 }}>
-        <Alert severity="error">{errorMessage}</Alert>
-      </Paper>
-    );
-  }
-
+function ProjectList({ projects }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <EmptyState
