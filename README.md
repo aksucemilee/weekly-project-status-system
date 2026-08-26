@@ -81,9 +81,24 @@ weekly-project-status-system/
 │   ├── package.json
 │   └── vite.config.ts
 │
+├── docs/
+│   ├── t13-filter-contract.md
+│   ├── t14-authorization-matrix.md
+│   ├── test-raporu.md
+│   └── ai-kullanim-ozeti.md
+│
 ├── .gitignore
 └── README.md
 ```
+
+### Teslim Dokümanları
+
+| Doküman | İçerik |
+| --- | --- |
+| [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) | Filtre sözleşmesi, sayfalama/sıralama kuralları ve backend filtreleme yönteminin gerekçesi |
+| [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md) | Rol/yetki matrisi, kimlik doğrulama kararı, API ve arayüz yetkilendirme kuralları, yetki test senaryoları |
+| [`docs/test-raporu.md`](docs/test-raporu.md) | Konsolide test kanıtı: senaryolar, hata kayıtları, tekrar test sonuçları ve kalan riskler |
+| [`docs/ai-kullanim-ozeti.md`](docs/ai-kullanim-ozeti.md) | Yapay zekânın nerede, ne amaçla kullanıldığı ve çıktının nasıl doğrulandığı |
 
 Backend tarafında temel olarak katmanlı mimari kullanılmaktadır:
 
@@ -740,6 +755,8 @@ Frontend tarafında şu anda ayrı bir otomatik test komutu tanımlı değildir.
 
 # Manuel MVP Test Kapsamı
 
+> **Ayrıntılı test kanıtı:** Senaryo listeleri, hata kayıtları (kök neden ve düzeltme commit'leriyle), tekrar test sonuçları ve kalan riskler için [`docs/test-raporu.md`](docs/test-raporu.md) dosyasına bakınız. Aşağıdaki bölüm yalnızca kapsamın özetidir.
+
 Temel Full Stack akışları backend, frontend ve PostgreSQL birlikte çalıştırılarak manuel olarak test edilmiştir.
 
 Kontrol edilen ana akış:
@@ -790,27 +807,41 @@ Rol bazlı yetkilendirme senaryoları da test edilmektedir: yetkisiz endpoint er
 
 # Demo Verisi ve Kullanıcılar
 
-Mevcut sürümde otomatik seed yapısı bulunmamaktadır.
+Uygulama, açılışta çalışan iki seeder içerir. Ayrıntılı yapılandırma için yukarıdaki [Demo / Sunum Verisi](#demo--sunum-verisi) bölümüne bakınız.
 
-Demo verileri:
+| Seeder | Sınıf | Ne yapar | Nasıl tetiklenir |
+| --- | --- | --- | --- |
+| Rol / yetki / demo kullanıcı | `config/AuthorizationDataInitializer.java` | Rolleri ve yetki demetlerini senkronlar; dört demo kullanıcısını ve örnek proje atamalarını oluşturur | `SEED_USER_PASSWORD` ortam değişkeni tanımlıysa |
+| Demo / sunum verisi | `config/DemoDataInitializer.java` | Örnek proje, haftalık rapor, iş kalemi ve risk/engel kayıtlarını oluşturur | `SEED_DEMO_DATA=true` ise |
 
-- Uygulama arayüzü
-- Swagger
+Her iki seeder de **idempotent**tir; uygulama her açıldığında veri çoğalmaz.
 
-üzerinden oluşturulabilir.
+## Demo kullanıcıları
 
-Önerilen demo sırası:
+`SEED_USER_PASSWORD` tanımlandığında aşağıdaki kullanıcılar oluşturulur. Parolaların tamamı bu ortam değişkeninin değeridir; kaynak kodda parola tutulmaz.
 
-1. Yeni bir proje oluşturun.
-2. Proje için haftalık rapor ekleyin.
-3. Rapora en az bir iş kalemi ekleyin.
-4. Rapora risk veya engel kaydı ekleyin.
-5. Dashboard'a geçin.
-6. Özet kartlarını ve proje tablosunu kontrol edin.
-7. Hafta, proje, durum veya risk filtresi uygulayın.
-8. Proje detayına girerek rapor, iş kalemi ve risk bilgilerini görüntüleyin.
+| E-posta | Rol | Görebildiği kapsam |
+| --- | --- | --- |
+| `pm@demo.local` | Proje Yöneticisi | Yalnızca atandığı projeler |
+| `cto@demo.local` | CTO | Tüm projeler (salt okunur) |
+| `admin@demo.local` | Admin | Tüm projeler (yönetim amaçlı) |
+| `lider@demo.local` | Ekip Lideri | Yalnızca atandığı projeler (salt okunur) |
 
-Authentication henüz uygulanmadığı için mevcut sürümde tanımlı demo kullanıcı adı veya parola bulunmamaktadır.
+Bu değişken tanımlı değilse demo kullanıcıları oluşturulmaz ve sisteme giriş yapılamaz; uygulama başlangıçta bunu uyarı olarak loglar.
+
+## Önerilen demo sırası
+
+Seeder verisiyle (`SEED_DEMO_DATA=true`) rol farkını göstermek için:
+
+1. `cto@demo.local` ile giriş yapın; dashboard açılır, altı projenin tamamı ve özet sayaçlar görünür.
+2. Hafta, proje, durum veya risk filtresi uygulayın; boş sonuç davranışını da deneyin.
+3. Bir proje satırından rapor detayına girip iş kalemi ve risk bilgilerini görüntüleyin.
+4. Çıkış yapıp `pm@demo.local` ile girin; `/reports` ekranına düşersiniz ve yalnızca üç proje görünür.
+5. Yeni haftalık rapor oluşturun, rapora iş kalemi ve risk/engel ekleyin.
+6. `e-Fatura Entegrasyon Modülü` projesini seçip rapor listesinde sayfalamayı görün (12 rapor, sayfa boyutu 10).
+7. `admin@demo.local` ile girin; kullanıcı oluşturma ve proje ataması akışını gösterin.
+
+Seeder kullanılmadan da veriler uygulama arayüzü veya Swagger üzerinden elle oluşturulabilir.
 
 ---
 
@@ -885,7 +916,7 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
 - Otomatik backend test kapsamı genişletilecektir.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
-- Kontrollü migration ve seed yapısı henüz bulunmamaktadır.
+- Şema yönetimi Hibernate `ddl-auto=update` ile yapılır; Flyway/Liquibase gibi sürümlenmiş bir migration yapısı bulunmamaktadır. Seed tarafı ise mevcuttur (`AuthorizationDataInitializer` ve `DemoDataInitializer`), ancak uygulama açılışında çalışan idempotent bir seeder'dır; sürümlenmiş bir veri göçü değildir.
 - Deployment henüz tamamlanmamıştır; proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.
 - Geliştirme ilerledikçe README, test sonuçları ve çalıştırma adımları güncellenecektir.
 
@@ -893,13 +924,14 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
 # Geliştirme Planı
 
-MVP'nin çalışan sürümü hazır; backend ve frontend, PostgreSQL ile birlikte yerel ortamda doğrulanmış durumdadır.
+MVP'nin çalışan sürümü hazır; backend ve frontend, PostgreSQL ile birlikte yerel ortamda doğrulanmış durumdadır. Bunun üzerine T13 (filtreleme, sayfalama, sıralama), T14 (kimlik doğrulama ve rol bazlı yetkilendirme) ve T15 (demo verisi) tamamlanmıştır.
 
 Sıradaki planlanan geliştirmeler:
 
-1. Dashboard filtrelerinin genişletilmesi (ek filtre seçenekleri; Dashboard'a özel sayfalama, portföy görünümü gerektirdiği için kasıtlı olarak eklenmedi)
-2. Authentication ve rol bazlı yetkilendirme
-3. Yetkili ve yetkisiz kullanıcı senaryolarının test edilmesi
+1. **Otomatik test kapsamının genişletilmesi.** Mevcut durumda yalnızca uygulama bağlamının yüklendiğini doğrulayan tek bir test bulunuyor; iş kuralları, yetkilendirme ve filtreleme davranışları manuel olarak doğrulanmaktadır. Bu, projenin en büyük açık riskidir (bkz. [`docs/test-raporu.md`](docs/test-raporu.md), "Kalan riskler").
+2. **Haftalık rapor ve proje güncelleme endpointleri.** Ön Analiz'de planlanmış, T14 kapsamında bilinçli olarak ertelenmiştir (bkz. [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md), bölüm 7).
+3. **Sorumlu filtresi.** Gerekli `ProjectAssignment` veri modeli mevcut; dashboard ve rapor listesi endpointlerine `responsibleUserId` parametresinin eklenmesi kalmıştır.
+4. **Deployment.** Proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.
 
 Daha sonraki aşamalarda ihtiyaç ve süreye bağlı olarak:
 
