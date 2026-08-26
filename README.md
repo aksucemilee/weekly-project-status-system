@@ -81,9 +81,24 @@ weekly-project-status-system/
 │   ├── package.json
 │   └── vite.config.ts
 │
+├── docs/
+│   ├── t13-filter-contract.md
+│   ├── t14-authorization-matrix.md
+│   ├── test-raporu.md
+│   └── ai-kullanim-ozeti.md
+│
 ├── .gitignore
 └── README.md
 ```
+
+### Teslim Dokümanları
+
+| Doküman | İçerik |
+| --- | --- |
+| [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) | Filtre sözleşmesi, sayfalama/sıralama kuralları ve backend filtreleme yönteminin gerekçesi |
+| [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md) | Rol/yetki matrisi, kimlik doğrulama kararı, API ve arayüz yetkilendirme kuralları, yetki test senaryoları |
+| [`docs/test-raporu.md`](docs/test-raporu.md) | Konsolide test kanıtı: senaryolar, hata kayıtları, tekrar test sonuçları ve kalan riskler |
+| [`docs/ai-kullanim-ozeti.md`](docs/ai-kullanim-ozeti.md) | Yapay zekânın nerede, ne amaçla kullanıldığı ve çıktının nasıl doğrulandığı |
 
 Backend tarafında temel olarak katmanlı mimari kullanılmaktadır:
 
