@@ -48,6 +48,7 @@ Yönetmelik bu ikinci ekseni 27. günde ayrıca istiyor ("Proje sahipliği ve 40
 | `PROJECT_MANAGE` | Proje oluşturma |
 | `REPORT_VIEW` | Haftalık rapor listeleme ve detay görüntüleme |
 | `REPORT_CREATE` | Haftalık rapor oluşturma |
+| `REPORT_UPDATE` | Haftalık rapor güncelleme *(final denetiminde eklendi, bkz. bölüm 13)* |
 | `WORKITEM_VIEW` | İş kalemi listeleme ve detay görüntüleme |
 | `WORKITEM_MANAGE` | İş kalemi oluşturma, güncelleme, silme |
 | `RISK_VIEW` | Risk/engel listeleme ve detay görüntüleme |
@@ -66,6 +67,7 @@ Yönetmelik bu ikinci ekseni 27. günde ayrıca istiyor ("Proje sahipliği ve 40
 | `PROJECT_MANAGE` | – | – | ✔ | – |
 | `REPORT_VIEW` | ✔ | ✔ | ✔ | ✔ |
 | `REPORT_CREATE` | ✔ | – | – | – |
+| `REPORT_UPDATE` | ✔ | – | – | – |
 | `WORKITEM_VIEW` | ✔ | ✔ | – | ✔ |
 | `WORKITEM_MANAGE` | ✔ | – | – | – |
 | `RISK_VIEW` | ✔ | ✔ | – | ✔ |
@@ -159,11 +161,13 @@ Kapsam sütunu: **Atanmış** = yalnızca kullanıcının atandığı projeler, 
 | --- | --- | :-: | :-: | :-: | :-: | --- | --- |
 | `GET /api/health` | – (açık) | ✔ | ✔ | ✔ | ✔ | – | – |
 | `POST /api/projects` | `PROJECT_MANAGE` | ✘ | ✘ | ✔ | ✘ | – | 401 / 403 |
+| `PUT /api/projects/{projectId}` | `PROJECT_MANAGE` | ✘ | ✘ | ✔ | ✘ | – | 401 / 403 / 404 |
 | `GET /api/projects` | `PROJECT_VIEW` | ✔ | ✔ | ✔ | ✔ | PY, EL → Atanmış | 401 / 403; kapsam dışı projeler listeye girmez |
 | `GET /api/projects/{projectId}` | `PROJECT_VIEW` | ✔ | ✔ | ✔ | ✔ | PY, EL → Atanmış | 401 / 403 |
 | `POST /api/projects/{projectId}/weekly-reports` | `REPORT_CREATE` | ✔ | ✘ | ✘ | ✘ | Atanmış | 401 / 403 |
 | `GET /api/projects/{projectId}/weekly-reports` | `REPORT_VIEW` | ✔ | ✔ | ✔ | ✔ | PY, EL → Atanmış | 401 / 403 |
 | `GET /api/projects/{projectId}/weekly-reports/{weeklyReportId}` | `REPORT_VIEW` | ✔ | ✔ | ✔ | ✔ | PY, EL → Atanmış | 401 / 403 / 404 |
+| `PUT /api/projects/{projectId}/weekly-reports/{weeklyReportId}` | `REPORT_UPDATE` | ✔ | ✘ | ✘ | ✘ | Atanmış | 401 / 403 / 404 / 409 |
 | `POST /api/weekly-reports/{id}/work-items` | `WORKITEM_MANAGE` | ✔ | ✘ | ✘ | ✘ | Atanmış | 401 / 403 |
 | `GET /api/weekly-reports/{id}/work-items` | `WORKITEM_VIEW` | ✔ | ✔ | ✘ | ✔ | PY, EL → Atanmış | 401 / 403 |
 | `GET /api/weekly-reports/{id}/work-items/{workItemId}` | `WORKITEM_VIEW` | ✔ | ✔ | ✘ | ✔ | PY, EL → Atanmış | 401 / 403 / 404 |
@@ -193,10 +197,12 @@ Kapsam sütunu: **Atanmış** = yalnızca kullanıcının atandığı projeler, 
 
 ### Kapsam dışı bırakılanlar
 
+> **Güncelleme notu (final denetimi):** Aşağıdaki ilk iki satır T14 *kapsamı* için geçerliydi ve o hâliyle doğruydu. Rapor ve proje **güncelleme** endpointleri final teslim öncesi kapsam denetiminde eklenmiştir; güncel durum için bölüm 13'e bakınız. **Silme** endpointleri hâlâ yoktur ve bilinçli olarak kapsam dışıdır.
+
 | Konu | Durum |
 | --- | --- |
-| Haftalık rapor güncelleme/silme | Projede bu endpointler **hiç yok**. T14 yetkilendirmeye odaklandığı için yeni CRUD endpoint'i eklenmez. Bu, Ön Analiz'deki 3. açık soruyu (*geçmiş raporlar düzenlenebilir mi*) T14 kapsamında açık bırakır. |
-| Proje güncelleme/silme | Aynı şekilde endpoint yok, T14'te eklenmez. |
+| Haftalık rapor güncelleme/silme | T14 yetkilendirmeye odaklandığı için yeni CRUD endpoint'i eklenmedi. Bu, Ön Analiz'deki 3. açık soruyu (*geçmiş raporlar düzenlenebilir mi*) T14 kapsamında açık bıraktı. **Güncelleme sonradan eklendi (bölüm 13); silme hâlâ yok.** |
+| Proje güncelleme/silme | T14'te eklenmedi. **Güncelleme sonradan eklendi (bölüm 13); silme hâlâ yok.** |
 | Yetki demetlerinin arayüzden yönetimi | Seed verisi olarak sabittir (bkz. bölüm 3). |
 | Kullanıcı silme | Uygulanmadı. Erişim, silme yerine kullanıcının pasife alınmasıyla kapatılır; böylece geçmiş raporlardaki `oluşturan kullanıcı` izleri korunur. |
 
@@ -233,6 +239,9 @@ Mevcut kodda `/` ve tanımsız route'lar koşulsuz olarak `/dashboard`'a yönlen
 | --- | --- | --- | --- |
 | `/projects` | "+ Yeni proje" butonu | `PROJECT_MANAGE` | Buton gösterilmez |
 | `/reports` | "+ Yeni rapor" butonu | `REPORT_CREATE` | Buton gösterilmez |
+| `/reports` → Rapor detayı | "Raporu düzenle" butonu | `REPORT_UPDATE` | Buton gösterilmez |
+| `/reports` → Rapor detayı | "İş Kalemleri" / "Risk ve Engeller" sekmeleri | `WORKITEM_VIEW` / `RISK_VIEW` | Sekme hiç açılmaz |
+| `/projects` | Proje kartındaki "Düzenle" butonu | `PROJECT_MANAGE` | Buton gösterilmez |
 | `/reports` → İş Kalemleri | Ekle / Düzenle / Sil | `WORKITEM_MANAGE` | Butonlar gösterilmez, liste salt okunur |
 | `/reports` → Risk ve Engeller | Ekle / Düzenle / Sil | `RISK_MANAGE` | Butonlar gösterilmez, liste salt okunur |
 | `/admin` | Kullanıcı oluştur/güncelle | `USER_MANAGE` | Ekrana zaten erişilemez |
@@ -340,3 +349,51 @@ Admin ekranı arayüze bağlandıktan sonra **14 senaryoluk ek bir tarayıcı tu
 Uygulama sırasında matristen bilinçli olarak sapılan tek nokta, tüm projelere erişim yetkisinin belirlenme biçimidir. Matris bunu rol bazında tanımlıyordu (CTO ve Admin sınırsız). Uygulamada bu, rol adına değil **yetkiye** bağlandı: `DASHBOARD_VIEW` veya `ASSIGNMENT_MANAGE` yetkisine sahip kullanıcı kapsam kısıtına tabi değildir. Sonuç aynı, ancak bu sayede rol adı kodda hiçbir yerde geçmiyor ve dokümanın 1. bölümündeki ilke tutarlı kalıyor.
 
 Bunun dışında tüm kurallar matriste yazıldığı gibi uygulanmıştır.
+
+---
+
+## 13. Final Denetimi Sonrası Eklemeler (26.08.2026)
+
+Final teslim öncesi yapılan kapsam denetiminde, T14'te bilinçli olarak ertelenen iki endpoint MVP kapsamında gerekli bulunarak eklenmiştir. Gerekçeler aşağıdadır.
+
+### 13.1 `PUT .../weekly-reports/{id}` — eklendi
+
+T14'te erteleme gerekçesi "T14 yetkilendirmeye odaklandığı için" idi; bu, kapsam kararı değil sıralama kararıydı. Kaynaklara yeniden bakıldığında güncelleme MVP'de zorunlu çıkmıştır:
+
+- **Yönetmelik bölüm 5.4**, ilk madde: *"proje yöneticisinin yalnızca yetkili olduğu projelerde haftalık rapor **oluşturup güncelleyebildiği** bir akış geliştirin."*
+- **Yönetmelik T05, 8. gün / Backend:** *"Listeleme, oluşturma ve **güncelleme** servis/endpointlerini geliştir."*
+- **Ön Analiz bölüm 5 (MVP):** *"haftalık rapor oluşturabilmeli ve yetkisi varsa daha sonra **güncelleyebilmelidir**."*
+- **Ön Analiz bölüm 7.4:** tam kullanıcı hikâyesi ve üç kabul kriteri.
+- **Ön Analiz bölüm 10.3:** ekranın adı zaten *"Haftalık Rapor Oluşturma **ve Düzenleme** Ekranı"*.
+
+**Açık soru 3 neden engel değil:** Ön Analiz bölüm 7.4, iş kuralı 2 açık soruyu daraltıyor: *"Geçmiş raporların **ne kadar süreyle** düzenlenebileceği açık sorudur."* Belirsiz olan **süre sınırı**, güncellemenin varlığı değil. MVP kararı süre sınırı koymamaktır; erişim yalnızca yetki ve kapsam ile sınırlanır. Bu karar bölüm 6'daki hata davranışı tablosunu değiştirmez.
+
+**Neden yeni bir yetki:** `REPORT_CREATE` yeniden kullanılsaydı yetki adı yaptığı işi anlatmaz ve Ön Analiz 7.4'ün *"güncelleme yetkisi bulunan kullanıcı"* ifadesi karşılıksız kalırdı. `REPORT_UPDATE` yalnızca proje yöneticisine verilmiştir: CTO Ön Analiz bölüm 3 gereği salt okunur, Admin ise bu dokümanın 3. bölümünde açık soru 5 kapatılırken "düzenleyemez/silemez" olarak kararlaştırılmıştı.
+
+**İş kuralı:** Rapor haftası, aynı projede başka bir rapora ait haftaya taşınırsa `409 Conflict` döner; raporun kendi haftası çakışma sayılmaz.
+
+### 13.2 `PUT /api/projects/{projectId}` — eklendi
+
+Bu endpoint Ön Analiz bölüm 12.2'de listeli, bölüm 10.8'de ekranı tanımlı, ancak **hiçbir MVP kapsam tanımında ve hiçbir kabul kriterinde yok**. Tek başına bakıldığında B seviyesi bir özelliktir.
+
+Eklenmesinin nedeni işlevsel bir çıkmazdır: `Project.status` ve `Project.active` yalnızca oluşturma anında belirlenebiliyordu. Dashboard "bloke proje" sayacı `status == BLOCKED` üzerinden, aktif proje listesi ise `active` üzerinden hesaplandığı için, bir proje **hiçbir zaman** tamamlandı/bloke olarak işaretlenemiyor ve portföyden çıkarılamıyordu. Admin proje yönetimi akışı (Ön Analiz 7.8) bu hâliyle yarım kalıyordu.
+
+Kapsam dar tutulmuştur: oluşturma ile aynı alanlar, mevcut `PROJECT_MANAGE` yetkisi (yeni yetki eklenmedi), **silme yok**.
+
+### 13.3 Testte bulunan yetkilendirme dışı kusurlar
+
+Denetim sırasında yetkilendirmeyle ilgili iki arayüz kusuru bulunup düzeltilmiştir; ikisi de bu dokümandaki kuralların arayüzde eksik uygulanmasından kaynaklanıyordu:
+
+| Bulgu | Kök neden | Düzeltme |
+| --- | --- | --- |
+| Marka logosu tüm rollerde `/dashboard`'a gidiyordu; PY, Admin ve EL erişim reddi ekranına düşüyordu | Bölüm 8'deki "başlangıç ekranı" kuralı `AppRoutes` içinde uygulanmış ama `MainLayout`'taki marka bağlantısında uygulanmamıştı | Bağlantı `getLandingPath(user)` kullanacak şekilde düzeltildi |
+| Admin, rapor detayında "İş Kalemleri" sekmesini açtığında genel bir hata mesajı görüyordu | Admin'in `WORKITEM_VIEW`/`RISK_VIEW` yetkisi yok (bölüm 3, kasıtlı), ancak sekmeler koşulsuz gösteriliyor ve alt liste `403` alıyordu | Sekmeler ilgili `*_VIEW` yetkisine bağlandı |
+
+### 13.4 Kapsam dışında bırakılmaya devam edenler
+
+| Konu | Gerekçe |
+| --- | --- |
+| `DELETE` (rapor ve proje) | Ön Analiz 12.3 "MVP dışında bırakılabilir" diyor; bölüm 14, açık soru 3 cevaplanmadı |
+| Kullanıcı silme | Bölüm 7'deki gerekçe geçerliliğini koruyor |
+| Yetki demetlerinin arayüzden yönetimi | Bölüm 3'teki gerekçe geçerliliğini koruyor |
+| `responsibleUserId` filtresi | Sorumlu bilgisi artık **gösteriliyor**, ancak filtre parametresi eklenmedi; MVP filtre beklentisi (yönetmelik 5.2: proje, hafta, durum, risk) zaten karşılanıyor |

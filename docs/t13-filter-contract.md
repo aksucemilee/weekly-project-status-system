@@ -56,6 +56,8 @@ Bu doküman, 21-24. gün (T13: Filtreleme ve Durum Zenginleştirme) kapsamında 
 
 Bu nedenle T13 kapsamında sahte bir proje sorumlusu filtresi kurulmuyor. Sorumlu filtresi, T14'te `User`/`ProjectAssignment` benzeri bir veri modeli oluşturulduktan sonra: `Dashboard` ve rapor listesi endpointlerine `responsibleUserId` (veya benzeri) parametresi eklenerek, projenin atanmış kullanıcısına göre filtrelenerek tamamlanacaktır.
 
+> **Güncelleme (26.08.2026):** `ProjectAssignment` modeli T14 ile geldi ve sorumlu proje yöneticisi bilgisi final denetiminde dashboard ile proje listesinde **gösterilmeye** başlandı (aktif ve `PROJE_YONETICISI` rolündeki atamadan türetilir). Ancak buna göre **filtreleme** hâlâ eklenmemiştir; yukarıdaki plan `responsibleUserId` parametresi için geçerliliğini korur. Yönetmelik bölüm 5.2'nin istediği asgari filtre kümesi (proje, hafta/tarih, durum, risk) bu parametre olmadan da karşılanmaktadır.
+
 ### Yetki Etkisi (RBAC) — T14'e Ertelendi, Genişletme Notu
 
 Sistemde şu an authentication/authorization (RBAC) yok, bu nedenle T13 kapsamında sahte bir yetki filtresi kurulmadı. Ancak `WeeklyReportSpecifications` yapısı bu genişlemeye uygun kurulmuştur: T14'te RBAC eklendiğinde, oturum açmış kullanıcının yetkili olduğu proje id listesi (`allowedProjectIds`) `WeeklyReportSpecifications.projectIdIn(allowedProjectIds)` ile mevcut `Specification.and(...)` zincirine tek bir ek predicate olarak eklenebilir — `DashboardService.findLatestReportsForProjects` zaten `projectIdIn` kullandığı için aynı predicate doğrudan tekrar kullanılabilir, servis/controller imzalarını kırmadan.

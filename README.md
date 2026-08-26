@@ -12,9 +12,9 @@ Sistem kapsamında proje ve haftalık rapor yönetiminin yanında iş kalemleri,
 
 Mevcut sürümde aşağıdaki temel akışlar bulunmaktadır:
 
-- Proje oluşturma ve listeleme
+- Proje oluşturma, listeleme ve güncelleme
 - Proje detayını görüntüleme
-- Haftalık proje durum raporu oluşturma ve listeleme
+- Haftalık proje durum raporu oluşturma, listeleme ve güncelleme
 - Haftalık rapor detayını görüntüleme
 - Haftalık raporlara bağlı iş kalemlerini yönetme
 - Haftalık raporlara bağlı risk ve engel kayıtlarını yönetme
@@ -424,21 +424,29 @@ Parola veya parola hash'i hiçbir yanıtta dönmez. Aynı kullanıcı-proje ikil
 
 ## Project
 
-| Metot  | Endpoint                    | Açıklama                             |
-| ------ | --------------------------- | ------------------------------------ |
-| `POST` | `/api/projects`             | Yeni proje oluşturur                 |
-| `GET`  | `/api/projects`             | Tüm projeleri listeler               |
-| `GET`  | `/api/projects/{projectId}` | Belirtilen projenin detayını getirir |
+| Metot  | Endpoint                    | Açıklama                             | Gerekli yetki    |
+| ------ | --------------------------- | ------------------------------------ | ---------------- |
+| `POST` | `/api/projects`             | Yeni proje oluşturur                 | `PROJECT_MANAGE` |
+| `GET`  | `/api/projects`             | Kullanıcının kapsamındaki projeleri listeler | `PROJECT_VIEW` |
+| `GET`  | `/api/projects/{projectId}` | Belirtilen projenin detayını getirir | `PROJECT_VIEW`   |
+| `PUT`  | `/api/projects/{projectId}` | Proje temel bilgilerini, durumunu ve portföy aktifliğini günceller | `PROJECT_MANAGE` |
+
+Proje yanıtlarında `responsibleManager` alanı, projeye `PROJE_YONETICISI` sıfatıyla atanmış aktif kullanıcının adını taşır; atama yoksa `null` döner.
+
+Proje güncellemede `status` ve `active` alanları zorunludur. `active=false` yapılan proje CTO dashboard'unda listelenmez; kayıt silinmediği için geçmiş raporları korunur.
 
 ---
 
 ## Weekly Report
 
-| Metot  | Endpoint                                                    | Açıklama                                     |
-| ------ | ----------------------------------------------------------- | -------------------------------------------- |
-| `POST` | `/api/projects/{projectId}/weekly-reports`                  | Projeye haftalık rapor oluşturur             |
-| `GET`  | `/api/projects/{projectId}/weekly-reports`                  | Projeye ait haftalık raporları listeler      |
-| `GET`  | `/api/projects/{projectId}/weekly-reports/{weeklyReportId}` | Belirtilen haftalık raporun detayını getirir |
+| Metot  | Endpoint                                                    | Açıklama                                     | Gerekli yetki   |
+| ------ | ----------------------------------------------------------- | -------------------------------------------- | --------------- |
+| `POST` | `/api/projects/{projectId}/weekly-reports`                  | Projeye haftalık rapor oluşturur             | `REPORT_CREATE` |
+| `GET`  | `/api/projects/{projectId}/weekly-reports`                  | Projeye ait haftalık raporları listeler      | `REPORT_VIEW`   |
+| `GET`  | `/api/projects/{projectId}/weekly-reports/{weeklyReportId}` | Belirtilen haftalık raporun detayını getirir | `REPORT_VIEW`   |
+| `PUT`  | `/api/projects/{projectId}/weekly-reports/{weeklyReportId}` | Haftalık raporu günceller                    | `REPORT_UPDATE` |
+
+Güncellemede oluşturma ile aynı validasyon kuralları uygulanır. Rapor haftası, aynı projede başka bir rapora ait bir haftaya taşınırsa istek `409 Conflict` ile reddedilir; raporun kendi haftası çakışma sayılmaz. Düzenleme için bir süre sınırı yoktur: erişim yalnızca `REPORT_UPDATE` yetkisi ve proje ataması (kapsam) ile sınırlanır.
 
 Rapor listeleme isteği aşağıdaki isteğe bağlı filtre, sayfalama ve sıralama parametrelerini destekler:
 
@@ -527,8 +535,12 @@ Proje yönetimi kapsamında:
 - Yeni proje oluşturulabilir.
 - Projeler listelenebilir.
 - Proje detayları backend üzerinden görüntülenebilir.
-- Proje oluşturma sırasında oluşan API hataları frontend üzerinde kullanıcıya gösterilir.
+- `PROJECT_MANAGE` yetkisi olan kullanıcı (Admin) proje adı, müşteri, açıklama, tarihler, proje durumu ve portföy aktifliğini güncelleyebilir.
+- Proje listesinde her projenin sorumlu proje yöneticisi gösterilir; atama yoksa "Atanmadı" yazar.
+- Proje oluşturma ve güncelleme sırasında oluşan API hataları frontend üzerinde kullanıcıya gösterilir.
 - Listeleme sırasında loading, empty ve error durumları yönetilir.
+
+Proje durumu ve aktifliğinin güncellenebilmesi, CTO dashboard'undaki "bloke proje" sayacının ve aktif proje listesinin gerçekten yönetilebilmesini sağlar; bu iki alan yalnızca oluşturma anında belirlenebilseydi bir proje tamamlandı/bloke olarak işaretlenemez ve portföyden çıkarılamazdı.
 
 ---
 
@@ -550,6 +562,8 @@ Haftalık raporlarda temel olarak aşağıdaki bilgiler tutulmaktadır:
 - Genel durum notu
 
 Seçilen projeye ait geçmiş haftalık raporlar listelenebilir ve rapor detayları görüntülenebilir. Rapor listesi; hafta, genel durum, risk seviyesi ve takvim durumuna göre filtrelenebilir. Bu filtreler seçim yapıldığı anda uygulanır (Dashboard'daki "Uygula" adımının aksine); "Temizle" ile sıfırlanır.
+
+`REPORT_UPDATE` yetkisi olan kullanıcı (proje yöneticisi), rapor detayındaki "Raporu düzenle" aksiyonuyla mevcut bir raporu güncelleyebilir. Form aynı validasyon kurallarıyla mevcut değerler dolu olarak açılır. Düzenleme için süre sınırı bulunmaz; kullanıcı yalnızca atandığı projelerin raporlarını düzenleyebilir. CTO ve Admin bu aksiyonu görmez ve doğrudan API isteği gönderirlerse `403` alırlar.
 
 ---
 
@@ -598,7 +612,7 @@ CTO dashboard, projelerin güncel haftalık durumlarını tek ekranda karşıla�
 Dashboard üzerinde:
 
 - Portföy özet kartları
-- Proje durum tablosu
+- Proje durum tablosu (proje, müşteri, sorumlu proje yöneticisi)
 - Proje ve rapor detay görünümü
 - İş kalemi bilgileri
 - Risk ve engel bilgileri
@@ -774,6 +788,8 @@ Raporu PostgreSQL'e kaydetme
         ↓
 Haftalık raporları görüntüleme
         ↓
+Haftalık raporu güncelleme
+        ↓
 Rapora iş kalemi ekleme
         ↓
 İş kalemini güncelleme ve silme
@@ -838,8 +854,10 @@ Seeder verisiyle (`SEED_DEMO_DATA=true`) rol farkını göstermek için:
 3. Bir proje satırından rapor detayına girip iş kalemi ve risk bilgilerini görüntüleyin.
 4. Çıkış yapıp `pm@demo.local` ile girin; `/reports` ekranına düşersiniz ve yalnızca üç proje görünür.
 5. Yeni haftalık rapor oluşturun, rapora iş kalemi ve risk/engel ekleyin.
-6. `e-Fatura Entegrasyon Modülü` projesini seçip rapor listesinde sayfalamayı görün (12 rapor, sayfa boyutu 10).
-7. `admin@demo.local` ile girin; kullanıcı oluşturma ve proje ataması akışını gösterin.
+6. Aynı raporu "Raporu düzenle" ile güncelleyin; hatalı bir ilerleme değeri (`120`) girip alan hatasını da gösterin.
+7. `e-Fatura Entegrasyon Modülü` projesini seçip rapor listesinde sayfalamayı görün (12 rapor, sayfa boyutu 10).
+8. `admin@demo.local` ile girin; kullanıcı oluşturma ve proje ataması akışını gösterin.
+9. `/projects` ekranında bir projeyi düzenleyip durumunu `Bloke` yapın; CTO ile tekrar girip dashboard'daki "bloke proje" sayacının arttığını gösterin.
 
 Seeder kullanılmadan da veriler uygulama arayüzü veya Swagger üzerinden elle oluşturulabilir.
 
@@ -891,6 +909,9 @@ Tamamlanan ana teknik parçalar:
 - Frontend production build
 - Manuel MVP testleri
 - Proje (Project) alan validasyonları (ad ve müşteri adı zorunluluğu, uzunluk sınırı)
+- Haftalık rapor güncelleme (`REPORT_UPDATE` yetkisi, hafta çakışmasında `409`)
+- Proje güncelleme (durum ve portföy aktifliği dâhil)
+- Sorumlu proje yöneticisinin dashboard ve proje listesinde gösterimi
 - Dashboard takvim durumu (gecikme) filtresi
 - Haftalık rapor listesi filtreleri (hafta, genel durum, risk seviyesi, takvim durumu), Specification tabanlı dinamik sorgu, sayfalama ve sıralama
 - Kullanıcı, rol, yetki ve proje atama veri modeli
@@ -910,9 +931,9 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Parola sıfırlama ve parola değiştirme akışları bulunmamaktadır; parola yalnızca kullanıcı oluşturulurken belirlenir.
 - Kullanıcıya rolünün dışında doğrudan ek yetki verme (`User.additionalPermissions`) veri modelinde desteklenmekte, ancak bunu yöneten bir arayüz bulunmamaktadır.
 - Yetki demetleri (hangi rolün hangi yetkilere sahip olduğu) uygulama açılışında sabit seed verisi olarak yüklenir; çalışma zamanında arayüzden yönetilemez.
-- Project API üzerinde güncelleme ve silme endpointleri mevcut değildir.
-- WeeklyReport API üzerinde güncelleme ve silme endpointleri mevcut değildir.
-- Dashboard ve rapor listesinde "sorumlu" filtresi henüz yoktur. Gerekli `ProjectAssignment` veri modeli artık mevcuttur; filtre parametresinin eklenmesi sonraki adımdadır.
+- Project ve WeeklyReport API'lerinde **silme** endpointleri bulunmamaktadır. Ön Analiz bölüm 12.3 rapor silmeyi "MVP dışında bırakılabilir" olarak işaretlemiş, bölüm 14'teki 3. açık soru da cevaplanmamıştır; bu nedenle silme bilinçli olarak kapsam dışında bırakılmıştır. Güncelleme endpointleri mevcuttur.
+- Dashboard ve rapor listesinde "sorumlu" **filtresi** henüz yoktur. Sorumlu proje yöneticisi bilgisi artık dashboard ve proje listesinde **gösterilmektedir**, ancak buna göre filtreleme yapılamamaktadır.
+- Enum alanları için Hibernate `CHECK` constraint üretir ve `ddl-auto=update` bu constraint'i güncellemez. Bu nedenle mevcut bir veritabanına yeni bir enum değeri (örneğin yeni bir yetki kodu) eklendiğinde uygulama açılışta hata verir; temiz kurulumda sorun oluşmaz. Ayrıntı ve tek seferlik çözüm için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 7, bulgu H8'e bakınız.
 - Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
 - Otomatik backend test kapsamı genişletilecektir.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
@@ -926,11 +947,13 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 
 MVP'nin çalışan sürümü hazır; backend ve frontend, PostgreSQL ile birlikte yerel ortamda doğrulanmış durumdadır. Bunun üzerine T13 (filtreleme, sayfalama, sıralama), T14 (kimlik doğrulama ve rol bazlı yetkilendirme) ve T15 (demo verisi) tamamlanmıştır.
 
+Final teslim öncesi yapılan kapsam denetiminde, Ön Analiz ve yönetmelikte MVP kapsamında olduğu hâlde eksik kalan üç konu tamamlanmıştır: haftalık rapor güncelleme, proje güncelleme ve sorumlu proje yöneticisinin gösterimi.
+
 Sıradaki planlanan geliştirmeler:
 
 1. **Otomatik test kapsamının genişletilmesi.** Mevcut durumda yalnızca uygulama bağlamının yüklendiğini doğrulayan tek bir test bulunuyor; iş kuralları, yetkilendirme ve filtreleme davranışları manuel olarak doğrulanmaktadır. Bu, projenin en büyük açık riskidir (bkz. [`docs/test-raporu.md`](docs/test-raporu.md), "Kalan riskler").
-2. **Haftalık rapor ve proje güncelleme endpointleri.** Ön Analiz'de planlanmış, T14 kapsamında bilinçli olarak ertelenmiştir (bkz. [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md), bölüm 7).
-3. **Sorumlu filtresi.** Gerekli `ProjectAssignment` veri modeli mevcut; dashboard ve rapor listesi endpointlerine `responsibleUserId` parametresinin eklenmesi kalmıştır.
+2. **Sorumlu filtresi.** Sorumlu bilgisi artık gösteriliyor; dashboard ve rapor listesi endpointlerine `responsibleUserId` parametresinin eklenmesi kalmıştır.
+3. **Sürümlenmiş migration (Flyway/Liquibase).** `ddl-auto=update` şema evrimini karşılamıyor (bkz. bulgu H8).
 4. **Deployment.** Proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.
 
 Daha sonraki aşamalarda ihtiyaç ve süreye bağlı olarak:
