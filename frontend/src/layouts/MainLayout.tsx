@@ -21,6 +21,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router";
 
 import type { PermissionCode } from "../types/auth";
 
+import { getLandingPath } from "../types/auth";
 import { useAuth } from "../auth/authContext";
 import { useColorMode } from "../theme/ColorModeProvider";
 import { layoutTokens } from "../theme/layoutTokens";
@@ -165,7 +166,10 @@ function MainLayout() {
           >
             <Box
               component={Link}
-              to="/dashboard"
+              // Dashboard yalnizca DASHBOARD_VIEW yetkisi olan kullaniciya
+              // acik oldugu icin marka baglantisi sabit /dashboard olamaz;
+              // aksi halde diger roller erisim reddi ekranina duser.
+              to={user ? getLandingPath(user) : "/login"}
               sx={{
                 display: "flex",
                 alignItems: "center",
