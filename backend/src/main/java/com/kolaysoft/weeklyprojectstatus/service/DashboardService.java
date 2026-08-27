@@ -18,6 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,7 +55,17 @@ public class DashboardService {
                         GeneralStatus generalStatus,
                         RiskLevel riskLevel,
                         ScheduleStatus scheduleStatus) {
-                LocalDate weekEnd = weekStart == null ? null : weekStart.plusDays(6);
+                // Rapor donemi haftanin Pazartesi'sine normalize edilerek
+                // saklandigi icin pencere de ayni gunden baslar; aksi halde
+                // hafta ici bir gun secildiginde pencere kayar ve o haftanin
+                // raporu disarida kalirdi.
+                LocalDate normalizedWeekStart = weekStart == null
+                                ? null
+                                : weekStart.with(DayOfWeek.MONDAY);
+
+                LocalDate weekEnd = normalizedWeekStart == null
+                                ? null
+                                : normalizedWeekStart.plusDays(6);
 
                 List<Project> activeProjects = projectRepository
                                 .findByActiveTrueOrderByNameAsc()
@@ -65,7 +76,7 @@ public class DashboardService {
 
                 Map<Long, WeeklyReport> latestMatchingReportByProjectId = findLatestReportsForProjects(
                                 activeProjects,
-                                weekStart,
+                                normalizedWeekStart,
                                 weekEnd);
 
                 Map<Long, String> responsibleManagers = projectAssignmentService

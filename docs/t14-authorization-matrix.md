@@ -389,7 +389,33 @@ Denetim sırasında yetkilendirmeyle ilgili iki arayüz kusuru bulunup düzeltil
 | Marka logosu tüm rollerde `/dashboard`'a gidiyordu; PY, Admin ve EL erişim reddi ekranına düşüyordu | Bölüm 8'deki "başlangıç ekranı" kuralı `AppRoutes` içinde uygulanmış ama `MainLayout`'taki marka bağlantısında uygulanmamıştı | Bağlantı `getLandingPath(user)` kullanacak şekilde düzeltildi |
 | Admin, rapor detayında "İş Kalemleri" sekmesini açtığında genel bir hata mesajı görüyordu | Admin'in `WORKITEM_VIEW`/`RISK_VIEW` yetkisi yok (bölüm 3, kasıtlı), ancak sekmeler koşulsuz gösteriliyor ve alt liste `403` alıyordu | Sekmeler ilgili `*_VIEW` yetkisine bağlandı |
 
-### 13.4 Kapsam dışında bırakılmaya devam edenler
+### 13.4 Rapor dönemi modeli — Ön Analiz açık soru 8 ve 2 kapatıldı
+
+**Açık soru 8:** *"Rapor dönemi hafta numarasıyla mı, tek bir rapor tarihiyle mi, yoksa başlangıç ve bitiş tarihleriyle mi tutulacaktır?"*
+
+**Karar: tek tarih (`LocalDate`), daima ISO haftasının Pazartesi'si.**
+
+**Bulunan sorun.** Alan `reportWeekStart` adını taşımasına ve sistemin geri kalanının hafta varsaymasına rağmen (dashboard `weekStart .. +6 gün` penceresi, seeder çıktısı, README "güncel hafta" filtresi), kayıt adımı girilen tarihi **olduğu gibi** saklıyordu. Benzersizlik kısıtı da tam tarih üzerindeydi. Sonuç: aynı takvim haftasının iki farklı günü (örn. Pazartesi ve Salı) ayrı dönem sayılıyor ve **aynı haftaya iki rapor girilebiliyordu.** Bu, açık soru 2'nin ("aynı proje ve rapor haftası için yalnızca bir rapor") gerektirdiği kuralın fiilen uygulanamaması demekti; `409` dönüyordu ancak yanlış eksende.
+
+**Neden hafta modeli seçildi.** Yönetmelik bölüm 5.1, 5.2 ve 5.3 dönemi hep "rapor tarihi/haftası" biçiminde, ikisini birlikte yazarak tanımlar; yani modeli açıkça geliştiriciye bırakır. Seçim, işin gerçeğine göre yapılmıştır: yönetmelik bölüm 2.4 CTO'nun görevini "bütün projeleri tek ekranda **karşılaştırma**" olarak tanımlar. Karşılaştırmanın anlamlı olması için tüm projelerin **aynı döneme** ait raporlarının yan yana gelmesi gerekir. Raporun kimliği "hangi hafta" olmalıdır; ne zaman yazıldığı ayrı bir bilgidir (`createdAt`/`updatedAt` zaten tutuluyor). Aksi hâlde bir proje yöneticisinin hafta içinde ikinci bir rapor açması, yönetmelik bölüm 5'te tarif edilen asıl problemi ("aynı bilginin tekrar hazırlanması, güncel tek bir kaynağın oluşmaması") sisteme geri getirirdi.
+
+**Neden validasyon değil normalizasyon.** Kullanıcıdan Pazartesi seçmesini istemek (ve Salı seçerse hata vermek) gereksiz yük olurdu; kullanıcı yanlış bir şey yapmıyor, yalnızca o haftanın raporunu girmek istiyor. Bunun yerine girdi kanonik forma çevrilir. `<input type="week">` daha doğrudan bir arayüz olurdu, ancak tarayıcı desteği ve tip dönüşümü maliyeti MVP'de karşılık bulmadı.
+
+**Uygulama.**
+
+| Yer | Davranış |
+| --- | --- |
+| `WeeklyReportService.createWeeklyReport` / `updateWeeklyReport` | Girilen tarih `DayOfWeek.MONDAY`'e normalize edilerek saklanır |
+| Çakışma kontrolü | Normalize edilmiş hafta üzerinden yapılır → aynı haftanın herhangi bir günü `409` |
+| Rapor listesi `weekStart` filtresi | Aynı normalizasyondan geçer; hafta içi bir gün seçilince o haftanın raporu bulunur |
+| `DashboardService` | Pencere normalize edilmiş Pazartesi'den başlar; hafta içi gün seçilince pencere kaymaz |
+| Arayüz | Tarih alanının altında "Seçilen tarihin bulunduğu haftaya kaydedilir." notu |
+
+**Veri göçü gerekmedi:** mevcut 23 raporun tamamı zaten Pazartesi tarihlidir (SQL ile doğrulandı).
+
+**Bu karar açık soru 2'yi de kapatır:** aynı proje ve hafta için yalnızca bir rapor oluşturulabilir; ikinci kayıt `409 Conflict` ile engellenir.
+
+### 13.5 Kapsam dışında bırakılmaya devam edenler
 
 | Konu | Gerekçe |
 | --- | --- |

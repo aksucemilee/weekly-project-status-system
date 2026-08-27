@@ -280,7 +280,10 @@ function WeeklyReportForm({
               updateFormField("reportWeekStart", event.target.value)
             }
             error={Boolean(fieldErrors.reportWeekStart)}
-            helperText={fieldErrors.reportWeekStart}
+            helperText={
+              fieldErrors.reportWeekStart ??
+              "Seçilen tarihin bulunduğu haftaya kaydedilir."
+            }
             slotProps={{
               inputLabel: {
                 shrink: true,

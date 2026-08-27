@@ -239,6 +239,24 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 
 **Not:** Bu kusur, denetim sırasında demo kullanıcı isimleri değiştirilirken uygulamanın birkaç kez yeniden başlatılması sayesinde ortaya çıktı; tek seferlik çalıştırmada görünmüyordu.
 
+### H10 — Aynı takvim haftasına birden fazla rapor girilebiliyordu
+
+| Alan | İçerik |
+| --- | --- |
+| **Ortam** | Backend + tarayıcı |
+| **Ön koşul** | Bir projede `13.07.2026` haftasına ait rapor mevcut |
+| **Adımlar** | Raporun haftasını `07.07.2026` (aynı haftanın Salı'sı değil, bir önceki haftanın Salı'sı) gibi Pazartesi olmayan bir güne çek; ardından aynı haftanın başka bir gününe ikinci rapor oluşturmayı dene |
+| **Beklenen** | Aynı proje ve hafta için tek rapor (Ön Analiz bölüm 14, açık soru 2) |
+| **Gerçekleşen** | Girilen gün olduğu gibi saklanıyordu ve benzersizlik kısıtı **tam tarih** üzerindeydi. Aynı takvim haftasının Pazartesi ve Salı'sı ayrı dönem sayılıyor, dolayısıyla aynı haftaya iki rapor girilebiliyordu |
+| **Kök neden** | Alan adı `reportWeekStart` ve sistemin geri kalanı hafta varsayıyordu (dashboard `weekStart .. +6 gün` penceresi, seeder çıktısı, "güncel hafta" filtresi), ancak **kayıt adımı bu varsayımı zorlamıyordu.** Ön Analiz bölüm 14, açık soru 8 (rapor dönemi modeli) cevapsız bırakılmıştı |
+| **Etki** | Orta. `409` kuralı var gibi görünüyor ama yanlış eksende çalışıyordu; CTO'nun aynı haftaya ait iki rapordan hangisine bakacağı belirsiz kalırdı. Bu, yönetmelik bölüm 5'te tarif edilen asıl problemi ("güncel tek bir kaynağın oluşmaması") sisteme geri getirirdi |
+| **Düzeltme** | Rapor dönemi ISO haftasının Pazartesi'sine normalize edilir; kural oluşturma, güncelleme, liste filtresi ve dashboard penceresinde aynı şekilde uygulanır. Karar ve gerekçesi [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13.4'te |
+| **Kanıt** | Bölüm 10.3'teki 11 senaryo; mevcut 23 raporun tamamının zaten Pazartesi olduğu SQL ile doğrulandı, veri göçü gerekmedi |
+| **Önem** | Orta |
+| **Durum** | Kapandı, tekrar test edildi (W1–W11) |
+
+**Not:** Bu bulgu, denetim değil **manuel kullanıcı testi** sırasında ortaya çıktı: rapor haftası elle değiştirildiğinde beklenen `409` gelmedi. İlk bakışta çakışma kuralının bozuk olduğu düşünüldü; incelemede kuralın çalıştığı ancak **yanlış eksende** çalıştığı görüldü. Seeder her zaman Pazartesi ürettiği için demo veride hiç görünmüyordu.
+
 ## 8. Tekrar test
 
 Düzeltmelerden sonra yalnızca ilgili senaryo değil, etkilenen akışların tamamı yeniden çalıştırılmıştır:
@@ -300,7 +318,29 @@ Test için üç geçici kullanıcı (proje yöneticisi, CTO, admin) oluşturulmu
 | P8 | Admin projeyi `active=false` yapar | `200` | ✅ |
 | P9 | Pasife alınan proje dashboard'da | Listeden çıkar, toplam `6` → `5` | ✅ |
 
-### 10.3 Sorumlu proje yöneticisi
+### 10.3 Rapor dönemi hafta normalizasyonu
+
+Bulgu H10 sonrası çalıştırılan senaryolar. Gerekçe: [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13.4.
+
+| # | Senaryo | Gönderilen | Beklenen | Sonuç |
+| --- | --- | --- | --- | --- |
+| W1 | Çarşamba gönder | `2026-07-15` | `2026-07-13` kaydedilir | ✅ |
+| W2 | Pazar gönder | `2026-07-19` | `2026-07-13` kaydedilir | ✅ |
+| W3 | Pazartesi gönder | `2026-07-13` | Aynen kalır | ✅ |
+| W4 | Dolu haftanın Çarşambası | `2026-07-22` | `409`, mesajda hafta `2026-07-20` | ✅ |
+| W5 | Dolu haftanın Pazarı | `2026-07-26` | `409` | ✅ |
+| W6 | Filtre: hafta başı | `weekStart=2026-07-13` | 1 kayıt | ✅ |
+| W7 | Filtre: hafta ortası | `weekStart=2026-07-15` | 1 kayıt | ✅ |
+| W8 | Filtre: hafta sonu | `weekStart=2026-07-19` | 1 kayıt | ✅ |
+| W9 | Oluşturmada normalizasyon | `2026-09-16` (Çrş) | `201`, `2026-09-14` kaydedilir | ✅ |
+| W10 | Oluşturmada aynı hafta | `2026-09-18` (Cum) | `409` | ✅ |
+| W11 | Dashboard penceresi kaymamalı | `weekStart` = 24/26/30 Ağustos | Üçünde de aynı sayaçlar | ✅ |
+
+W11 önemli: normalizasyon öncesi `weekStart=2026-08-26` gönderildiğinde pencere `26.08 – 01.09` oluyor ve o haftanın (`24.08`) raporu **pencere dışında** kalıyordu.
+
+**Veri doğrulaması:** Test sonrası `weekly_reports` 23 satırda kaldı ve tamamı Pazartesi tarihli (`extract(isodow) <> 1` sorgusu 0 döndü). Test amaçlı oluşturulan rapor silindi.
+
+### 10.4 Sorumlu proje yöneticisi
 
 | # | Senaryo | Beklenen | Sonuç |
 | --- | --- | --- | --- |
@@ -308,7 +348,7 @@ Test için üç geçici kullanıcı (proje yöneticisi, CTO, admin) oluşturulmu
 | S2 | `GET /api/projects` yanıtı | Aynı sonuç | ✅ |
 | S3 | Sorgu sayısı | Sorumlular proje başına ayrı sorgu yapılmadan tek sorguda okunur | ✅ (toplu sorgu kullanıldı) |
 
-### 10.4 Doğrulanmayanlar — dürüst not
+### 10.5 Doğrulanmayanlar — dürüst not
 
 Aşağıdakiler bu denetimde **çalıştırılmamıştır** ve teslim öncesi tarayıcıda manuel doğrulanmalıdır:
 

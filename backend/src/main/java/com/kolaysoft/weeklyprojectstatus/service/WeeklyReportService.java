@@ -22,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -42,6 +43,29 @@ public class WeeklyReportService {
                 this.currentUserService = currentUserService;
         }
 
+        /**
+         * Rapor donemi, secilen tarihin ait oldugu ISO haftasinin
+         * Pazartesi'sine normalize edilir.
+         *
+         * On Analiz 14, acik soru 8 ("rapor donemi hafta numarasiyla mi,
+         * tarihle mi tutulacak") cevapsizdi ve alan tek bir LocalDate
+         * olarak, girilen gun aynen saklanacak sekilde uygulanmisti.
+         * Bunun sonucunda ayni takvim haftasinin iki farkli gunu (orn.
+         * Pazartesi ve Sali) ayri donem sayiliyor, boylece acik soru 2'nin
+         * ("ayni proje ve hafta icin tek rapor") gerektirdigi kural fiilen
+         * uygulanamiyordu: benzersizlik kisiti tam tarih uzerindeydi.
+         *
+         * Karar: donem "hafta"dir; kullanicidan Pazartesi secmesi
+         * ISTENMEZ, girdi kanonik forma cevrilir. Sistemin geri kalani
+         * zaten hafta varsayiyordu (dashboard weekStart..+6 gun penceresi,
+         * alan adi reportWeekStart, seeder ciktisi).
+         */
+        private static LocalDate toWeekStart(LocalDate date) {
+                return date == null
+                                ? null
+                                : date.with(DayOfWeek.MONDAY);
+        }
+
         public WeeklyReportResponse createWeeklyReport(
                         Long projectId,
                         WeeklyReportCreateRequest request) {
@@ -49,23 +73,25 @@ public class WeeklyReportService {
 
                 Project project = projectService.getProjectEntity(projectId);
 
+                LocalDate weekStart = toWeekStart(request.getReportWeekStart());
+
                 boolean reportAlreadyExists = weeklyReportRepository
                                 .existsByProjectIdAndReportWeekStart(
                                                 projectId,
-                                                request.getReportWeekStart());
+                                                weekStart);
 
                 if (reportAlreadyExists) {
                         throw new DuplicateResourceException(
                                         "Weekly report already exists for project id "
                                                         + projectId
                                                         + " and week "
-                                                        + request.getReportWeekStart());
+                                                        + weekStart);
                 }
 
                 WeeklyReport weeklyReport = new WeeklyReport();
 
                 weeklyReport.setProject(project);
-                weeklyReport.setReportWeekStart(request.getReportWeekStart());
+                weeklyReport.setReportWeekStart(weekStart);
                 weeklyReport.setTargetProgress(request.getTargetProgress());
                 weeklyReport.setActualProgress(request.getActualProgress());
                 weeklyReport.setGeneralStatus(request.getGeneralStatus());
@@ -104,10 +130,12 @@ public class WeeklyReportService {
                                                                 + " for project id: "
                                                                 + projectId));
 
+                LocalDate weekStart = toWeekStart(request.getReportWeekStart());
+
                 boolean weekTakenByAnotherReport = weeklyReportRepository
                                 .existsByProjectIdAndReportWeekStartAndIdNot(
                                                 projectId,
-                                                request.getReportWeekStart(),
+                                                weekStart,
                                                 weeklyReportId);
 
                 if (weekTakenByAnotherReport) {
@@ -115,10 +143,10 @@ public class WeeklyReportService {
                                         "Weekly report already exists for project id "
                                                         + projectId
                                                         + " and week "
-                                                        + request.getReportWeekStart());
+                                                        + weekStart);
                 }
 
-                weeklyReport.setReportWeekStart(request.getReportWeekStart());
+                weeklyReport.setReportWeekStart(weekStart);
                 weeklyReport.setTargetProgress(request.getTargetProgress());
                 weeklyReport.setActualProgress(request.getActualProgress());
                 weeklyReport.setGeneralStatus(request.getGeneralStatus());
@@ -155,7 +183,11 @@ public class WeeklyReportService {
 
                 Specification<WeeklyReport> specification = Specification
                                 .<WeeklyReport>where(WeeklyReportSpecifications.hasProjectId(projectId))
-                                .and(WeeklyReportSpecifications.hasWeekStart(weekStart))
+                                // Filtre de kayit ile ayni normalizasyondan gecer;
+                                // aksi halde hafta ici bir gun secildiginde o
+                                // haftanin raporu bulunamazdi.
+                                .and(WeeklyReportSpecifications.hasWeekStart(
+                                                toWeekStart(weekStart)))
                                 .and(WeeklyReportSpecifications.hasGeneralStatus(generalStatus))
                                 .and(WeeklyReportSpecifications.hasRiskLevel(riskLevel))
                                 .and(WeeklyReportSpecifications.hasScheduleStatus(scheduleStatus));
