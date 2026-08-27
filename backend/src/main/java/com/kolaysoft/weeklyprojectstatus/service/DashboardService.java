@@ -5,7 +5,6 @@ import com.kolaysoft.weeklyprojectstatus.model.dto.dashboard.DashboardSummaryRes
 import com.kolaysoft.weeklyprojectstatus.model.entity.Project;
 import com.kolaysoft.weeklyprojectstatus.model.entity.WeeklyReport;
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
-import com.kolaysoft.weeklyprojectstatus.model.enums.ProjectStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import com.kolaysoft.weeklyprojectstatus.model.enums.WorkItemStatus;
