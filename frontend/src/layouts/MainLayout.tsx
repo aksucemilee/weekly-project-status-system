@@ -96,8 +96,8 @@ function MainLayout() {
         onClick={toggleColorMode}
         aria-label={mode === "light" ? "Koyu temaya geç" : "Açık temaya geç"}
         sx={{
-          width: 40,
-          height: 40,
+          width: 32,
+          height: 32,
           border: "1px solid",
           borderColor: "divider",
           color: "text.primary",
@@ -112,7 +112,7 @@ function MainLayout() {
           component="span"
           aria-hidden="true"
           sx={{
-            fontSize: 20,
+            fontSize: 16,
             lineHeight: 1,
           }}
         >
