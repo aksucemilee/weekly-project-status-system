@@ -460,11 +460,27 @@ Proje güncellemede `status` ve `active` alanları zorunludur. `active=false` ya
 
 Güncellemede oluşturma ile aynı validasyon kuralları uygulanır. Rapor haftası, aynı projede başka bir rapora ait bir haftaya taşınırsa istek `409 Conflict` ile reddedilir; raporun kendi haftası çakışma sayılmaz. Düzenleme için bir süre sınırı yoktur: erişim yalnızca `REPORT_UPDATE` yetkisi ve proje ataması (kapsam) ile sınırlanır.
 
+### Rapor dönemi: hafta modeli
+
+`reportWeekStart` bir **dönemi** temsil eder, tek bir günü değil. Gönderilen tarih, ait olduğu ISO haftasının **Pazartesi**'sine normalize edilerek saklanır:
+
+```text
+gönderilen 2026-07-15 (Çarşamba)  →  kaydedilen 2026-07-13 (Pazartesi)
+```
+
+Bu kural oluşturma, güncelleme, rapor listesi `weekStart` filtresi ve dashboard hafta penceresinde aynı şekilde uygulanır. Sonuçları:
+
+- **Aynı proje ve hafta için yalnızca bir rapor** oluşturulabilir; aynı haftanın herhangi bir günü gönderilse de ikinci kayıt `409 Conflict` alır.
+- Filtrede hafta içi bir gün seçilince o haftanın raporu bulunur.
+- Dashboard'da hafta içi bir gün seçilince pencere kaymaz.
+
+Kullanıcıdan Pazartesi seçmesi istenmez; arayüz tarih alanının altında "Seçilen tarihin bulunduğu haftaya kaydedilir." notunu gösterir. Bu karar Ön Analiz bölüm 14'teki 8. ve 2. açık soruları kapatır; gerekçesi [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md) bölüm 13.4'tedir.
+
 Rapor listeleme isteği aşağıdaki isteğe bağlı filtre, sayfalama ve sıralama parametrelerini destekler:
 
 | Parametre       | Açıklama                                                              |
 | --------------- | ---------------------------------------------------------------------- |
-| `weekStart`     | Rapor haftasına göre filtreleme (tam eşleşme)                        |
+| `weekStart`     | Rapor haftasına göre filtreleme; gönderilen tarih haftanın Pazartesi'sine normalize edilir |
 | `generalStatus` | Genel duruma göre filtreleme                                          |
 | `riskLevel`     | Risk seviyesine göre filtreleme                                       |
 | `scheduleStatus`| Takvim durumuna (gecikme) göre filtreleme                             |

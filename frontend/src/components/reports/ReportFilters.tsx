@@ -88,6 +88,7 @@ function ReportFilters({ filters, isLoading, onChange }: ReportFiltersProps) {
           value={filters.weekStart}
           onChange={(event) => updateField("weekStart", event.target.value)}
           disabled={isLoading}
+          helperText="Seçilen tarihin bulunduğu hafta filtrelenir."
           slotProps={{
             inputLabel: {
               shrink: true,

@@ -25,13 +25,15 @@ Bu doküman, 21-24. gün (T13: Filtreleme ve Durum Zenginleştirme) kapsamında 
 | Filtre | Frontend alan | API parametresi | Tip | Opsiyonel |
 | --- | --- | --- | --- | --- |
 | Proje | mevcut proje seçici (path variable) | path `{projectId}` | - | Hayır (zaten zorunlu) |
-| Hafta | `weekStart` (date) | `weekStart` | `LocalDate` | Evet — **tam eşleşme** (Dashboard'daki pencereden farklı; burada gerçek rapor satırları listelendiği için tek bir `reportWeekStart` değeriyle eşleşme daha doğru) |
+| Hafta | `weekStart` (date) | `weekStart` | `LocalDate` | Evet — **hafta eşleşmesi** (Dashboard'daki pencereden farklı; burada gerçek rapor satırları listelendiği için tek bir `reportWeekStart` değeriyle eşleşme daha doğru) |
 | Genel durum | `generalStatus` (select) | `generalStatus` | enum `GeneralStatus` | Evet |
 | Risk seviyesi | `riskLevel` (select) | `riskLevel` | enum `RiskLevel` | Evet |
 | Takvim durumu | `scheduleStatus` (select) | `scheduleStatus` | enum `ScheduleStatus` | Evet |
 | Sayfa | frontend'de otomatik yönetilir (Pagination bileşeni) | `page` | `int` (0 tabanlı) | Evet — varsayılan `0` |
 | Sayfa boyutu | frontend'de sabit `10` | `size` | `int` | Evet — varsayılan `20` (frontend `10` gönderir) |
 | Sıralama | şu an ayrı bir UI kontrolü yok, backend destekliyor | `sort` | `alan,yön` (örn. `targetProgress,asc`) | Evet — varsayılan `reportWeekStart,desc` |
+
+> **Güncelleme (27.08.2026):** Rapor dönemi artık ISO haftasının Pazartesi'sine normalize edilerek saklanıyor; `weekStart` filtresi de aynı normalizasyondan geçiyor. Bu nedenle hafta içi herhangi bir gün gönderildiğinde o haftanın raporu bulunur. Karar ve gerekçesi [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13.4'tedir.
 
 - **Yanıt gövdesi:** Artık düz bir dizi değil, sayfalanmış bir gövde döner:
   ```json
