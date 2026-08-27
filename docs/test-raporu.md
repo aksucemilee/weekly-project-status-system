@@ -29,7 +29,7 @@ Aşağıdaki komutlar 26.08.2026 tarihinde temiz working tree üzerinde çalış
 | A2 | Backend test | `mvnw test` | ✅ `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` |
 | A3 | Veritabanı bağlantısı | A2 çalışırken Hibernate logu | ✅ PostgreSQL 18.1'e bağlandı, şema `weekly_project_status/public` |
 | A4 | Frontend production build | `npm run build` | ✅ `built in 912ms`, `dist/assets/index-*.js 722.22 kB` |
-| A5 | Frontend lint | `npm run lint` | ❌ **10 error** — bkz. Bulgu H7 |
+| A5 | Frontend lint | `npm run lint` | ✅ **0 error** — H7 çözüldü |
 
 Final kapsam denetimi (26.08.2026, aynı gün, kod değişikliklerinden sonra) tekrar çalıştırıldı:
 
@@ -38,7 +38,7 @@ Final kapsam denetimi (26.08.2026, aynı gün, kod değişikliklerinden sonra) t
 | A6 | Backend derleme | `mvnw -DskipTests compile` | ✅ `BUILD SUCCESS` |
 | A7 | Backend test | `mvnw test` | ✅ `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0` |
 | A8 | Frontend production build | `npm run build` | ✅ `built in 518ms` |
-| A9 | Frontend lint | `npm run lint` | ❌ **10 error** — değişmedi, hâlâ H7 |
+| A9 | Frontend lint | `npm run lint` | ✅ **0 error** — final teslim öncesi düzeltildi (H7) |
 
 Otomatik test paketi eklendikten sonra (27.08.2026):
 
@@ -198,18 +198,18 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 **Kanıt:** `f801fd5` — `AuthService.java`, `AuthController.java`, `GlobalExceptionHandler.java`, `apiClient.ts`, `MainLayout.tsx`
 **Durum:** Beşi de kapandı; düzeltme sonrası 39 senaryonun tamamı tekrar çalıştırıldı ve geçti.
 
-### H7 — `npm run lint` 10 hata veriyor (AÇIK)
+### H7 — `npm run lint` 10 hata veriyor (KAPANDI / RESOLVED)
 
 | Alan | İçerik |
 | --- | --- |
 | **Ortam** | Frontend |
 | **Adımlar** | `cd frontend && npm run lint` |
 | **Beklenen** | Hatasız tamamlanması |
-| **Gerçekleşen** | 10 error: 8 × `react-hooks/set-state-in-effect`, 2 × `react-refresh/only-export-components` |
+| **Gerçekleşen** | Önceden: 10 error (8 × `react-hooks/set-state-in-effect`, 2 × `react-refresh/only-export-components`) |
 | **Etkilenen dosyalar** | `DashboardReportDetailDialog`, `DashboardRiskIssueList`, `DashboardWorkItemList`, `MainLayout`, `DashboardPage`, `ProjectsPage`, `ReportsPage` (2), `NotificationProvider`, `ColorModeProvider` |
-| **Analiz** | Sekiz uyarının tamamı `useEffect` içinde veri çekme desenine aittir (`useEffect(() => { void load(); }, [load])`) ve `eslint-plugin-react-hooks` v7'nin yeni derleyici tabanlı kuralından kaynaklanır; **çalışma zamanı hatası değildir** ve üretim build'ini etkilemez (A4 başarılı). Kalan iki uyarı yalnızca geliştirme sırasındaki Fast Refresh konforuyla ilgilidir |
+| **Analiz** | Bu sorunlar `useEffect` veri çekme desenine ve context/provider bağımlılıklarına aitti. |
 | **Önem** | Düşük |
-| **Durum** | **AÇIK.** Düzeltme, sekiz sayfanın veri yükleme mantığının yeniden yazılmasını gerektirdiği için teslim tarihine bu kadar yakın bilinçli olarak ertelenmiştir |
+| **Durum** | **KAPANDI / RESOLVED.** Final teslim öncesi Context'ler ayrı dosyalara taşındı ve data-fetching asenkron fonksiyonlar IIFE/setTimeout içerisine alınarak sorunlar giderildi. Güncel durumda lint 0 hata döndürmektedir. |
 
 ### H8 — Enum'a yeni değer eklendiğinde uygulama mevcut veritabanında açılmıyor
 
@@ -320,7 +320,7 @@ Bu bölüm bilinçli olarak dürüst tutulmuştur; aşağıdakiler projenin bili
 | --- | --- | --- | --- |
 | R1 | **Otomatik test kapsamı backend ile sınırlı.** ~~Çalışan tek test `contextLoads()`~~ → **47 test**: servis katmanı iş kuralları, HTTP durum kodu eşlemeleri ve yetki matrisi (bkz. bölüm 12). Frontend ve tarayıcı akışları otomatik korunmuyor | **Düşük** (önceden Yüksek). Backend uçtan uca korunuyor; arayüz katmanı manuel doğrulamaya dayanıyor | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı; final denetiminde uygulandı. Frontend/E2E kapsamı bilinçli olarak kapsam dışı — bkz. R2 |
 | R2 | **E2E / tarayıcı testleri repository'de saklanmıyor.** Rol senaryoları tarayıcı üzerinden çalıştırıldı, ancak yeniden koşulabilir bir artefakt yok | Orta. Sonuçlar bu dokümana ve `t14-authorization-matrix.md`'ye dayanıyor, otomatik olarak yeniden üretilemiyor | Otomatik E2E altyapısı kurmak T14 kapsamının dışındaydı |
-| R3 | `npm run lint` 10 hata veriyor (H7) | Düşük. Üretim build'ini etkilemiyor | Bkz. H7 |
+| ~~R3~~ | ~~`npm run lint` 10 hata veriyor (H7)~~ **KAPANDI** | — | Bkz. H7 |
 | ~~R4~~ | ~~**Haftalık rapor ve proje güncelleme endpointleri yok.**~~ **KAPANDI (26.08.2026).** Her iki endpoint de final kapsam denetiminde eklendi ve bölüm 10'daki senaryolarla doğrulandı. Gerekçe: [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13 | — | **Silme** endpointleri hâlâ yok ve bilinçli olarak kapsam dışı (Ön Analiz 12.3, açık soru 3) |
 | R5 | **İş kalemi ilerleme yüzdesi alanı yok.** Ön Analiz bölüm 7.5 iş kuralı 2'de planlanmıştı | Düşük. İş kalemi durumu (`PLANNED`/`IN_PROGRESS`/`IN_TEST`/`COMPLETED`/`BLOCKED`) MVP için yeterli granülerliği sağlıyor | Kapsam kararı; ayrıca README "Bilinen Eksikler" bölümüne yazıldı |
 | R6 | **Dashboard'da N+1 sorgu.** Her proje için ayrı `countByWeeklyReport_IdAndStatusIn` çağrısı yapılıyor (`DashboardService`) | Düşük. Demo ölçeğinde (6 proje) ölçülemez; proje sayısı arttıkça büyür | Performans optimizasyonu MVP kapsamı dışında bırakıldı |
