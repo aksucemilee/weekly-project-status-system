@@ -226,6 +226,22 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 
 **Neden kayda değer:** Bu bulgu R7'nin ("sürümlenmiş migration yok") soyut bir risk olmadığını, ilk şema değişikliğinde somut olarak ortaya çıktığını gösterir. Derleme ve testler bu hatayı yakalamaz; yalnızca uygulamayı mevcut bir veritabanına karşı gerçekten çalıştırmak ortaya çıkarır.
 
+**Denenen ucuz çözümler (27.08.2026).** Constraint üretimini anotasyon seviyesinde kapatmak için iki yaklaşım temiz bir veritabanı üzerinde denendi; **ikisi de işe yaramadı:**
+
+| Deneme | Sonuç |
+| --- | --- |
+| `@Column(columnDefinition = "varchar(40)")` | `permissions_code_check` yine üretildi |
+| `@JdbcTypeCode(SqlTypes.VARCHAR)` | `permissions_code_check` yine üretildi |
+
+Her iki denemede de `pg_constraint` sorgulanarak doğrulandı; ardından değişiklikler geri alındı (uygulama kaynağında kalıcı değişiklik yok).
+
+**Sonuç:** Hibernate 6.2+ bu davranışı anotasyonla kapatmıyor. Geriye iki seçenek kalıyor:
+
+1. **Flyway/Liquibase** — doğru çözüm; `ddl-auto` kapatılır, şema numaralı SQL dosyalarıyla yönetilir. Ancak çalışan ve 47 testle korunan bir sistemin şema yönetimini değiştirmek demektir; test profilinin de uyarlanması gerekir.
+2. **Açılışta constraint senkronlayan özel bileşen** — Flyway'in kırılgan bir taklidi olurdu; bakımı ve testi olmayan bir altyapı parçası eklemek, hiç eklememekten kötüdür.
+
+Yönetmelik bölüm 5.5 bu tür altyapı konularını genişletme aşamasına bıraktığı için **1. seçenek MVP kapsamı dışında bırakılmıştır.** Karar, "kolay bir yolu var ama yapılmadı" değil, "kolay yolu denendi ve yok" gerekçesine dayanır.
+
 ### H9 — Seeder idempotent değildi: her açılışta yeni proje ataması üretiyordu
 
 | Alan | İçerik |
