@@ -91,7 +91,10 @@ function DashboardWorkItemList({ weeklyReportId }: DashboardWorkItemListProps) {
   }, [weeklyReportId]);
 
   useEffect(() => {
-    void loadWorkItems();
+    const run = async () => {
+      await loadWorkItems();
+    };
+    void run();
   }, [loadWorkItems]);
 
   const sortedWorkItems = [...workItems].sort((first, second) => {

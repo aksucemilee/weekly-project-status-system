@@ -17,7 +17,7 @@ import UserFormDialog from "../components/admin/UserFormDialog";
 import PageHeader from "../components/common/PageHeader";
 import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
 import EmptyState from "../components/feedback/EmptyState";
-import { useNotification } from "../components/feedback/NotificationProvider";
+import { useNotification } from "../components/feedback/NotificationContext";
 import { getUsers } from "../services/adminService";
 import { layoutTokens } from "../theme/layoutTokens";
 import type { AdminUser } from "../types/admin";

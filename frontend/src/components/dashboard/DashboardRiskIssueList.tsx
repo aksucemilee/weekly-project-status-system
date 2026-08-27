@@ -118,7 +118,10 @@ function DashboardRiskIssueList({
   }, [weeklyReportId]);
 
   useEffect(() => {
-    void loadRiskIssues();
+    const run = async () => {
+      await loadRiskIssues();
+    };
+    void run();
   }, [loadRiskIssues]);
 
   const sortedRiskIssues = [...riskIssues].sort((first, second) => {

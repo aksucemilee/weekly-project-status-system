@@ -23,7 +23,7 @@ import type { PermissionCode } from "../types/auth";
 
 import { getLandingPath } from "../types/auth";
 import { useAuth } from "../auth/authContext";
-import { useColorMode } from "../theme/ColorModeProvider";
+import { useColorMode } from "../theme/ColorModeContext";
 import { layoutTokens } from "../theme/layoutTokens";
 
 type NavigationItem = {
@@ -83,7 +83,8 @@ function MainLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    setIsDrawerOpen(false);
+    const timeoutId = setTimeout(() => setIsDrawerOpen(false), 0);
+    return () => clearTimeout(timeoutId);
   }, [location.pathname]);
 
   const isNavigationItemActive = (path: string) =>

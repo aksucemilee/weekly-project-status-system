@@ -1,8 +1,9 @@
 import { Alert, Snackbar } from "@mui/material";
-import { createContext, useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-type NotificationSeverity = "success" | "info" | "warning" | "error";
+import { NotificationContext } from "./NotificationContext";
+import type { NotificationContextValue, NotificationSeverity } from "./NotificationContext";
 
 type NotificationState = {
   key: number;
@@ -11,17 +12,9 @@ type NotificationState = {
   severity: NotificationSeverity;
 };
 
-type NotificationContextValue = {
-  showNotification: (message: string, severity?: NotificationSeverity) => void;
-};
-
 type NotificationProviderProps = {
   children: ReactNode;
 };
-
-const NotificationContext = createContext<NotificationContextValue | null>(
-  null,
-);
 
 const initialNotificationState: NotificationState = {
   key: 0,
@@ -93,15 +86,3 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     </NotificationContext.Provider>
   );
 }
-
-export const useNotification = () => {
-  const context = useContext(NotificationContext);
-
-  if (!context) {
-    throw new Error(
-      "useNotification, NotificationProvider içinde kullanılmalıdır.",
-    );
-  }
-
-  return context;
-};

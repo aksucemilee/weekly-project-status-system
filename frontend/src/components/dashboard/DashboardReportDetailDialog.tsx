@@ -162,7 +162,8 @@ function DashboardReportDetailDialog({
 
   useEffect(() => {
     if (open) {
-      setActiveTab(0);
+      const timeoutId = setTimeout(() => setActiveTab(0), 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [open, report?.id]);
 

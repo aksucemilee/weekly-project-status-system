@@ -1,23 +1,18 @@
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import type { PaletteMode } from "@mui/material";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import createAppTheme from "./theme";
-
-type ColorModeContextValue = {
-  mode: PaletteMode;
-  toggleColorMode: () => void;
-};
+import { ColorModeContext } from "./ColorModeContext";
+import type { ColorModeContextValue } from "./ColorModeContext";
 
 type ColorModeProviderProps = {
   children: ReactNode;
 };
 
 const STORAGE_KEY = "weekly-project-status-color-mode";
-
-const ColorModeContext = createContext<ColorModeContextValue | null>(null);
 
 const getInitialMode = (): PaletteMode => {
   const storedMode = window.localStorage.getItem(STORAGE_KEY);
@@ -60,13 +55,3 @@ export function ColorModeProvider({ children }: ColorModeProviderProps) {
     </ColorModeContext.Provider>
   );
 }
-
-export const useColorMode = () => {
-  const context = useContext(ColorModeContext);
-
-  if (!context) {
-    throw new Error("useColorMode, ColorModeProvider içinde kullanılmalıdır.");
-  }
-
-  return context;
-};

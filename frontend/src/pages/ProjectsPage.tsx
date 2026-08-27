@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/authContext";
 import PageHeader from "../components/common/PageHeader";
 import ResponsiveCardGrid from "../components/common/ResponsiveCardGrid";
-import { useNotification } from "../components/feedback/NotificationProvider";
+import { useNotification } from "../components/feedback/NotificationContext";
 import ProjectCreateForm from "../components/projects/ProjectCreateForm";
 import ProjectList from "../components/projects/ProjectList";
 import { getProjects } from "../services/projectService";
@@ -60,7 +60,10 @@ function ProjectsPage() {
   }, []);
 
   useEffect(() => {
-    void loadProjects();
+    const run = async () => {
+      await loadProjects();
+    };
+    void run();
   }, [loadProjects]);
 
   const projectSummary = useMemo(

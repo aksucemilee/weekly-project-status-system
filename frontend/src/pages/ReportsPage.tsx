@@ -26,7 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/authContext";
 import PageHeader from "../components/common/PageHeader";
 import { layoutTokens } from "../theme/layoutTokens";
-import { useNotification } from "../components/feedback/NotificationProvider";
+import { useNotification } from "../components/feedback/NotificationContext";
 import RiskIssueManager from "../components/risk-issues/RiskIssueManager";
 import ReportFilters from "../components/reports/ReportFilters";
 import WeeklyReportForm from "../components/reports/WeeklyReportForm";
@@ -183,7 +183,10 @@ function ReportsPage() {
   }, []);
 
   useEffect(() => {
-    void loadProjects();
+    const run = async () => {
+      await loadProjects();
+    };
+    void run();
   }, [loadProjects]);
 
   const loadReports = useCallback(async () => {
@@ -231,7 +234,10 @@ function ReportsPage() {
   }, [selectedProjectId, reportFilters, reportPage]);
 
   useEffect(() => {
-    void loadReports();
+    const run = async () => {
+      await loadReports();
+    };
+    void run();
   }, [loadReports]);
 
   useEffect(() => {

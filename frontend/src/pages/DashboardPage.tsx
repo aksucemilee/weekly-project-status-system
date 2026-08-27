@@ -118,7 +118,10 @@ function DashboardPage() {
   }, [appliedFilters]);
 
   useEffect(() => {
-    void loadDashboard();
+    const run = async () => {
+      await loadDashboard();
+    };
+    void run();
   }, [loadDashboard]);
 
   const loadReportDetail = async (projectId: number, reportId: number) => {
