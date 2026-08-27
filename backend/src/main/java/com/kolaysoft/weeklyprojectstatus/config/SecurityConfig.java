@@ -1,7 +1,9 @@
 package com.kolaysoft.weeklyprojectstatus.config;
 
+import com.kolaysoft.weeklyprojectstatus.security.LoginRateLimitFilter;
 import com.kolaysoft.weeklyprojectstatus.security.SpaCsrfConfigurer;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,8 +13,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -27,10 +32,21 @@ public class SecurityConfig {
      * bir JSON serilestirme kodu tutulmaz.
      */
     private final HandlerExceptionResolver handlerExceptionResolver;
+    private final LoginRateLimitFilter loginRateLimitFilter;
+
+    /**
+     * Uretimde HSTS ve CSP gibi basliklarin acilmasi icin kullanilir.
+     * Varsayilan false: lokal demo HTTP uzerinden calisir ve HSTS
+     * tarayiciyi bu host icin HTTPS'e kilitleyerek gelistirmeyi bozar.
+     */
+    @Value("${security.production-hardening:false}")
+    private boolean productionHardening;
 
     public SecurityConfig(
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver handlerExceptionResolver) {
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver handlerExceptionResolver,
+            LoginRateLimitFilter loginRateLimitFilter) {
         this.handlerExceptionResolver = handlerExceptionResolver;
+        this.loginRateLimitFilter = loginRateLimitFilter;
     }
 
     @Bean
@@ -56,6 +72,48 @@ public class SecurityConfig {
                 .addFilterAfter(
                         new SpaCsrfConfigurer.CsrfCookieFilter(),
                         BasicAuthenticationFilter.class)
+
+                // Giris denemesi siniri, kimlik dogrulama denenmeden once
+                // uygulanir; boylece sinir asildiginda parola hic
+                // kontrol edilmez.
+                .addFilterBefore(
+                        loginRateLimitFilter,
+                        UsernamePasswordAuthenticationFilter.class)
+
+                /*
+                 * Guvenlik basliklari. Spring Security varsayilan olarak
+                 * X-Frame-Options ve X-Content-Type-Options gonderir;
+                 * asagida CSP ve Referrer-Policy eklenir.
+                 *
+                 * HSTS yalnizca uretim sertlestirmesi acikken gonderilir:
+                 * lokal demo HTTP uzerinden calistigi icin tarayiciyi bu
+                 * host adina HTTPS'e kilitlemek gelistirmeyi bozardi.
+                 */
+                .headers(headers -> {
+                    headers.contentSecurityPolicy(csp -> csp
+                            .policyDirectives(
+                                    "default-src 'self'; "
+                                            + "script-src 'self'; "
+                                            + "style-src 'self' 'unsafe-inline'; "
+                                            + "img-src 'self' data:; "
+                                            + "font-src 'self' data:; "
+                                            + "connect-src 'self'; "
+                                            + "frame-ancestors 'none'; "
+                                            + "base-uri 'self'; "
+                                            + "form-action 'self'"));
+
+                    headers.referrerPolicy(referrer -> referrer
+                            .policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+
+                    if (productionHardening) {
+                        headers.httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31_536_000));
+                    } else {
+                        headers.httpStrictTransportSecurity(
+                                HstsConfig::disable);
+                    }
+                })
 
                 // CORS ayarlari mevcut CorsConfig sinifindan okunur.
                 .cors(cors -> {

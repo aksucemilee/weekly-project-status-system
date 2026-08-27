@@ -173,7 +173,16 @@ DB_PASSWORD
 JPA_DDL_AUTO
 SEED_USER_PASSWORD
 SEED_DEMO_DATA
+CORS_ALLOWED_ORIGINS
+LOGIN_MAX_ATTEMPTS
+LOGIN_WINDOW_MINUTES
+COOKIE_SECURE
+COOKIE_SAME_SITE
+PRODUCTION_HARDENING
+FORWARD_HEADERS_STRATEGY
 ```
+
+Son yedi değişken güvenlik yapılandırması içindir; ayrıntı için [Güvenlik Yapılandırması](#güvenlik-yapılandırması) bölümüne bakınız. Hiçbiri lokal demo için tanımlanmak zorunda değildir.
 
 Varsayılan değerler:
 
@@ -318,16 +327,79 @@ Backend, `/api/**` altındaki tüm endpointler için CORS izinlerini `CorsConfig
 Varsayılan yapılandırma:
 
 ```text
-allowedOrigins : http://localhost:5173
+allowedOrigins : http://localhost:5173   (CORS_ALLOWED_ORIGINS ile değiştirilebilir)
 allowedMethods : GET, POST, PUT, PATCH, DELETE, OPTIONS
-allowedHeaders : *
+allowedHeaders : Content-Type, X-XSRF-TOKEN, Accept, Origin
 ```
 
 Bu yapılandırma, frontend'in varsayılan Vite geliştirme portu (`5173`) ile birebir uyumludur; standart `npm run dev` ile çalıştırıldığında ek bir işlem gerekmez.
 
-Frontend farklı bir portta veya farklı bir origin üzerinden çalıştırılırsa (örneğin `5173` portu meşgulse Vite otomatik olarak `5174` gibi başka bir porta geçer), backend bu isteği CORS hatasıyla reddeder. Bu durumda `backend/src/main/java/com/kolaysoft/weeklyprojectstatus/config/CorsConfig.java` dosyasındaki `allowedOrigins` değeri, frontend'in gerçekte çalıştığı adresle güncellenmelidir.
+Frontend farklı bir portta çalışırsa (örneğin `5173` meşgulse Vite `5174`'e geçer) **kod değiştirmeye gerek yoktur**; origin ortam değişkeninden verilir:
 
-Tarayıcı konsolunda `CORS policy` veya `No 'Access-Control-Allow-Origin' header` şeklinde bir hata görülmesi, genellikle frontend portunun `CorsConfig` içindeki izinli origin ile eşleşmediğini gösterir.
+```powershell
+$env:CORS_ALLOWED_ORIGINS='http://localhost:5174'
+```
+
+Birden fazla origin virgülle ayrılarak verilebilir. Joker (`*`) **kullanılmaz**: oturum çerezi gönderildiği için (`allowCredentials`) joker origin, herhangi bir sitenin kullanıcının oturumuyla istek yapmasına izin verirdi.
+
+Tarayıcı konsolunda `CORS policy` veya `No 'Access-Control-Allow-Origin' header` hatası, genellikle frontend portunun izinli origin ile eşleşmediğini gösterir.
+
+---
+
+## Güvenlik Yapılandırması
+
+Aşağıdaki ayarların **hiçbiri lokal demo için tanımlanmak zorunda değildir**; varsayılanlar geliştirme ortamına göre seçilmiştir.
+
+### Giriş denemesi sınırı (brute-force koruması)
+
+`/api/auth/login` ucu IP başına sınırlıdır. Sınır aşıldığında parola hiç kontrol edilmez ve `429 Too Many Requests` döner.
+
+| Değişken | Varsayılan | Açıklama |
+| --- | --- | --- |
+| `LOGIN_MAX_ATTEMPTS` | `5` | Pencere başına izin verilen deneme |
+| `LOGIN_WINDOW_MINUTES` | `15` | Pencere uzunluğu (dakika) |
+
+> **Demo notu:** Sınır IP bazlıdır, hesap bazlı değil. Sunum sırasında art arda 5 hatalı parola girilirse **doğru parola da 15 dakika boyunca `429` alır.** Demo öncesi bu riski ortadan kaldırmak için sınır geçici olarak yükseltilebilir:
+>
+> ```powershell
+> $env:LOGIN_MAX_ATTEMPTS='50'
+> ```
+>
+> Sayaçlar bellekte tutulduğu için uygulamayı yeniden başlatmak da sıfırlar.
+
+### Oturum çerezi
+
+| Değişken | Varsayılan | Üretimde |
+| --- | --- | --- |
+| `COOKIE_SECURE` | `false` | **`true`** — çerez yalnızca HTTPS üzerinden gönderilir |
+| `COOKIE_SAME_SITE` | `Lax` | `Lax` veya `Strict` |
+
+`HttpOnly` her zaman açıktır; oturum çerezi JavaScript tarafından okunamaz. CSRF token çerezi (`XSRF-TOKEN`) bilinçli olarak `HttpOnly` **değildir** — SPA'nın token'ı okuyup `X-XSRF-TOKEN` başlığına yazması gerekir.
+
+> `COOKIE_SECURE=true` yapıp HTTPS kullanmazsanız tarayıcı çerezi hiç göndermez ve **giriş yapılamaz.**
+
+### Güvenlik başlıkları
+
+Her yanıtta gönderilenler: `Content-Security-Policy`, `Referrer-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
+
+| Değişken | Varsayılan | Açıklama |
+| --- | --- | --- |
+| `PRODUCTION_HARDENING` | `false` | `true` yapıldığında `Strict-Transport-Security` (HSTS) eklenir |
+| `FORWARD_HEADERS_STRATEGY` | `none` | Reverse proxy arkasında `framework` yapılmalıdır |
+
+> HSTS lokalde **kapalı olmalıdır**: tarayıcıyı `localhost` adına HTTPS'e kilitler ve HTTP geliştirmeyi bozar.
+
+### Üretime çıkarken
+
+```powershell
+$env:CORS_ALLOWED_ORIGINS='https://uygulama.example.com'
+$env:COOKIE_SECURE='true'
+$env:PRODUCTION_HARDENING='true'
+$env:FORWARD_HEADERS_STRATEGY='framework'
+$env:JPA_DDL_AUTO='validate'
+```
+
+Bu ayarlar **kod değişikliği gerektirmez.** Ayrıca TLS sonlandırma, yedekleme ve sürümlenmiş migration konuları MVP kapsamı dışındadır; ayrıntı için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 13'e bakınız.
 
 ---
 
@@ -770,7 +842,7 @@ cd backend
 
 **Testler çalışan bir PostgreSQL kurulumu gerektirmez.** In-memory H2 üzerinde çalışırlar (`src/test/resources/application-test.properties`); şema her çalıştırmada sıfırdan kurulur ve seeder'lar devre dışıdır. Bu nedenle `DB_PASSWORD` tanımlamanıza gerek yoktur.
 
-Komut şu anda **47 test** çalıştırır:
+Komut şu anda **58 test** çalıştırır:
 
 | Test sınıfı | Test | Kapsam |
 | --- | ---: | --- |
@@ -780,6 +852,8 @@ Komut şu anda **47 test** çalıştırır:
 | `DashboardConsistencyTest` | 6 | Dashboard sayaçları ile tablo satırlarının tutarlılığı |
 | `HttpStatusMappingTest` | 10 | Exception → HTTP kodu eşlemeleri (`400`/`401`/`403`/`404`/`405`/`409`) |
 | `AuthorizationMatrixTest` | 10 | Yetki matrisinin dört rol için doğrulanması |
+| `SecurityHardeningTest` | 6 | Giriş denemesi sınırı ve güvenlik başlıkları |
+| `AdminSafeguardTest` | 5 | Admin kilitlenme korumaları |
 | `WeeklyProjectStatusApplicationTests` | 1 | Spring bağlamının yüklenmesi |
 
 Kapsam **backend ile sınırlıdır**: frontend ve tarayıcı akışları manuel olarak doğrulanmaktadır. Ayrıntı ve dürüst sınırlar için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12'ye bakınız.
@@ -991,7 +1065,7 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Dashboard ve rapor listesinde "sorumlu" **filtresi** henüz yoktur. Sorumlu proje yöneticisi bilgisi artık dashboard ve proje listesinde **gösterilmektedir**, ancak buna göre filtreleme yapılamamaktadır.
 - Enum alanları için Hibernate `CHECK` constraint üretir ve `ddl-auto=update` bu constraint'i güncellemez. Bu nedenle mevcut bir veritabanına yeni bir enum değeri (örneğin yeni bir yetki kodu) eklendiğinde uygulama açılışta hata verir; temiz kurulumda sorun oluşmaz. Ayrıntı ve tek seferlik çözüm için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 7, bulgu H8'e bakınız.
 - Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
-- Otomatik test kapsamı **backend ile sınırlıdır** (47 test: servis kuralları, HTTP durum kodları, yetki matrisi). Frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmamaktadır; arayüz manuel olarak doğrulanmaktadır.
+- Otomatik test kapsamı **backend ile sınırlıdır** (58 test: servis kuralları, HTTP durum kodları, yetki matrisi, güvenlik sertleştirmeleri). Frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmamaktadır; arayüz manuel olarak doğrulanmaktadır.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
 - Şema yönetimi Hibernate `ddl-auto=update` ile yapılır; Flyway/Liquibase gibi sürümlenmiş bir migration yapısı bulunmamaktadır. Seed tarafı ise mevcuttur (`AuthorizationDataInitializer` ve `DemoDataInitializer`), ancak uygulama açılışında çalışan idempotent bir seeder'dır; sürümlenmiş bir veri göçü değildir.
 - Deployment henüz tamamlanmamıştır; proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.
@@ -1007,7 +1081,7 @@ Final teslim öncesi yapılan kapsam denetiminde, Ön Analiz ve yönetmelikte MV
 
 Sıradaki planlanan geliştirmeler:
 
-1. **Frontend test altyapısı.** Backend 47 testle korunuyor (servis kuralları, HTTP durum kodları, yetki matrisi); frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmuyor (bkz. [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12 ve R2).
+1. **Frontend test altyapısı.** Backend 58 testle korunuyor (servis kuralları, HTTP durum kodları, yetki matrisi); frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmuyor (bkz. [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12 ve R2).
 2. **Sorumlu filtresi.** Sorumlu bilgisi artık gösteriliyor; dashboard ve rapor listesi endpointlerine `responsibleUserId` parametresinin eklenmesi kalmıştır.
 3. **Sürümlenmiş migration (Flyway/Liquibase).** `ddl-auto=update` şema evrimini karşılamıyor (bkz. bulgu H8).
 4. **Deployment.** Proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.

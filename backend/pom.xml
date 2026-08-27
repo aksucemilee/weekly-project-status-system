@@ -88,6 +88,16 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.0.3</version>
 		</dependency>
+		<!--
+			Giris denemelerine sinir koymak icin (brute-force korumasi).
+			BCrypt offline saldiriyi yavaslatir ancak online denemeyi
+			engellemez; bu nedenle istek sayisi ayrica sinirlanir.
+		-->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>8.14.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
