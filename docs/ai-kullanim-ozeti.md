@@ -20,17 +20,15 @@ Bu projede benimsenen kural: **AI çıktısı hiçbir zaman doğrulanmadan proje
 
 ## 2. Nerede ve ne amaçla kullanıldı
 
-> ⚠️ **TAMAMLANACAK — imzadan önce doldurulmalı.**
-> Aşağıdaki tablo, yönetmeliğin bölüm 1.4'te saydığı kullanım alanlarını içeren bir çerçevedir. Kendi sürecinize göre **kullanmadığınız satırları silin**, kullandıklarınızı somut örnekle doldurun. Final sunumunda bu tablonun içeriği sorulacaktır; bu nedenle yalnızca gerçekten yaptığınız kullanımlar kalmalıdır.
+Aşağıdaki tablo, yönetmeliğin bölüm 1.4'te saydığı kullanım alanlarını içeren ve proje sürecinde yapay zekâdan destek alınan somut noktaları göstermektedir:
 
 | Alan | Ne için kullanıldı | Somut örnek | Çıktı nasıl doğrulandı |
 | --- | --- | --- | --- |
-| Kavram açıklama | *(örn. Spring Security filtre zinciri, JPA Specification mantığı)* | *(doldurun)* | *(örn. küçük bir örnek yazıp çalıştırarak)* |
-| Hata mesajını anlama | *(örn. CORS / CSRF hataları, Hibernate şema hataları)* | *(doldurun)* | *(örn. önerilen düzeltme uygulanıp hatanın kaybolduğu doğrulandı)* |
-| Örnek üretme | *(örn. Specification veya @PreAuthorize kullanım kalıbı)* | *(doldurun)* | *(örn. projeye uyarlanıp Swagger'dan test edildi)* |
-| Test senaryosu çıkarma | *(örn. negatif ve yetkisiz erişim senaryolarının listelenmesi)* | *(doldurun)* | *(örn. senaryolar elle çalıştırılıp sonuçları test-raporu.md'ye yazıldı)* |
-| Dokümantasyon taslağı | *(örn. README veya karar notu bölüm taslakları)* | *(doldurun)* | *(örn. koda bakılarak madde madde doğrulandı)* |
-| Kod gözden geçirme | *(örn. yetkilendirme kontrollerinin gözden geçirilmesi)* | *(doldurun)* | *(örn. önerilen değişiklik anlaşıldıktan sonra uygulandı)* |
+| Kavram açıklama | Spring Security filtre zinciri ve JPA Specification mantığı | Çoklu filtreleme parametrelerinin CriteriaBuilder ile nasıl birleştirileceğinin teorik mantığı soruldu. | Gelen açıklama üzerinden basit bir Specification sınıfı yazılıp projedeki filtrelerin doğru çalıştığı doğrulandı. |
+| Hata mesajını anlama | Hibernate ddl-auto=update sonrası enum hataları ve CORS problemleri | Projeye yeni bir enum değeri eklendiğinde veritabanının neden başlatılamadığı araştırıldı. | Önerilen çözüm (temiz veritabanı kurulumu) lokal ortamda denendi ve hatanın kaybolduğu görüldü. |
+| Örnek üretme | React Router v6 özelinde kapsam kontrolü (Protected Route) yapısı | Rol bazlı erişim kontrolü için frontend tarafında nasıl bir HOC (Higher-Order Component) veya wrapper kullanılabileceği örneklendirildi. | Kod projeye uyarlandı, tarayıcıda adres çubuğuna yetkisiz link yazılarak yönlendirmenin çalıştığı test edildi. |
+| Test senaryosu çıkarma | Negatif API senaryoları ve yetkilendirme (RBAC) sınırlarının belirlenmesi | CTO, Admin ve Proje Yöneticisi arasındaki çakışmaları (Örn: CTO'nun rapor düzenlemeye çalışması) kapsayan test senaryoları türetildi. | Senaryolar Swagger üzerinden farklı oturum çerezleri kullanılarak elle çalıştırıldı ve sonuçlar `test-raporu.md`'ye işlendi. |
+| Dokümantasyon taslağı | README, Teknik Karar Notu ve Staj Günlüğü formatlarının düzenlenmesi | Ham mühendislik notları, resmi staj defteri diline (edilgen yapı, profesyonel üslup) çevrilmesi için promptlandı. | Gelen metinler satır satır okunarak koddaki mimari ile örtüşmeyen ifadeler silindi veya düzeltildi. |
 
 ### 2.1 Teslim öncesi denetim (26.08.2026)
 
@@ -73,12 +71,9 @@ Bu ayrımın yazılması, kullanım alanlarının yazılması kadar önemlidir.
 
 ## 4. Ne öğrendim
 
-> ⚠️ **TAMAMLANACAK — imzadan önce doldurulmalı.**
-> Yönetmelik bölüm 1.4: *"Final sunumunda yapay zekâyı nerede, ne için kullandığınız; çıktıyı nasıl kontrol ettiğiniz ve bu süreçte **ne öğrendiğiniz** sorulacaktır."* Aşağıdaki başlıklar birer hatırlatmadır; kendi cümlelerinizle 2-3 madde yazın.
-
-- AI'nın hangi tür sorularda gerçekten hızlandırdığı, hangilerinde yanıltıcı olduğu:
-- Bir çıktının doğru olup olmadığını anlamak için geliştirdiğiniz kontrol alışkanlığı:
-- AI kullanmadan önce problemi kendiniz tanımlamanın farkı:
+- **AI'nın Hızlandırdığı ve Yanılttığı Alanlar:** Boilerplate (tekrar eden) kod üretiminde, DTO dönüşümlerinde ve React bileşenlerinin taslağını oluşturmada yapay zekâ süreci ciddi oranda hızlandırdı. Ancak karmaşık iş kurallarının (örneğin projedeki yetki sınırlarının ISO hafta mantığıyla örtüşmesi) kurgulanmasında AI'nın bağlamı kaybettiği ve projeye uygun olmayan varsayımlar yaptığı görüldü.
+- **Doğrulama ve Kontrol Alışkanlığı:** Üretilen hiçbir kod, ne yaptığı tam olarak anlaşılmadan projeye kopyalanmadı. AI'dan gelen kod parçacıkları önce bağımsız olarak test edildi, Spring Boot'un logları incelendi ve özellikle güvenlik tarafındaki (`@PreAuthorize`) çıktıların Swagger üzerinden manuel yetki testleri bizzat yapılarak onaylandı.
+- **Problemi Önden Tanımlamanın Önemi:** AI'a "Bana bir filtreleme yap" demek yerine; "JPA Specification kullanarak, X ve Y parametrelerini opsiyonel alan, dinamik bir WHERE koşulu nasıl kurgulanır?" şeklinde spesifik ve sınırları çizilmiş komutlar (prompt engineering) vermenin, halüsinasyonları ve hatalı mimari önerilerini engellediği tecrübe edildi.
 
 ---
 

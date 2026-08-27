@@ -1053,6 +1053,17 @@ Tamamlanan ana teknik parçalar:
 
 ---
 
+# Öğrenilenler ve Retrospektif
+
+Altı haftalık staj süreci boyunca uygulamanın gereksinim analizinden başlayıp, veritabanı tasarımına, backend iş mantığından, React tabanlı frontend arayüzüne kadar gerçek bir Full-Stack geliştirme deneyimi elde edilmiştir. 
+
+- **Mimarî ve Standartlar:** Spring Boot ile geliştirilen backend katmanında, Controller-Service-Repository (Layered Architecture) yapısının birbirinden kesin sınırlarla ayrılmasının önemi tecrübe edilmiştir. Özellikle DTO'ların (Data Transfer Object) kullanımı sayesinde, veritabanı (Entity) yapısının dış dünyaya doğrudan açılması engellenerek veri güvenliği ve bant genişliği optimizasyonu sağlanmıştır.
+- **Güvenlik ve Yetkilendirme (RBAC):** Projenin en öğretici aşamalarından biri olan Spring Security entegrasyonu; sadece oturum açmanın ötesine geçerek detaylı bir Rol Bazlı Yetkilendirme (RBAC) modelinin nasıl kurulacağını göstermiştir. Her bir rolün (Admin, CTO, Proje Yöneticisi) kendi yetki (scope) sınırlarında veri görüntüleyip işlem yapabilmesi, veri gizliliğinin sağlanması açısından büyük bir kazanımdır.
+- **Veri Toplulaştırma ve Filtreleme:** CTO Dashboard ekranında sistemdeki tüm projelerin özet halinde sunulması gereksinimi; JPA Specification, CriteriaBuilder ve Pagination mimarilerinin derinlemesine öğrenilmesini sağlamıştır. Büyük verilerle çalışırken sistemi yormamak adına sayfalama ve filtreleme işlemlerinin veritabanı seviyesinde optimize edilmesinin performansa etkisi net bir şekilde görülmüştür.
+- **Test ve Hata Yönetimi:** Spring Boot `@ControllerAdvice` mekanizması ile sistemin standart dışı karmaşık yığın izi (stack trace) döndürmesinin önüne geçilmiştir. Frontend tarafında Axios interceptor'ları ile bu hataların merkezi şekilde yakalanıp kullanıcı dostu bildirimlere dönüştürülmesi, Kullanıcı Deneyimi (UX) konusunda ciddi bir vizyon kazandırmıştır. Ayrıca backend tarafına yazılan 58 farklı otomatik test, kod kalitesinin artmasında test odaklı yaklaşımın ne kadar kritik olduğunu uygulamalı olarak öğretmiştir.
+
+---
+
 # Bilinen Eksikler ve Sonraki Adımlar
 
 Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
