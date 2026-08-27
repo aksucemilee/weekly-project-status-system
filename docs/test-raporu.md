@@ -221,6 +221,24 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 
 **Neden kayda değer:** Bu bulgu R7'nin ("sürümlenmiş migration yok") soyut bir risk olmadığını, ilk şema değişikliğinde somut olarak ortaya çıktığını gösterir. Derleme ve testler bu hatayı yakalamaz; yalnızca uygulamayı mevcut bir veritabanına karşı gerçekten çalıştırmak ortaya çıkarır.
 
+### H9 — Seeder idempotent değildi: her açılışta yeni proje ataması üretiyordu
+
+| Alan | İçerik |
+| --- | --- |
+| **Ortam** | Backend + PostgreSQL |
+| **Ön koşul** | `SEED_USER_PASSWORD` tanımlı; veritabanında hem `AuthorizationDataInitializer` hem `DemoDataInitializer` verisi mevcut |
+| **Adımlar** | Uygulamayı arka arkaya birkaç kez başlat, `project_assignments` satır sayısını izle |
+| **Beklenen** | Sayı sabit kalır (README: "Her iki seeder de **idempotent**tir; uygulama her açıldığında veri çoğalmaz") |
+| **Gerçekleşen** | Atama sayısı 5 → 7'ye çıktı; dashboard'da daha önce "Sorumlu: Atanmadı" görünen `Arşiv Raporlama Altyapısı` projesi sorumlu göstermeye başladı |
+| **Kök neden** | `seedDemoAssignments`, projeleri **isme göre alfabetik** sıralayıp "ilk iki projeyi" atıyordu. `DemoDataInitializer` sonradan yeni projeler eklediği için alfabetik ilk iki proje değişti; mevcut atama kontrolü ise yalnızca *o proje* için yapıldığından, yeni baştaki projeler için her açılışta yeni atama üretildi |
+| **Etki** | Demo verisi sessizce değişiyor: rol kapsamı senaryosu ("PM 3 proje görür") bozuluyor ve dashboard'daki sorumlu sütunu kayıyor. Sessiz veri değişimi olduğu için fark edilmesi zor |
+| **Düzeltme** | `assignDemoUser` artık kullanıcının **hiç aktif ataması yoksa** çalışır; varsa hiç dokunmaz |
+| **Kanıt** | Düzeltme sonrası uygulama iki kez arka arkaya başlatıldı; `project_assignments` her ikisinde de 5 satırda kaldı (kullanıcı 4, proje 6, rapor 23 sabit) |
+| **Önem** | Orta |
+| **Durum** | Kapandı, tekrar test edildi |
+
+**Not:** Bu kusur, denetim sırasında demo kullanıcı isimleri değiştirilirken uygulamanın birkaç kez yeniden başlatılması sayesinde ortaya çıktı; tek seferlik çalıştırmada görünmüyordu.
+
 ## 8. Tekrar test
 
 Düzeltmelerden sonra yalnızca ilgili senaryo değil, etkilenen akışların tamamı yeniden çalıştırılmıştır:

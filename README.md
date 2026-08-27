@@ -185,20 +185,32 @@ JPA_DDL_AUTO=update
 
 `DB_PASSWORD` için varsayılan bir parola bulunmamaktadır ve yerel ortamda tanımlanması gerekir.
 
-`SEED_USER_PASSWORD`, demo kullanıcılarının parolasını belirler. Bu değişken tanımlı değilse demo kullanıcıları **oluşturulmaz** ve sisteme giriş yapılamaz; uygulama başlangıçta bunu uyarı olarak loglar. Parola kaynak kodda tutulmadığı için yerel ortamda tanımlanması gerekir:
+`SEED_USER_PASSWORD`, demo kullanıcılarının parolasının **son ekini** belirler. Bu değişken tanımlı değilse demo kullanıcıları **oluşturulmaz** ve sisteme giriş yapılamaz; uygulama başlangıçta bunu uyarı olarak loglar.
+
+Her demo kullanıcısının parolası şu desenle üretilir:
+
+```text
+parola = <e-posta yerel kısmı> + SEED_USER_PASSWORD
+```
+
+Böylece her rolün demo sırasında akılda kalan ayrı bir parolası olur, ancak parolanın gizli kısmı kaynak kodda tutulmaz (yönetmelik bölüm 8.2). Örneğin:
 
 ```powershell
-$env:SEED_USER_PASSWORD='YEREL_DEMO_PAROLANIZ'
+$env:SEED_USER_PASSWORD='1234!'
 ```
 
 Tanımlandığında aşağıdaki demo kullanıcıları oluşturulur ve proje yöneticisi ile ekip liderine örnek proje ataması yapılır:
 
-| E-posta | Rol |
-| --- | --- |
-| `pm@demo.local` | Proje Yöneticisi |
-| `cto@demo.local` | CTO |
-| `admin@demo.local` | Admin |
-| `lider@demo.local` | Ekip Lideri |
+| E-posta | Ad Soyad | Rol | Yukarıdaki örnekle parola |
+| --- | --- | --- | --- |
+| `pm@demo.local` | Elif Demir | Proje Yöneticisi | `pm1234!` |
+| `cto@demo.local` | Murat Yılmaz | CTO | `cto1234!` |
+| `admin@demo.local` | Sistem Yöneticisi | Admin | `admin1234!` |
+| `lider@demo.local` | Burak Kaya | Ekip Lideri | `lider1234!` |
+
+Kullanıcı adları gerçek kişi verisi değildir; müşteri adları gibi tamamı demo amaçlı üretilmiştir.
+
+> **Mevcut veritabanı notu:** Seeder idempotenttir ve **var olan kullanıcıyı güncellemez**. Daha önce oluşturulmuş bir veritabanında ad veya parola deseni değiştiğinde kayıtlar kendiliğinden güncellenmez; kullanıcıları silip uygulamayı yeniden başlatmak (`DELETE FROM project_assignments; DELETE FROM users;`) veya ilgili satırları elle güncellemek gerekir.
 
 ### Demo / Sunum Verisi
 
@@ -834,14 +846,14 @@ Her iki seeder de **idempotent**tir; uygulama her açıldığında veri çoğalm
 
 ## Demo kullanıcıları
 
-`SEED_USER_PASSWORD` tanımlandığında aşağıdaki kullanıcılar oluşturulur. Parolaların tamamı bu ortam değişkeninin değeridir; kaynak kodda parola tutulmaz.
+`SEED_USER_PASSWORD` tanımlandığında aşağıdaki kullanıcılar oluşturulur. Parola her kullanıcı için `<e-posta yerel kısmı> + SEED_USER_PASSWORD` desenine göre üretilir; parolanın gizli kısmı kaynak kodda tutulmaz (ayrıntı için yukarıdaki [Demo kullanıcı parolaları](#2-postgresql-veritabanını-hazırlama) bölümüne bakınız).
 
-| E-posta | Rol | Görebildiği kapsam |
-| --- | --- | --- |
-| `pm@demo.local` | Proje Yöneticisi | Yalnızca atandığı projeler |
-| `cto@demo.local` | CTO | Tüm projeler (salt okunur) |
-| `admin@demo.local` | Admin | Tüm projeler (yönetim amaçlı) |
-| `lider@demo.local` | Ekip Lideri | Yalnızca atandığı projeler (salt okunur) |
+| E-posta | Ad Soyad | Rol | Görebildiği kapsam |
+| --- | --- | --- | --- |
+| `pm@demo.local` | Elif Demir | Proje Yöneticisi | Yalnızca atandığı projeler |
+| `cto@demo.local` | Murat Yılmaz | CTO | Tüm projeler (salt okunur) |
+| `admin@demo.local` | Sistem Yöneticisi | Admin | Tüm projeler (yönetim amaçlı) |
+| `lider@demo.local` | Burak Kaya | Ekip Lideri | Yalnızca atandığı projeler (salt okunur) |
 
 Bu değişken tanımlı değilse demo kullanıcıları oluşturulmaz ve sisteme giriş yapılamaz; uygulama başlangıçta bunu uyarı olarak loglar.
 

@@ -79,6 +79,18 @@ public class AuthorizationDataInitializer implements CommandLineRunner {
             RoleCode.ADMIN, "admin@demo.local",
             RoleCode.EKIP_LIDERI, "lider@demo.local");
 
+    /**
+     * Demo kullanicilarinin ad/soyadi. Onceki surumde soyad alanina rol
+     * kodu ("EKIP_LIDERI") yaziliyordu; bu deger admin ekraninda ve
+     * dashboard'un "Sorumlu" sutununda kullaniciya gorunuyordu. Isimler
+     * gercek kisi degil, demo verisidir (bkz. README).
+     */
+    private static final Map<RoleCode, String[]> DEMO_USER_NAMES = Map.of(
+            RoleCode.PROJE_YONETICISI, new String[] { "Elif", "Demir" },
+            RoleCode.CTO, new String[] { "Murat", "Yılmaz" },
+            RoleCode.ADMIN, new String[] { "Sistem", "Yöneticisi" },
+            RoleCode.EKIP_LIDERI, new String[] { "Burak", "Kaya" });
+
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
@@ -156,11 +168,14 @@ public class AuthorizationDataInitializer implements CommandLineRunner {
             Role role = roleRepository.findByCode(entry.getKey())
                     .orElseThrow();
 
+            String[] name = DEMO_USER_NAMES.get(entry.getKey());
+
             User user = new User();
-            user.setFirstName("Demo");
-            user.setLastName(entry.getKey().name());
+            user.setFirstName(name[0]);
+            user.setLastName(name[1]);
             user.setEmail(email);
-            user.setPasswordHash(passwordEncoder.encode(seedUserPassword));
+            user.setPasswordHash(
+                    passwordEncoder.encode(demoPasswordFor(email)));
             user.setRole(role);
             user.setActive(true);
 
@@ -172,6 +187,19 @@ public class AuthorizationDataInitializer implements CommandLineRunner {
         }
 
         seedDemoAssignments();
+    }
+
+    /**
+     * Demo kullanicisinin parolasi: e-posta yerel kismi + SEED_USER_PASSWORD.
+     * Ornek: SEED_USER_PASSWORD=1234! ise cto@demo.local -> "cto1234!".
+     *
+     * Parolanin tamami kaynak kodda tutulmaz (yonetmelik 8.2); yalnizca
+     * hangi desenin kullanildigi kodda gorunur. Boylece her rol icin
+     * demo sirasinda akilda kalan ayri bir parola olusur, ancak gizli
+     * kisim ortam degiskeninde kalir.
+     */
+    private String demoPasswordFor(String email) {
+        return email.substring(0, email.indexOf('@')) + seedUserPassword;
     }
 
     /**
@@ -208,6 +236,17 @@ public class AuthorizationDataInitializer implements CommandLineRunner {
             AssignmentRole assignmentRole,
             List<Project> projects) {
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
+            // Kullanicinin zaten bir atamasi varsa hic dokunulmaz.
+            // Aksi halde proje kumesi degistiginde (ornegin
+            // DemoDataInitializer yeni projeler ekledikten sonra) alfabetik
+            // "ilk iki proje" degisiyor ve her acilista yeni atama
+            // uretiliyordu; seeder idempotent kalmiyordu.
+            if (!projectAssignmentRepository
+                    .findByUser_IdAndActiveTrue(user.getId())
+                    .isEmpty()) {
+                return;
+            }
+
             for (Project project : projects) {
                 boolean alreadyAssigned = projectAssignmentRepository
                         .existsByProject_IdAndUser_IdAndActiveTrue(
