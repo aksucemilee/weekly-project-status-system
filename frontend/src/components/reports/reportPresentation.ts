@@ -20,8 +20,6 @@ export const generalStatusLabels: Record<
   IN_PROGRESS: "Devam Ediyor",
   IN_TEST: "Testte",
   COMPLETED: "Tamamlandı",
-  DELAYED: "Gecikti",
-  AT_RISK: "Riskli",
   BLOCKED: "Bloke",
 };
 
@@ -33,8 +31,6 @@ export const generalStatusColors: Record<
   IN_PROGRESS: "primary",
   IN_TEST: "warning",
   COMPLETED: "success",
-  DELAYED: "warning",
-  AT_RISK: "error",
   BLOCKED: "error",
 };
 

@@ -18,14 +18,12 @@ import {
 import type { Project } from "../../types/project";
 import type {
   GeneralStatus,
-  RiskLevel,
   ScheduleStatus,
   WeeklyReport,
   WeeklyReportCreateRequest,
 } from "../../types/weeklyReport";
 import {
   generalStatusLabels,
-  riskLevelLabels,
   scheduleStatusLabels,
 } from "./reportPresentation";
 
@@ -55,7 +53,6 @@ const initialReportForm: WeeklyReportFormState = {
   actualProgress: "",
   generalStatus: "PLANNED",
   scheduleStatus: "ON_TRACK",
-  riskLevel: "LOW",
   completedSummary: "",
   nextWeekPlan: "",
   blockers: "",
@@ -68,7 +65,6 @@ const toFormState = (report: WeeklyReport): WeeklyReportFormState => ({
   actualProgress: String(report.actualProgress),
   generalStatus: report.generalStatus,
   scheduleStatus: report.scheduleStatus,
-  riskLevel: report.riskLevel,
   completedSummary: report.completedSummary ?? "",
   nextWeekPlan: report.nextWeekPlan ?? "",
   blockers: report.blockers ?? "",
@@ -202,7 +198,6 @@ function WeeklyReportForm({
       actualProgress,
       generalStatus: reportForm.generalStatus,
       scheduleStatus: reportForm.scheduleStatus,
-      riskLevel: reportForm.riskLevel,
       completedSummary: reportForm.completedSummary.trim(),
       nextWeekPlan: reportForm.nextWeekPlan.trim(),
       blockers: reportForm.blockers.trim(),
@@ -396,26 +391,12 @@ function WeeklyReportForm({
             ))}
           </TextField>
 
-          <TextField
-            select
-            label="Risk seviyesi"
-            value={reportForm.riskLevel}
-            onChange={(event) =>
-              updateFormField("riskLevel", event.target.value as RiskLevel)
-            }
-            fullWidth
-            sx={{
-              gridColumn: {
-                md: "span 2",
-              },
-            }}
-          >
-            {Object.entries(riskLevelLabels).map(([riskLevel, label]) => (
-              <MenuItem key={riskLevel} value={riskLevel}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
+          {/*
+            Risk seviyesi artik form alani degildir: rapora bagli acik
+            risk/engel kayitlarindan turetilir (bkz. RiskLevelResolver).
+            Kullanici seviyeyi dogrudan secebilseydi kayitli risklerle
+            celisebilirdi.
+          */}
         </Box>
 
         <Box

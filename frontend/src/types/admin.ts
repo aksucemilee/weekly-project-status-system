@@ -2,8 +2,7 @@ import type { RoleCode } from "./auth";
 
 export type AssignmentRole =
   | "PROJE_YONETICISI"
-  | "EKIP_LIDERI"
-  | "GORUNTULEYICI";
+  | "EKIP_LIDERI";
 
 export type AdminUser = {
   id: number;
@@ -63,5 +62,4 @@ export const roleLabels: Record<RoleCode, string> = {
 export const assignmentRoleLabels: Record<AssignmentRole, string> = {
   PROJE_YONETICISI: "Proje Yöneticisi",
   EKIP_LIDERI: "Ekip Lideri",
-  GORUNTULEYICI: "Görüntüleyici",
 };

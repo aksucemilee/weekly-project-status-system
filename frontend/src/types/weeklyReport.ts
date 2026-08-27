@@ -3,8 +3,6 @@ export type GeneralStatus =
   | "IN_PROGRESS"
   | "IN_TEST"
   | "COMPLETED"
-  | "DELAYED"
-  | "AT_RISK"
   | "BLOCKED";
 
 export type ScheduleStatus =
@@ -40,7 +38,6 @@ export type WeeklyReportCreateRequest = {
   actualProgress: number;
   generalStatus: GeneralStatus;
   scheduleStatus: ScheduleStatus;
-  riskLevel: RiskLevel;
   completedSummary: string;
   nextWeekPlan: string;
   blockers: string;

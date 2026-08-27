@@ -38,18 +38,22 @@ export function getDashboardHealth(
     return "NO_REPORT";
   }
 
-  if (
-    project.projectStatus === "BLOCKED" ||
-    project.generalStatus === "BLOCKED" ||
-    project.riskLevel === "HIGH"
-  ) {
+  /*
+   * Saglik yalnizca HAFTALIK RAPOR verisinden turetilir; projenin yasam
+   * dongusu alani (projectStatus) buraya karismaz.
+   *
+   * Onceki surumde projectStatus === "BLOCKED" de kritik sayiliyordu.
+   * O alan yalnizca admin elle degistirdiginde guncellendigi icin rozet,
+   * raporun gercek durumundan bagimsiz kirmizi kalabiliyordu; ayrica
+   * dashboard'daki "Bloke" sayaci farkli bir kaynaga baktigi icin sayac
+   * ile rozet celisebiliyordu. Ikisi artik ayni veriden beslenir.
+   */
+  if (project.generalStatus === "BLOCKED" || project.riskLevel === "HIGH") {
     return "CRITICAL";
   }
 
   if (
     project.scheduleStatus === "DELAYED" ||
-    project.generalStatus === "DELAYED" ||
-    project.generalStatus === "AT_RISK" ||
     project.riskLevel === "MEDIUM"
   ) {
     return "ATTENTION";

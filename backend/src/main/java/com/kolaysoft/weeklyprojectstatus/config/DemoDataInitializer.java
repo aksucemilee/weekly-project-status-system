@@ -20,6 +20,7 @@ import com.kolaysoft.weeklyprojectstatus.repository.RiskIssueRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.UserRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.WeeklyReportRepository;
 import com.kolaysoft.weeklyprojectstatus.repository.WorkItemRepository;
+import com.kolaysoft.weeklyprojectstatus.service.RiskLevelResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +77,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final RiskIssueRepository riskIssueRepository;
     private final UserRepository userRepository;
     private final ProjectAssignmentRepository projectAssignmentRepository;
+    private final RiskLevelResolver riskLevelResolver;
 
     @Value("${SEED_DEMO_DATA:false}")
     private boolean seedDemoData;
@@ -86,13 +88,15 @@ public class DemoDataInitializer implements CommandLineRunner {
             WorkItemRepository workItemRepository,
             RiskIssueRepository riskIssueRepository,
             UserRepository userRepository,
-            ProjectAssignmentRepository projectAssignmentRepository) {
+            ProjectAssignmentRepository projectAssignmentRepository,
+            RiskLevelResolver riskLevelResolver) {
         this.projectRepository = projectRepository;
         this.weeklyReportRepository = weeklyReportRepository;
         this.workItemRepository = workItemRepository;
         this.riskIssueRepository = riskIssueRepository;
         this.userRepository = userRepository;
         this.projectAssignmentRepository = projectAssignmentRepository;
+        this.riskLevelResolver = riskLevelResolver;
     }
 
     @Override
@@ -121,6 +125,12 @@ public class DemoDataInitializer implements CommandLineRunner {
 
         seedAssignments();
 
+        // Risk seviyesi turetilmis alandir: raporlar varsayilan seviyeyle
+        // olusturulur, risk kayitlari eklendikten sonra burada yeniden
+        // hesaplanir. Boylece demo verisi de uygulamanin kendi kuraliyla
+        // ayni yoldan gecer.
+        weeklyReportRepository.findAll().forEach(riskLevelResolver::recompute);
+
         log.info("Demo verisi oluşturuldu: {} proje, {} haftalık rapor.",
                 projectRepository.count(),
                 weeklyReportRepository.count());
@@ -138,7 +148,7 @@ public class DemoDataInitializer implements CommandLineRunner {
                         + "sistemleriyle entegrasyonu.",
                 thisWeek.minusWeeks(13),
                 thisWeek.plusWeeks(6),
-                ProjectStatus.IN_PROGRESS);
+                ProjectStatus.ACTIVE);
 
         // 12 hafta: en eskiden en yeniye dogru ilerleyen bir proje.
         int[] target = { 5, 12, 20, 28, 35, 42, 50, 56, 62, 68, 74, 80 };
@@ -149,12 +159,12 @@ public class DemoDataInitializer implements CommandLineRunner {
                 GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_PROGRESS,
-                GeneralStatus.DELAYED,
+                GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_TEST,
                 GeneralStatus.IN_PROGRESS,
-                GeneralStatus.AT_RISK,
+                GeneralStatus.IN_PROGRESS,
                 GeneralStatus.IN_TEST,
                 GeneralStatus.IN_TEST
         };
@@ -186,8 +196,6 @@ public class DemoDataInitializer implements CommandLineRunner {
                     actual[index],
                     statuses[index],
                     index == 4 ? ScheduleStatus.DELAYED : ScheduleStatus.ON_TRACK,
-                    index == 9 ? RiskLevel.HIGH
-                            : (index >= 6 ? RiskLevel.MEDIUM : RiskLevel.LOW),
                     completed[index],
                     "Sonraki hafta planı bir önceki rapordaki açık maddeler "
                             + "üzerinden güncellenmiştir.",
@@ -229,26 +237,23 @@ public class DemoDataInitializer implements CommandLineRunner {
                         + "hesaplama akışlarının geliştirilmesi.",
                 thisWeek.minusWeeks(8),
                 thisWeek.plusWeeks(2),
-                ProjectStatus.IN_PROGRESS);
+                ProjectStatus.ACTIVE);
 
         createReport(project, thisWeek.minusWeeks(2), 45, 38,
                 GeneralStatus.IN_PROGRESS, ScheduleStatus.ON_TRACK,
-                RiskLevel.MEDIUM,
                 "İzin talep ekranı tamamlandı.",
                 "Bordro hesaplama kurallarına geçilecek.",
                 "", "");
 
         createReport(project, thisWeek.minusWeeks(1), 60, 44,
-                GeneralStatus.DELAYED, ScheduleStatus.DELAYED,
-                RiskLevel.MEDIUM,
+                GeneralStatus.IN_PROGRESS, ScheduleStatus.DELAYED,
                 "Bordro kurallarının bir kısmı geliştirildi.",
                 "Eksik kuralların tamamlanması hedefleniyor.",
                 "Mevzuat değişikliği nedeniyle kurallar yeniden yorumlanıyor.",
                 "Takvimde bir haftalık sapma oluştu.");
 
         WeeklyReport latest = createReport(project, thisWeek, 70, 48,
-                GeneralStatus.DELAYED, ScheduleStatus.DELAYED,
-                RiskLevel.HIGH,
+                GeneralStatus.IN_PROGRESS, ScheduleStatus.DELAYED,
                 "Bordro hesaplama motorunun çekirdek kısmı tamamlandı.",
                 "Mevzuat kaynaklı açık maddelerin kapatılması planlanıyor.",
                 "Mevzuat yorumu için hukuk biriminden dönüş bekleniyor.",
@@ -282,18 +287,16 @@ public class DemoDataInitializer implements CommandLineRunner {
                         + "takip ettiği modül.",
                 thisWeek.minusWeeks(6),
                 thisWeek.plusWeeks(4),
-                ProjectStatus.BLOCKED);
+                ProjectStatus.ON_HOLD);
 
         createReport(project, thisWeek.minusWeeks(1), 30, 22,
                 GeneralStatus.IN_PROGRESS, ScheduleStatus.ON_TRACK,
-                RiskLevel.MEDIUM,
                 "Cihaz kayıt ekranı geliştirildi.",
                 "Arıza kaydı akışına başlanacak.",
                 "", "");
 
         WeeklyReport latest = createReport(project, thisWeek, 40, 24,
                 GeneralStatus.BLOCKED, ScheduleStatus.DELAYED,
-                RiskLevel.HIGH,
                 "Arıza kaydı ekranının taslağı hazırlandı.",
                 "Donanım test cihazları geldiğinde geliştirmeye devam edilecek.",
                 "Test cihazları tedarik edilemediği için saha testleri "
@@ -326,13 +329,13 @@ public class DemoDataInitializer implements CommandLineRunner {
                 ProjectStatus.PLANNED);
 
         createReport(project, thisWeek.minusWeeks(1), 0, 0,
-                GeneralStatus.PLANNED, ScheduleStatus.ON_TRACK, RiskLevel.LOW,
+                GeneralStatus.PLANNED, ScheduleStatus.ON_TRACK,
                 "Proje ekibi oluşturuldu, analiz çalışmasına başlandı.",
                 "Ekran taslakları çıkarılacak.",
                 "", "Proje henüz başlangıç aşamasında.");
 
         createReport(project, thisWeek, 8, 8,
-                GeneralStatus.PLANNED, ScheduleStatus.ON_TRACK, RiskLevel.LOW,
+                GeneralStatus.PLANNED, ScheduleStatus.ON_TRACK,
                 "Analiz dokümanının ilk sürümü hazırlandı.",
                 "Teknik tasarım kararları netleştirilecek.",
                 "", "Planlanan takvime uygun ilerliyor.");
@@ -347,18 +350,16 @@ public class DemoDataInitializer implements CommandLineRunner {
                         + "mevcut servislere bağlanması.",
                 thisWeek.minusWeeks(10),
                 thisWeek.plusWeeks(3),
-                ProjectStatus.IN_PROGRESS);
+                ProjectStatus.ACTIVE);
 
         createReport(project, thisWeek.minusWeeks(2), 50, 47,
                 GeneralStatus.IN_PROGRESS, ScheduleStatus.ON_TRACK,
-                RiskLevel.LOW,
                 "Yeni tasarımın ana ekranları geliştirildi.",
                 "Servis entegrasyonlarına geçilecek.",
                 "", "");
 
         WeeklyReport latest = createReport(project, thisWeek, 65, 58,
-                GeneralStatus.AT_RISK, ScheduleStatus.ON_TRACK,
-                RiskLevel.MEDIUM,
+                GeneralStatus.IN_PROGRESS, ScheduleStatus.ON_TRACK,
                 "Servis entegrasyonlarının yarısı tamamlandı.",
                 "Kalan servisler ve yük testleri planlanıyor.",
                 "",
@@ -386,17 +387,16 @@ public class DemoDataInitializer implements CommandLineRunner {
                 "Geçmiş belgelerin raporlanabilir bir yapıya taşınması.",
                 thisWeek.minusWeeks(14),
                 thisWeek.minusWeeks(1),
-                ProjectStatus.COMPLETED);
+                ProjectStatus.CLOSED);
 
         createReport(project, thisWeek.minusWeeks(2), 90, 88,
-                GeneralStatus.IN_TEST, ScheduleStatus.ON_TRACK, RiskLevel.LOW,
+                GeneralStatus.IN_TEST, ScheduleStatus.ON_TRACK,
                 "Kabul testleri tamamlandı.",
                 "Devreye alma planlanıyor.",
                 "", "");
 
         createReport(project, thisWeek.minusWeeks(1), 100, 100,
                 GeneralStatus.COMPLETED, ScheduleStatus.ON_TRACK,
-                RiskLevel.LOW,
                 "Sistem devreye alındı ve müşteriye teslim edildi.",
                 "Kapanış dokümantasyonu tamamlanacak.",
                 "", "Proje planlanan takvimde tamamlandı.");
@@ -475,7 +475,6 @@ public class DemoDataInitializer implements CommandLineRunner {
             int actualProgress,
             GeneralStatus generalStatus,
             ScheduleStatus scheduleStatus,
-            RiskLevel riskLevel,
             String completedSummary,
             String nextWeekPlan,
             String blockers,
@@ -488,7 +487,9 @@ public class DemoDataInitializer implements CommandLineRunner {
         report.setActualProgress(actualProgress);
         report.setGeneralStatus(generalStatus);
         report.setScheduleStatus(scheduleStatus);
-        report.setRiskLevel(riskLevel);
+        // Risk seviyesi turetilmis alandir; seed sonunda risk
+        // kayitlarindan yeniden hesaplanir.
+        report.setRiskLevel(RiskLevelResolver.DEFAULT_LEVEL);
         report.setCompletedSummary(completedSummary);
         report.setNextWeekPlan(nextWeekPlan);
         report.setBlockers(blockers);

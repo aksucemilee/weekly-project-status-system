@@ -1,7 +1,6 @@
 package com.kolaysoft.weeklyprojectstatus.model.dto.weeklyreport;
 
 import com.kolaysoft.weeklyprojectstatus.model.enums.GeneralStatus;
-import com.kolaysoft.weeklyprojectstatus.model.enums.RiskLevel;
 import com.kolaysoft.weeklyprojectstatus.model.enums.ScheduleStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -34,9 +33,6 @@ public class WeeklyReportUpdateRequest {
 
     @NotNull(message = "Takvim durumu zorunludur.")
     private ScheduleStatus scheduleStatus;
-
-    @NotNull(message = "Risk seviyesi zorunludur.")
-    private RiskLevel riskLevel;
 
     @NotBlank(message = "Yapılanlar alanı zorunludur.")
     private String completedSummary;
@@ -88,14 +84,6 @@ public class WeeklyReportUpdateRequest {
 
     public void setScheduleStatus(ScheduleStatus scheduleStatus) {
         this.scheduleStatus = scheduleStatus;
-    }
-
-    public RiskLevel getRiskLevel() {
-        return riskLevel;
-    }
-
-    public void setRiskLevel(RiskLevel riskLevel) {
-        this.riskLevel = riskLevel;
     }
 
     public String getCompletedSummary() {

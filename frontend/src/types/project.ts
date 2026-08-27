@@ -1,8 +1,8 @@
 export type ProjectStatus =
   | "PLANNED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "BLOCKED";
+  | "ACTIVE"
+  | "ON_HOLD"
+  | "CLOSED";
 
 export type Project = {
   id: number;

@@ -68,10 +68,8 @@ function ProjectsPage() {
       total: projects.length,
       planned: projects.filter((project) => project.status === "PLANNED")
         .length,
-      inProgress: projects.filter((project) => project.status === "IN_PROGRESS")
-        .length,
-      completed: projects.filter((project) => project.status === "COMPLETED")
-        .length,
+      active: projects.filter((project) => project.status === "ACTIVE").length,
+      closed: projects.filter((project) => project.status === "CLOSED").length,
     }),
     [projects],
   );
@@ -228,7 +226,7 @@ function ProjectsPage() {
                 color="text.secondary"
                 sx={{ fontWeight: 800 }}
               >
-                Planlanan
+                Başlamadı
               </Typography>
 
               <Typography
@@ -260,7 +258,7 @@ function ProjectsPage() {
                 color="text.secondary"
                 sx={{ fontWeight: 800 }}
               >
-                Devam eden
+                Aktif
               </Typography>
 
               <Typography
@@ -274,7 +272,7 @@ function ProjectsPage() {
                   },
                 }}
               >
-                {projectSummary.inProgress}
+                {projectSummary.active}
               </Typography>
             </Paper>
 
@@ -293,7 +291,7 @@ function ProjectsPage() {
                 color="text.secondary"
                 sx={{ fontWeight: 800 }}
               >
-                Tamamlanan
+                Kapandı
               </Typography>
 
               <Typography
@@ -307,7 +305,7 @@ function ProjectsPage() {
                   },
                 }}
               >
-                {projectSummary.completed}
+                {projectSummary.closed}
               </Typography>
             </Paper>
           </ResponsiveCardGrid>

@@ -110,8 +110,19 @@ public class DashboardService {
                                 .filter(summary -> summary.scheduleStatus() == ScheduleStatus.DELAYED)
                                 .count();
 
+                /*
+                 * "Bloke" sayaci projenin YASAM DONGUSU alanina degil, o
+                 * haftanin raporundaki calisma durumuna bakar.
+                 *
+                 * Onceki surumde sayac Project.status == BLOCKED sayiyordu;
+                 * bu alan yalnizca admin elle degistirdiginde guncellendigi
+                 * icin, proje yoneticisi haftalarca "bloke" raporu girse bile
+                 * sayac artmiyordu. Ayrica tablodaki saglik rozeti raporun
+                 * durumuna baktigi icin sayac ile rozet birbiriyle
+                 * celisebiliyordu. Ikisi artik ayni kaynaktan beslenir.
+                 */
                 long blockedProjects = projectSummaries.stream()
-                                .filter(summary -> summary.projectStatus() == ProjectStatus.BLOCKED)
+                                .filter(summary -> summary.generalStatus() == GeneralStatus.BLOCKED)
                                 .count();
 
                 return new DashboardSummaryResponse(

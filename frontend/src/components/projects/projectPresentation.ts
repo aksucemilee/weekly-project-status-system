@@ -10,10 +10,10 @@ export const projectStatusLabels: Record<
   ProjectStatus,
   string
 > = {
-  PLANNED: "Planlandı",
-  IN_PROGRESS: "Devam Ediyor",
-  COMPLETED: "Tamamlandı",
-  BLOCKED: "Bloke",
+  PLANNED: "Başlamadı",
+  ACTIVE: "Aktif",
+  ON_HOLD: "Askıda",
+  CLOSED: "Kapandı",
 };
 
 export const projectStatusColors: Record<
@@ -21,9 +21,9 @@ export const projectStatusColors: Record<
   ProjectStatusColor
 > = {
   PLANNED: "info",
-  IN_PROGRESS: "primary",
-  COMPLETED: "success",
-  BLOCKED: "error",
+  ACTIVE: "primary",
+  ON_HOLD: "error",
+  CLOSED: "success",
 };
 
 export const formatProjectDate = (
