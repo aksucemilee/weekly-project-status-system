@@ -126,6 +126,17 @@ const createAppTheme = (mode: PaletteMode) => {
             paddingRight: 16,
             borderRadius: 10,
           },
+
+          // root'taki minHeight, MUI'nin kendi "small" olcusunu eziyordu;
+          // size="small" verilen butonlar normal boyla ayni yukseklikte
+          // ciktigi icin ikincil aksiyonlar birincil olanlar kadar agir
+          // gorunuyordu. Kucuk boy burada acikca tanimlanir.
+          sizeSmall: {
+            minHeight: 32,
+            paddingLeft: 12,
+            paddingRight: 12,
+            fontSize: "0.8125rem",
+          },
         },
       },
 

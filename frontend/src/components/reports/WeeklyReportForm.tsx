@@ -488,9 +488,11 @@ function WeeklyReportForm({
         >
           <Button
             type="button"
-            variant="outlined"
+            variant="text"
+            color="inherit"
             onClick={onCancel}
             disabled={isSubmitting}
+            sx={{ color: "text.secondary" }}
           >
             İptal
           </Button>

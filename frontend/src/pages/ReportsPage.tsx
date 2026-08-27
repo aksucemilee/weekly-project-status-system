@@ -280,6 +280,17 @@ function ReportsPage() {
     setReportPage(0);
   };
 
+  /**
+   * Sayfa degistiginde acik rapor detayi kapatilir: detay listenin
+   * ustunde durdugu icin, aksi halde artik listede olmayan bir raporun
+   * detayi ekranda kalirdi.
+   */
+  const handleReportPageChange = (newPage: number) => {
+    setReportPage(newPage - 1);
+    setSelectedReport(null);
+    setSelectedDetailTab("overview");
+  };
+
   const handleOpenCreateDialog = () => {
     setReportBeingEdited(null);
     setIsReportDialogOpen(true);
@@ -457,33 +468,6 @@ function ReportsPage() {
             isLoading={isReportsLoading}
             onChange={handleReportFiltersChange}
           />
-
-          <WeeklyReportList
-            reports={reports}
-            totalCount={reportTotalElements}
-            isLoading={isReportsLoading}
-            errorMessage={reportListErrorMessage}
-            selectedReportId={selectedReport?.id ?? null}
-            hasActiveFilters={hasActiveReportFilters(reportFilters)}
-            onManageReportDetails={handleManageReport}
-            onRetry={() => void loadReports()}
-          />
-
-          {!isReportsLoading && !reportListErrorMessage && reportTotalPages > 1 && (
-            <Stack
-              sx={{
-                alignItems: "center",
-              }}
-            >
-              <Pagination
-                count={reportTotalPages}
-                page={reportPage + 1}
-                onChange={(_event, newPage) => setReportPage(newPage - 1)}
-                color="primary"
-                shape="rounded"
-              />
-            </Stack>
-          )}
 
           {selectedReport && (
             <Box
@@ -803,6 +787,33 @@ function ReportsPage() {
                 )}
               </Paper>
             </Box>
+          )}
+
+          <WeeklyReportList
+            reports={reports}
+            totalCount={reportTotalElements}
+            isLoading={isReportsLoading}
+            errorMessage={reportListErrorMessage}
+            selectedReportId={selectedReport?.id ?? null}
+            hasActiveFilters={hasActiveReportFilters(reportFilters)}
+            onManageReportDetails={handleManageReport}
+            onRetry={() => void loadReports()}
+          />
+
+          {!isReportsLoading && !reportListErrorMessage && reportTotalPages > 1 && (
+            <Stack
+              sx={{
+                alignItems: "center",
+              }}
+            >
+              <Pagination
+                count={reportTotalPages}
+                page={reportPage + 1}
+                onChange={(_event, newPage) => handleReportPageChange(newPage)}
+                color="primary"
+                shape="rounded"
+              />
+            </Stack>
           )}
         </Stack>
       )}
