@@ -18,12 +18,15 @@ public class RiskIssueService {
 
     private final RiskIssueRepository riskIssueRepository;
     private final WeeklyReportService weeklyReportService;
+    private final RiskLevelResolver riskLevelResolver;
 
     public RiskIssueService(
             RiskIssueRepository riskIssueRepository,
-            WeeklyReportService weeklyReportService) {
+            WeeklyReportService weeklyReportService,
+            RiskLevelResolver riskLevelResolver) {
         this.riskIssueRepository = riskIssueRepository;
         this.weeklyReportService = weeklyReportService;
+        this.riskLevelResolver = riskLevelResolver;
     }
 
     public RiskIssueResponse createRiskIssue(
@@ -45,6 +48,9 @@ public class RiskIssueService {
         riskIssue.setStatus(request.getStatus());
 
         RiskIssue savedRiskIssue = riskIssueRepository.save(riskIssue);
+
+        // Raporun risk seviyesi acik risk kayitlarindan turetilir.
+        riskLevelResolver.recompute(weeklyReport);
 
         return toResponse(savedRiskIssue);
     }
@@ -90,6 +96,8 @@ public class RiskIssueService {
 
         RiskIssue updatedRiskIssue = riskIssueRepository.save(riskIssue);
 
+        riskLevelResolver.recompute(riskIssue.getWeeklyReport());
+
         return toResponse(updatedRiskIssue);
     }
 
@@ -99,7 +107,12 @@ public class RiskIssueService {
 
         RiskIssue riskIssue = getRiskIssueEntity(weeklyReportId, riskIssueId);
 
+        WeeklyReport weeklyReport = riskIssue.getWeeklyReport();
+
         riskIssueRepository.delete(riskIssue);
+        riskIssueRepository.flush();
+
+        riskLevelResolver.recompute(weeklyReport);
     }
 
     private RiskIssue getRiskIssueEntity(

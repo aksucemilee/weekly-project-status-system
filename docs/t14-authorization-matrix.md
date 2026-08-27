@@ -415,7 +415,71 @@ Denetim sırasında yetkilendirmeyle ilgili iki arayüz kusuru bulunup düzeltil
 
 **Bu karar açık soru 2'yi de kapatır:** aynı proje ve hafta için yalnızca bir rapor oluşturulabilir; ikinci kayıt `409 Conflict` ile engellenir.
 
-### 13.5 Kapsam dışında bırakılmaya devam edenler
+### 13.5 Model tutarlılığı denetimi — kavram çakışmaları giderildi
+
+Final denetiminin son adımında MVP kendi içinde tutarlılık açısından tarandı. Enum'lar (backend ↔ frontend), yetki kodları ve hafta normalizasyonu tutarlı bulundu; ancak **kavram modelinde altı çakışma** tespit edildi ve kök nedenleri giderildi.
+
+#### 13.5.1 İki ayrı "proje durumu" (T1)
+
+Durum iki yerde tutuluyordu: `Project.status` (admin girer) ve `WeeklyReport.generalStatus` (PM her hafta girer). İkisi de `PLANNED/IN_PROGRESS/COMPLETED/BLOCKED` değerlerini taşıyordu ve **aynı proje için farklı değer gösterebiliyordu** — örneğin proje `IN_PROGRESS` iken son raporu `DELAYED`. Hangisinin doğru olduğu belirsizdi.
+
+**Karar:** iki alan farklı seviyeleri ifade eder ve artık farklı değer kümeleri kullanır.
+
+| Alan | Anlamı | Değerler | Kim yönetir |
+| --- | --- | --- | --- |
+| `Project.status` | Projenin **yaşam döngüsü** | `PLANNED` / `ACTIVE` / `ON_HOLD` / `CLOSED` | Admin |
+| `WeeklyReport.generalStatus` | O **haftanın** çalışma durumu | `PLANNED` / `IN_PROGRESS` / `IN_TEST` / `COMPLETED` / `BLOCKED` | Proje yöneticisi |
+
+Bu, Ön Analiz bölüm 4.1'in proje durumu tarifine ("Başlamadı, Aktif, Askıda veya Kapandı") uygundur.
+
+#### 13.5.2 `generalStatus` üç kavramı birden taşıyordu (T2) — açık soru 7 kapatıldı
+
+Ön Analiz bölüm 10.3 bunu önceden uyarmıştı: *"Genel durum alanındaki nihai seçenekler, Testte/Gecikti/Riskli gibi değerlerin iş kalemi durumu, takvim durumu ve risk seviyesi alanlarıyla **çakışmaması** için açık soruların cevaplarına göre netleştirilecektir."* Bu netleştirme yapılmamıştı: `DELAYED` hem `generalStatus`'ta hem `ScheduleStatus`'ta, `AT_RISK` ise `RiskLevel` ile aynı bilgiyi taşıyordu. Kullanıcı `generalStatus=DELAYED` + `scheduleStatus=ON_TRACK` gibi **mantıksal olarak çelişkili** kayıt oluşturabiliyordu.
+
+**Karar:** `DELAYED` ve `AT_RISK` `generalStatus`'tan kaldırıldı. Üç eksen artık birbirine diktir:
+
+```text
+ne yapılıyor  → generalStatus  (PLANNED / IN_PROGRESS / IN_TEST / COMPLETED / BLOCKED)
+takvime uyum  → scheduleStatus (ON_TRACK / DELAYED)
+risk düzeyi   → riskLevel      (LOW / MEDIUM / HIGH)
+```
+
+#### 13.5.3 Sayaç ile sağlık rozeti farklı kaynaktan besleniyordu (T3)
+
+Dashboard'ın "Bloke" sayacı `Project.status == BLOCKED` sayıyordu; tablodaki sağlık rozeti ise raporun durumuna bakıyordu. Sayaç `1` gösterirken tabloda `2` kırmızı rozet olabiliyordu. Ayrıca `Project.status` yalnızca admin elle değiştirdiğinde güncellendiği için, proje yöneticisi haftalarca "bloke" raporu girse bile sayaç artmıyordu.
+
+**Karar:** her ikisi de haftalık rapordan beslenir; yaşam döngüsü alanı dashboard göstergelerine karışmaz.
+
+#### 13.5.4 Risk seviyesi kayıtlı risklerle çelişebiliyordu (T4) — Ön Analiz 7.6 kabul kriteri
+
+`WeeklyReport.riskLevel` formda elle seçiliyordu. Bir raporda çözülmemiş **yüksek** seviyeli beş risk bulunsa bile kullanıcı "Düşük" seçebiliyordu; dashboard kayıtlı riskleri hiç okumuyordu. Bu, Ön Analiz bölüm 7.6'nın kabul kriterini (*"risk rapor altında gösterilir **ve dashboard özetine yansır**"*) karşılamıyordu.
+
+**Karar:** risk seviyesi girdi değil, **türetilmiş** alandır — rapora bağlı `OPEN` ve `ACTION_IN_PROGRESS` durumundaki risk kayıtlarının en yükseğidir; açık risk yoksa `LOW`. Form alanı kaldırıldı.
+
+**Neden hesaplanan değil, saklanan alan:** seviye tamamen sorgu anında hesaplansaydı T13 filtre sözleşmesinin gerektirdiği kolon ortadan kalkar ve risk filtresi Java tarafına kaymak zorunda kalırdı. Kolon korunur, ancak kullanıcı girdisi değildir: `RiskLevelResolver`, risk/engel oluşturma, güncelleme ve silme işlemlerinden sonra yeniden hesaplar.
+
+#### 13.5.5 `GORUNTULEYICI` atama rolü yanlış güvenlik beklentisi yaratıyordu (T5)
+
+`AssignmentRole` üç değer taşıyordu ama **hiçbir kod yolu bu alanı okumuyordu**; kapsam kontrolü yalnızca atamanın varlığına bakar. Yani "görüntüleyici olarak atanmış" bir kullanıcı, rolünün tüm yetkileriyle işlem yapıyordu.
+
+**Karar:** `GORUNTULEYICI` kaldırıldı. Alanın yetki belirlemediği, yalnızca raporlama/görünürlük amaçlı olduğu enum belgesinde açıkça yazıldı. Bu, bölüm 1'deki "rol değil, yetki" ilkesiyle tutarlıdır.
+
+#### 13.5.6 Pasif projeye rapor girilebiliyordu (T6)
+
+Pasif proje portföyden çıkarılır ve dashboard'da listelenmez, ancak ona yeni haftalık rapor eklenebiliyordu. Artık `400` ile engellenir.
+
+#### Kapsam dışı bırakılanlar
+
+| Konu | Karar |
+| --- | --- |
+| `actualProgress > targetProgress` engellensin mi | **Hayır.** Planın önünde giden proje için meşru bir durumdur; kural koymak gerçek senaryoyu bloke ederdi |
+| Gelecek haftaya rapor girilebilsin mi | Ön Analiz bölüm 14, açık soru 9 cevapsız. Proje yöneticisinin gelecek hafta planını önceden girmesi meşru olduğu için sınır konmadı |
+
+#### Veri etkisi
+
+Enum değişiklikleri H8'de kayıtlı `CHECK` constraint sorununu tetiklediği için tablolar düşürülüp şema ve demo verisi sıfırdan üretildi. Demo verisi artık uygulamanın kendi kuralından geçer: seeder raporları varsayılan risk seviyesiyle oluşturur, risk kayıtlarını ekler, ardından seviyeleri `RiskLevelResolver` ile yeniden hesaplar.
+
+### 13.6 Kapsam dışında bırakılmaya devam edenler
 
 | Konu | Gerekçe |
 | --- | --- |

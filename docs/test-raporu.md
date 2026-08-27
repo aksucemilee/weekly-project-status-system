@@ -257,6 +257,29 @@ Her bulgunun düzeltmesi bir commit ile izlenebilir.
 
 **Not:** Bu bulgu, denetim değil **manuel kullanıcı testi** sırasında ortaya çıktı: rapor haftası elle değiştirildiğinde beklenen `409` gelmedi. İlk bakışta çakışma kuralının bozuk olduğu düşünüldü; incelemede kuralın çalıştığı ancak **yanlış eksende** çalıştığı görüldü. Seeder her zaman Pazartesi ürettiği için demo veride hiç görünmüyordu.
 
+### H11 — MVP içi kavram çakışmaları (model tutarlılığı denetimi)
+
+Kod, üç kaynak doküman ve arayüz kendi içinde tutarlılık açısından tarandı. Enum'lar (backend ↔ frontend), yetki kodları ve hafta normalizasyonu tutarlı bulundu; altı kavram çakışması tespit edilip giderildi.
+
+| # | Bulgu | Somut kanıt (düzeltme öncesi) | Durum |
+| --- | --- | --- | --- |
+| T1 | `Project.status` ile `WeeklyReport.generalStatus` aynı değer kümesini kullanıp farklı değer gösterebiliyordu | PEYK: proje `IN_PROGRESS`, son raporu `DELAYED` — hangisi doğru belirsiz | Kapandı |
+| T2 | `generalStatus`, gecikme ve risk eksenleriyle örtüşen değerler taşıyordu | `DELAYED` hem `generalStatus`'ta hem `scheduleStatus`'ta; `AT_RISK` ~ `riskLevel`. `generalStatus=DELAYED` + `scheduleStatus=ON_TRACK` gibi çelişkili kayıt mümkündü | Kapandı |
+| T3 | "Bloke" sayacı ile sağlık rozeti farklı kaynaktan besleniyordu | Sayaç `Project.status`'a, rozet raporun durumuna bakıyordu; sayaç 1 iken tabloda 2 kırmızı rozet olabiliyordu | Kapandı |
+| T4 | Risk seviyesi elle giriliyor, kayıtlı risklerle çelişebiliyordu | Dashboard `RiskIssue` kayıtlarını hiç okumuyordu; Ön Analiz 7.6 kabul kriteri karşılanmıyordu | Kapandı |
+| T5 | `GORUNTULEYICI` atama rolü hiçbir kararı etkilemiyordu | Kapsam kontrolü yalnızca atamanın varlığına bakıyor; "görüntüleyici" atanan kullanıcı tam yetkiyle işlem yapıyordu | Kapandı |
+| T6 | Pasif projeye rapor girilebiliyordu | Proje dashboard'dan çıkıyor ama rapor kabul ediliyordu | Kapandı |
+
+**Kapsam dışı bırakılanlar:** `actualProgress > targetProgress` kısıtı (planın önünde gitmek meşru bir durumdur) ve gelecek haftaya rapor sınırı (Ön Analiz açık soru 9 cevapsız; ileriye dönük plan girmek meşru). İkisi de bilinçli kararlardır.
+
+**Kök neden ortaklığı:** T1, T2 ve T3 aynı sorunun görünümleriydi — "proje durumu" birden fazla yerde, farklı anlamlarla tutuluyordu. Ön Analiz bölüm 10.3 bu çakışmayı **önceden uyarmıştı** ("Testte/Gecikti/Riskli gibi değerlerin … çakışmaması için açık soruların cevaplarına göre netleştirilecektir", açık soru 7) ancak netleştirme yapılmamıştı.
+
+**Düzeltme ve gerekçeler:** [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13.5. Enum değişiklikleri H8'deki `CHECK` constraint sorununu tetiklediği için tablolar düşürülüp şema ve demo verisi sıfırdan üretildi.
+
+**Kanıt:** Bölüm 10.5'teki senaryolar.
+
+**Önem:** Yüksek (T1–T4), Orta (T5–T6) · **Durum:** Kapandı, tekrar test edildi
+
 ## 8. Tekrar test
 
 Düzeltmelerden sonra yalnızca ilgili senaryo değil, etkilenen akışların tamamı yeniden çalıştırılmıştır:
@@ -348,7 +371,24 @@ W11 önemli: normalizasyon öncesi `weekStart=2026-08-26` gönderildiğinde penc
 | S2 | `GET /api/projects` yanıtı | Aynı sonuç | ✅ |
 | S3 | Sorgu sayısı | Sorumlular proje başına ayrı sorgu yapılmadan tek sorguda okunur | ✅ (toplu sorgu kullanıldı) |
 
-### 10.5 Doğrulanmayanlar — dürüst not
+### 10.5 Model tutarlılığı (H11)
+
+Temiz şema ve yeniden üretilmiş demo verisi üzerinde, gerçek HTTP istekleriyle çalıştırıldı.
+
+| # | Senaryo | Beklenen | Sonuç |
+| --- | --- | --- | --- |
+| M1 | Dashboard sayaçları tablo satırlarıyla birebir aynı mı | bloke/riskli/geciken sayaçları tablodan sayılanla eşit | ✅ 1/2/2 = 1/2/2 |
+| M2 | `generalStatus` artık örtüşen değer taşıyor mu | `DELAYED` ve `AT_RISK` hiçbir kayıtta görünmemeli | ✅ yalnızca 5 dik değer |
+| M3 | Kaldırılan enum değeri API'de reddediliyor mu | `generalStatus=AT_RISK` → `400` | ✅ |
+| M4 | Risk seviyesi türetiliyor mu — ekleme | Rapora `HIGH` risk eklenince seviye `MEDIUM` → `HIGH` | ✅ |
+| M5 | Risk seviyesi türetiliyor mu — silme | Risk silinince seviye `HIGH` → `MEDIUM` | ✅ |
+| M6 | Pasif projeye rapor | `400`, "Pasif projeye haftalık rapor eklenemez." | ✅ |
+| M7 | Yaşam döngüsü ile hafta durumu ayrışıyor mu | Aynı projede `ON_HOLD` (yaşam döngüsü) + `BLOCKED` (hafta) tutarlı görünüyor | ✅ |
+| M8 | Türetilmiş risk gerçek kayıtlarla eşleşiyor mu | Her projede `riskLevel` ↔ açık risk kaydı sayısı tutarlı | ✅ SQL ile doğrulandı |
+
+**Regresyon:** T13 filtre/sayfalama/sıralama (`200`), geçersiz `sort` (`400`), kapsam kontrolü (`403`), desteklenmeyen metot (`405`), oturumsuz istek (`401`), sayfalama (12 rapor / 2 sayfa) — tamamı değişmedi. Tarayıcıda dört rolle giriş yapıldı, konsolda uygulama kaynaklı hata yok.
+
+### 10.6 Doğrulanmayanlar — dürüst not
 
 Aşağıdakiler bu denetimde **çalıştırılmamıştır** ve teslim öncesi tarayıcıda manuel doğrulanmalıdır:
 

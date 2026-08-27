@@ -226,7 +226,7 @@ Veri seti, geliştirilen özelliklerin demo sırasında görünür olması için
 | --- | --- |
 | Rapor listesi sayfalaması | `e-Fatura Entegrasyon Modülü` projesinde 12 haftalık rapor bulunur; sayfa boyutu 10 olduğu için liste 2 sayfaya bölünür |
 | Dashboard sayaçları | 6 aktif proje; 2 yüksek riskli, 2 geciken ve 1 bloke proje |
-| Dashboard ve rapor filtreleri | Yedi farklı genel durum (`PLANNED`, `IN_PROGRESS`, `IN_TEST`, `COMPLETED`, `DELAYED`, `AT_RISK`, `BLOCKED`), üç risk seviyesi ve iki takvim durumu |
+| Dashboard ve rapor filtreleri | Beş farklı genel durum (`PLANNED`, `IN_PROGRESS`, `IN_TEST`, `COMPLETED`, `BLOCKED`), üç risk seviyesi ve iki takvim durumu |
 | Aktif iş sayacı | `IN_PROGRESS`, `IN_TEST` ve `BLOCKED` durumunda iş kalemleri |
 | Rol bazlı kapsam | Proje yöneticisi 3, ekip lideri 2, CTO ise 6 projenin tamamını görür |
 | Boş durum davranışı | Tamamlanmış proje güncel hafta için rapor içermez; dashboard bunu "rapor bekleniyor" olarak gösterir |
@@ -460,6 +460,21 @@ Proje güncellemede `status` ve `active` alanları zorunludur. `active=false` ya
 
 Güncellemede oluşturma ile aynı validasyon kuralları uygulanır. Rapor haftası, aynı projede başka bir rapora ait bir haftaya taşınırsa istek `409 Conflict` ile reddedilir; raporun kendi haftası çakışma sayılmaz. Düzenleme için bir süre sınırı yoktur: erişim yalnızca `REPORT_UPDATE` yetkisi ve proje ataması (kapsam) ile sınırlanır.
 
+### Kavram ayrımı: dört ayrı eksen
+
+Sistem projenin durumunu **dört farklı eksende** tutar. Bunlar birbirinin yerine geçmez; Ön Analiz bölüm 4.1 ve 10.3 bu ayrımı açıkça ister.
+
+| Eksen | Alan | Değerler | Kim belirler |
+| --- | --- | --- | --- |
+| Projenin yaşam döngüsü | `Project.status` | `PLANNED` (Başlamadı) / `ACTIVE` (Aktif) / `ON_HOLD` (Askıda) / `CLOSED` (Kapandı) | Admin |
+| O haftanın çalışma durumu | `WeeklyReport.generalStatus` | `PLANNED` / `IN_PROGRESS` / `IN_TEST` / `COMPLETED` / `BLOCKED` | Proje yöneticisi |
+| Takvime uyum | `WeeklyReport.scheduleStatus` | `ON_TRACK` / `DELAYED` | Proje yöneticisi |
+| Risk düzeyi | `WeeklyReport.riskLevel` | `LOW` / `MEDIUM` / `HIGH` | **Türetilir** (girilmez) |
+
+**Risk seviyesi neden girilmez:** Rapora bağlı `OPEN` ve `ACTION_IN_PROGRESS` durumundaki risk/engel kayıtlarının en yükseğinden hesaplanır; açık risk yoksa `LOW` olur. Böylece dashboard'daki risk bilgisi her zaman gerçek risk kayıtlarıyla tutarlıdır. Bir risk kaydı eklendiğinde, güncellendiğinde veya silindiğinde raporun seviyesi otomatik yeniden hesaplanır.
+
+Dashboard sayaçları ve sağlık rozeti **yalnızca haftalık rapordan** beslenir; projenin yaşam döngüsü alanı bu göstergelere karışmaz. Gerekçeler için [`docs/t14-authorization-matrix.md`](docs/t14-authorization-matrix.md) bölüm 13.5'e bakınız.
+
 ### Rapor dönemi: hafta modeli
 
 `reportWeekStart` bir **dönemi** temsil eder, tek bir günü değil. Gönderilen tarih, ait olduğu ISO haftasının **Pazartesi**'sine normalize edilerek saklanır:
@@ -686,7 +701,7 @@ Temel kontroller:
 - İlerleme değerleri `0` ile `100` arasında olmalıdır.
 - Genel durum zorunludur.
 - Takvim durumu zorunludur.
-- Risk seviyesi zorunludur.
+- Risk seviyesi **girilmez**: rapora bağlı açık risk/engel kayıtlarından türetilir.
 - Yapılanlar alanı zorunludur.
 - Gelecek hafta yapılacaklar alanı zorunludur.
 - Engeller alanı isteğe bağlıdır.

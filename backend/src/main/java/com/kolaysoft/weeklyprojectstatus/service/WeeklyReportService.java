@@ -73,6 +73,13 @@ public class WeeklyReportService {
 
                 Project project = projectService.getProjectEntity(projectId);
 
+                // Pasif proje portfoyden cikarilmistir ve dashboard'da
+                // listelenmez; ona yeni rapor girilmesi de anlamsizdir.
+                if (!project.isActive()) {
+                        throw new IllegalArgumentException(
+                                        "Pasif projeye haftalık rapor eklenemez.");
+                }
+
                 LocalDate weekStart = toWeekStart(request.getReportWeekStart());
 
                 boolean reportAlreadyExists = weeklyReportRepository
@@ -96,7 +103,10 @@ public class WeeklyReportService {
                 weeklyReport.setActualProgress(request.getActualProgress());
                 weeklyReport.setGeneralStatus(request.getGeneralStatus());
                 weeklyReport.setScheduleStatus(request.getScheduleStatus());
-                weeklyReport.setRiskLevel(request.getRiskLevel());
+                // Risk seviyesi kullanici girdisi degildir; rapora bagli acik
+                // risk kayitlarindan turetilir. Yeni raporun henuz risk kaydi
+                // olmadigi icin varsayilan seviyeyle baslar.
+                weeklyReport.setRiskLevel(RiskLevelResolver.DEFAULT_LEVEL);
                 weeklyReport.setCompletedSummary(request.getCompletedSummary());
                 weeklyReport.setNextWeekPlan(request.getNextWeekPlan());
                 weeklyReport.setBlockers(request.getBlockers());
@@ -151,7 +161,8 @@ public class WeeklyReportService {
                 weeklyReport.setActualProgress(request.getActualProgress());
                 weeklyReport.setGeneralStatus(request.getGeneralStatus());
                 weeklyReport.setScheduleStatus(request.getScheduleStatus());
-                weeklyReport.setRiskLevel(request.getRiskLevel());
+                // riskLevel'a dokunulmaz: turetilmis alandir, risk/engel
+                // kayitlari degistiginde RiskLevelResolver gunceller.
                 weeklyReport.setCompletedSummary(request.getCompletedSummary());
                 weeklyReport.setNextWeekPlan(request.getNextWeekPlan());
                 weeklyReport.setBlockers(request.getBlockers());
