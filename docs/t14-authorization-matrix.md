@@ -155,6 +155,8 @@ Tüm yanıtlar mevcut `GlobalExceptionHandler` üzerinden, projedeki `ApiErrorRe
 
 Kapsam sütunu: **Atanmış** = yalnızca kullanıcının atandığı projeler, **Tümü** = tüm projeler, **–** = kapsam kontrolü uygulanmaz.
 
+> **Otomatik doğrulama:** Bu matrisin temsili bir alt kümesi `AuthorizationMatrixTest` ile teste bağlanmıştır (10 test, dört rol). Bir `@PreAuthorize` anotasyonu yanlışlıkla değiştirilirse test kırmızı yanar; bu, matrisin dokümanla kod arasında kopmasını engeller. Ayrıntı: [`test-raporu.md`](test-raporu.md) bölüm 12.
+
 ### Mevcut endpointler
 
 | Endpoint | Gerekli yetki | PY | CTO | Admin | EL | Kapsam | Yetkisiz davranış |

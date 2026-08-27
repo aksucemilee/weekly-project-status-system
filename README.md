@@ -770,7 +770,7 @@ cd backend
 
 **Testler çalışan bir PostgreSQL kurulumu gerektirmez.** In-memory H2 üzerinde çalışırlar (`src/test/resources/application-test.properties`); şema her çalıştırmada sıfırdan kurulur ve seeder'lar devre dışıdır. Bu nedenle `DB_PASSWORD` tanımlamanıza gerek yoktur.
 
-Komut şu anda **27 test** çalıştırır:
+Komut şu anda **47 test** çalıştırır:
 
 | Test sınıfı | Test | Kapsam |
 | --- | ---: | --- |
@@ -778,9 +778,11 @@ Komut şu anda **27 test** çalıştırır:
 | `WeeklyReportServiceTest` | 10 | Hafta normalizasyonu, çakışma kuralı, kapsam kontrolü, pasif proje kuralı, sıralama allow-list |
 | `RiskLevelDerivationTest` | 6 | Risk seviyesinin açık risk kayıtlarından türetilmesi |
 | `DashboardConsistencyTest` | 6 | Dashboard sayaçları ile tablo satırlarının tutarlılığı |
+| `HttpStatusMappingTest` | 10 | Exception → HTTP kodu eşlemeleri (`400`/`401`/`403`/`404`/`405`/`409`) |
+| `AuthorizationMatrixTest` | 10 | Yetki matrisinin dört rol için doğrulanması |
 | `WeeklyProjectStatusApplicationTests` | 1 | Spring bağlamının yüklenmesi |
 
-Kapsam **servis katmanıyla sınırlıdır**: controller/HTTP katmanı (durum kodları), yetki matrisinin tamamı, frontend ve tarayıcı akışları manuel olarak doğrulanmaktadır. Ayrıntı ve dürüst sınırlar için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12'ye bakınız.
+Kapsam **backend ile sınırlıdır**: frontend ve tarayıcı akışları manuel olarak doğrulanmaktadır. Ayrıntı ve dürüst sınırlar için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12'ye bakınız.
 
 Daha kapsamlı Maven doğrulaması için:
 
@@ -989,7 +991,7 @@ Mevcut sürümde aşağıdaki geliştirmeler henüz tamamlanmamıştır:
 - Dashboard ve rapor listesinde "sorumlu" **filtresi** henüz yoktur. Sorumlu proje yöneticisi bilgisi artık dashboard ve proje listesinde **gösterilmektedir**, ancak buna göre filtreleme yapılamamaktadır.
 - Enum alanları için Hibernate `CHECK` constraint üretir ve `ddl-auto=update` bu constraint'i güncellemez. Bu nedenle mevcut bir veritabanına yeni bir enum değeri (örneğin yeni bir yetki kodu) eklendiğinde uygulama açılışta hata verir; temiz kurulumda sorun oluşmaz. Ayrıntı ve tek seferlik çözüm için [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 7, bulgu H8'e bakınız.
 - Rapor listesi (`GET /api/projects/{projectId}/weekly-reports`) sayfalama ve sıralama destekler; Dashboard ise kasıtlı olarak sayfalanmaz (CTO'nun tüm portföyü tek ekranda görmesi gerektiği için), yalnızca `projectId`/`weekStart` filtreleri veritabanı seviyesinde uygulanır — gerekçe için [`docs/t13-filter-contract.md`](docs/t13-filter-contract.md) dosyasına bakınız.
-- Otomatik test kapsamı **servis katmanıyla sınırlıdır** (27 test). Controller/HTTP katmanı, yetki matrisinin tamamı, frontend ve tarayıcı akışları manuel olarak doğrulanmaktadır.
+- Otomatik test kapsamı **backend ile sınırlıdır** (47 test: servis kuralları, HTTP durum kodları, yetki matrisi). Frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmamaktadır; arayüz manuel olarak doğrulanmaktadır.
 - Frontend için otomatik test altyapısı henüz eklenmemiştir.
 - Şema yönetimi Hibernate `ddl-auto=update` ile yapılır; Flyway/Liquibase gibi sürümlenmiş bir migration yapısı bulunmamaktadır. Seed tarafı ise mevcuttur (`AuthorizationDataInitializer` ve `DemoDataInitializer`), ancak uygulama açılışında çalışan idempotent bir seeder'dır; sürümlenmiş bir veri göçü değildir.
 - Deployment henüz tamamlanmamıştır; proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.
@@ -1005,7 +1007,7 @@ Final teslim öncesi yapılan kapsam denetiminde, Ön Analiz ve yönetmelikte MV
 
 Sıradaki planlanan geliştirmeler:
 
-1. **Test kapsamının HTTP ve arayüz katmanına genişletilmesi.** Servis katmanındaki iş kuralları 27 testle korunuyor; controller durum kodları (`401`/`403`/`409`), yetki matrisinin 39 senaryosu ve frontend akışları hâlâ manuel doğrulamaya dayanıyor (bkz. [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12 ve R1/R2).
+1. **Frontend test altyapısı.** Backend 47 testle korunuyor (servis kuralları, HTTP durum kodları, yetki matrisi); frontend bileşen testleri ve tarayıcı (E2E) senaryoları bulunmuyor (bkz. [`docs/test-raporu.md`](docs/test-raporu.md) bölüm 12 ve R2).
 2. **Sorumlu filtresi.** Sorumlu bilgisi artık gösteriliyor; dashboard ve rapor listesi endpointlerine `responsibleUserId` parametresinin eklenmesi kalmıştır.
 3. **Sürümlenmiş migration (Flyway/Liquibase).** `ddl-auto=update` şema evrimini karşılamıyor (bkz. bulgu H8).
 4. **Deployment.** Proje şu aşamada doğrulanmış lokal ortam üzerinden çalıştırılmaktadır.

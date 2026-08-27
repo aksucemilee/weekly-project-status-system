@@ -13,7 +13,7 @@ Bu doküman, staj yönetmeliği bölüm 1.1'in ("Test kanıtı: senaryolar, hata
 | Konu | Durum |
 | --- | --- |
 | Test yaklaşımı | Ağırlıklı olarak **manuel** test: tarayıcı üzerinden kullanıcı akışları, Swagger/curl üzerinden API senaryoları |
-| Otomatik test | Backend'de **27 test** kritik iş kurallarını korur (bölüm 12); in-memory H2 üzerinde çalışır, PostgreSQL gerektirmez. Frontend'de otomatik test altyapısı yoktur |
+| Otomatik test | Backend'de **47 test**: servis katmanı iş kuralları + HTTP durum kodları + yetki matrisi (bölüm 12). In-memory H2 üzerinde çalışır, PostgreSQL gerektirmez. Frontend'de otomatik test altyapısı yoktur |
 | Test verisi | `DemoDataInitializer` ile üretilen demo verisi (`SEED_DEMO_DATA=true`) ve elle girilen kayıtlar |
 | Roller | Dört demo kullanıcısı ile ayrı oturumlar: `pm@`, `cto@`, `admin@`, `lider@demo.local` |
 
@@ -44,8 +44,8 @@ Otomatik test paketi eklendikten sonra (27.08.2026):
 
 | # | Kontrol | Komut | Sonuç |
 | --- | --- | --- | --- |
-| A10 | Backend test | `mvnw test` | ✅ `Tests run: 27, Failures: 0, Errors: 0, Skipped: 0` |
-| A11 | Testlerin PostgreSQL'den bağımsızlığı | Geçersiz `DB_URL`/`DB_PASSWORD` ile `mvnw test` | ✅ 27/27 geçti |
+| A10 | Backend test | `mvnw test` | ✅ `Tests run: 47, Failures: 0, Errors: 0, Skipped: 0` |
+| A11 | Testlerin PostgreSQL'den bağımsızlığı | Geçersiz `DB_URL`/`DB_PASSWORD` ile `mvnw test` | ✅ 47/47 geçti |
 
 **A2 hakkında dürüst not (tarihsel):** A2 çalıştırıldığı tarihte kapsam tek bir `contextLoads()` testinden ibaretti ve hiçbir iş kuralını doğrulamıyordu. Bu durum 27.08.2026'da değişti; güncel kapsam ve sınırları için bölüm 12'ye bakınız.
 
@@ -300,7 +300,7 @@ Bu bölüm bilinçli olarak dürüst tutulmuştur; aşağıdakiler projenin bili
 
 | # | Risk | Etki | Neden kabul edildi |
 | --- | --- | --- | --- |
-| R1 | **Otomatik test kapsamı sınırlı.** ~~Çalışan tek test `contextLoads()`~~ → **27 test** kritik iş kurallarını koruyor (bkz. bölüm 12). Ancak kapsam tam değil: uçtan uca HTTP katmanı, frontend ve tarayıcı akışları hâlâ otomatik korunmuyor | **Orta** (önceden Yüksek). Servis katmanındaki iş kuralları artık regresyona karşı korunuyor; controller/UI katmanı manuel doğrulamaya dayanıyor | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı; final denetiminde uygulandı. Kalan kapsam (E2E, frontend) bilinçli olarak sonraki aşamaya bırakıldı — bkz. R2 |
+| R1 | **Otomatik test kapsamı backend ile sınırlı.** ~~Çalışan tek test `contextLoads()`~~ → **47 test**: servis katmanı iş kuralları, HTTP durum kodu eşlemeleri ve yetki matrisi (bkz. bölüm 12). Frontend ve tarayıcı akışları otomatik korunmuyor | **Düşük** (önceden Yüksek). Backend uçtan uca korunuyor; arayüz katmanı manuel doğrulamaya dayanıyor | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı; final denetiminde uygulandı. Frontend/E2E kapsamı bilinçli olarak kapsam dışı — bkz. R2 |
 | R2 | **E2E / tarayıcı testleri repository'de saklanmıyor.** Rol senaryoları tarayıcı üzerinden çalıştırıldı, ancak yeniden koşulabilir bir artefakt yok | Orta. Sonuçlar bu dokümana ve `t14-authorization-matrix.md`'ye dayanıyor, otomatik olarak yeniden üretilemiyor | Otomatik E2E altyapısı kurmak T14 kapsamının dışındaydı |
 | R3 | `npm run lint` 10 hata veriyor (H7) | Düşük. Üretim build'ini etkilemiyor | Bkz. H7 |
 | ~~R4~~ | ~~**Haftalık rapor ve proje güncelleme endpointleri yok.**~~ **KAPANDI (26.08.2026).** Her iki endpoint de final kapsam denetiminde eklendi ve bölüm 10'daki senaryolarla doğrulandı. Gerekçe: [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13 | — | **Silme** endpointleri hâlâ yok ve bilinçli olarak kapsam dışı (Ön Analiz 12.3, açık soru 3) |
@@ -422,7 +422,7 @@ R1 riskini düşürmek için, denetim boyunca **elle** doğrulanan kritik iş ku
 
 Testler in-memory **H2** üzerinde çalışır (`src/test/resources/application-test.properties`); üretimde PostgreSQL kullanılmaya devam eder. Şema her çalışmada `create-drop` ile sıfırdan kurulur ve seeder'lar testte devre dışıdır — her test kendi verisini kurar.
 
-**Neden:** `mvnw test` çalışan bir PostgreSQL kurulumu gerektirmez, her ortamda aynı sonucu verir ve demo günü veritabanı erişimine bağımlı değildir. Bu, geçersiz `DB_URL`/`DB_PASSWORD` ile çalıştırılarak doğrulanmıştır: **27/27 test geçti.**
+**Neden:** `mvnw test` çalışan bir PostgreSQL kurulumu gerektirmez, her ortamda aynı sonucu verir ve demo günü veritabanı erişimine bağımlı değildir. Bu, geçersiz `DB_URL`/`DB_PASSWORD` ile çalıştırılarak doğrulanmıştır: **47/47 test geçti.**
 
 **Yeni bağımlılıklar (yalnızca `test` scope):** `com.h2database:h2`, `spring-security-test`.
 
@@ -430,12 +430,27 @@ Testler in-memory **H2** üzerinde çalışır (`src/test/resources/application-
 
 | Test sınıfı | Test | Neyi korur |
 | --- | ---: | --- |
+**Servis katmanı — iş kuralları**
+
+| Test sınıfı | Test | Neyi korur |
+| --- | ---: | --- |
 | `WorkItemValidationTest` | 4 | İş kalemi tarih/durum kuralları (bulgu H4) |
 | `WeeklyReportServiceTest` | 10 | Hafta normalizasyonu (H10), çakışma kuralı, kapsam kontrolü, pasif proje kuralı (T6), sıralama allow-list (T13) |
 | `RiskLevelDerivationTest` | 6 | Risk seviyesinin açık risk kayıtlarından türetilmesi (T4) |
 | `DashboardConsistencyTest` | 6 | Sayaç ↔ tablo tutarlılığı (T3), yaşam döngüsünün göstergelere karışmaması (T1) |
+
+**HTTP katmanı — durum kodları ve yetki**
+
+Servis testleri yalnızca doğru exception'ın fırladığını doğrular; aşağıdaki testler o exception'ın istemciye **hangi kodla** döndüğünü ve endpoint'in **hangi yetkiyi** istediğini doğrular. Gerçek güvenlik zinciri (`@PreAuthorize`, CSRF, `GlobalExceptionHandler`) çalışır.
+
+| Test sınıfı | Test | Neyi korur |
+| --- | ---: | --- |
+| `HttpStatusMappingTest` | 10 | `409` çakışma, `400` validasyon/enum/tip/sort, `404` bulunamadı, `405` metot, `403` kapsam, `401` oturumsuz, `/api/health` açık |
+| `AuthorizationMatrixTest` | 10 | `t14-authorization-matrix.md` bölüm 7'deki matrisin yürütülebilir karşılığı: rapor oluşturma/güncelleme, proje yönetimi, dashboard, admin ekranı, iş kalemi/risk yetkileri — dört rol için |
+
+| | **Toplam** | **47** |
+| --- | ---: | --- |
 | `WeeklyProjectStatusApplicationTests` | 1 | Spring bağlamı |
-| **Toplam** | **27** | |
 
 ### Testlerin gerçekten hata yakaladığı doğrulandı
 
@@ -448,15 +463,24 @@ expected: 2026-07-13  but was: 2026-07-19
 expected: 1L          but was: 0L
 ```
 
-Beş test kırmızı yandı ve hatanın tam nedenini gösterdi. Ardından kod geri yüklendi; uygulama kaynağında kalıcı değişiklik yapılmadı.
+Beş test kırmızı yandı ve hatanın tam nedenini gösterdi.
+
+HTTP katmanı testleri için aynı kontrol iki ayrı kusurla tekrarlandı:
+
+| Enjekte edilen kusur | Yakalayan test | Sonuç |
+| --- | --- | --- |
+| `@PreAuthorize('REPORT_UPDATE')` → `REPORT_VIEW` | `AuthorizationMatrixTest.reportUpdateIsRestrictedToProjectManager` | `expected:<403> but was:<404>` |
+| `DuplicateResourceException` → `409` yerine `400` | `HttpStatusMappingTest.duplicateWeekReturnsConflict` | `expected:<409> but was:<400>` |
+
+Her iki kusur da yakalandı. Ardından kod geri yüklendi; uygulama kaynağında kalıcı değişiklik yapılmadı (`git diff` boş).
 
 ### Hâlâ otomatik korunmayanlar — dürüst not
 
 | Konu | Durum |
 | --- | --- |
-| Controller/HTTP katmanı (`403`/`401`/`409` durum kodları) | Manuel doğrulandı (bölüm 10), otomatik test yok |
-| Yetki matrisinin 39 senaryosu | Manuel (bkz. `t14-authorization-matrix.md` bölüm 10) |
+| Yetki matrisinin tamamı (39 senaryo) | Temsili alt küme otomatik (10 test); kalanı manuel (bkz. `t14-authorization-matrix.md` bölüm 10) |
+| Arayüz davranışları (buton görünürlüğü, form akışları) | Manuel — tarayıcıda dört rolle doğrulandı |
 | Frontend birim/bileşen testleri | Yok — R2 |
 | Tarayıcı (E2E) senaryoları | Yok — R2 |
 
-Yani R1 **kapanmadı, düşürüldü**: servis katmanındaki iş kuralları artık korunuyor, HTTP ve arayüz katmanı manuel doğrulamaya dayanıyor.
+Yani R1 **backend için kapandı, arayüz için açık**: servis ve HTTP katmanları otomatik korunuyor, frontend manuel doğrulamaya dayanıyor. Frontend test altyapısı (Vitest/Playwright) bilinçli olarak kapsam dışı bırakıldı: yönetmelik bölüm 8.1 frontend çıktısı olarak test istemiyor ve E2E testleri çalışan backend + veritabanı gerektirdiği için testlerin ortam bağımsızlığını ortadan kaldırırdı.
