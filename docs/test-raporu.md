@@ -13,7 +13,7 @@ Bu doküman, staj yönetmeliği bölüm 1.1'in ("Test kanıtı: senaryolar, hata
 | Konu | Durum |
 | --- | --- |
 | Test yaklaşımı | Ağırlıklı olarak **manuel** test: tarayıcı üzerinden kullanıcı akışları, Swagger/curl üzerinden API senaryoları |
-| Otomatik test | Backend'de **47 test**: servis katmanı iş kuralları + HTTP durum kodları + yetki matrisi (bölüm 12). In-memory H2 üzerinde çalışır, PostgreSQL gerektirmez. Frontend'de otomatik test altyapısı yoktur |
+| Otomatik test | Backend'de **58 test**: servis katmanı iş kuralları + HTTP durum kodları + yetki matrisi + güvenlik sertleştirmeleri (bölüm 12, 13). In-memory H2 üzerinde çalışır, PostgreSQL gerektirmez. Frontend'de otomatik test altyapısı yoktur |
 | Test verisi | `DemoDataInitializer` ile üretilen demo verisi (`SEED_DEMO_DATA=true`) ve elle girilen kayıtlar |
 | Roller | Dört demo kullanıcısı ile ayrı oturumlar: `pm@`, `cto@`, `admin@`, `lider@demo.local` |
 
@@ -46,6 +46,8 @@ Otomatik test paketi eklendikten sonra (27.08.2026):
 | --- | --- | --- | --- |
 | A10 | Backend test | `mvnw test` | ✅ `Tests run: 47, Failures: 0, Errors: 0, Skipped: 0` |
 | A11 | Testlerin PostgreSQL'den bağımsızlığı | Geçersiz `DB_URL`/`DB_PASSWORD` ile `mvnw test` | ✅ 47/47 geçti |
+| A12 | Güvenlik denetimi sonrası (bölüm 13) | `mvnw test` | ✅ `Tests run: 58, Failures: 0, Errors: 0, Skipped: 0` |
+| A13 | Frontend bağımlılık taraması | `npm audit` | ✅ `found 0 vulnerabilities` (önce 2 high + 1 moderate) |
 
 **A2 hakkında dürüst not (tarihsel):** A2 çalıştırıldığı tarihte kapsam tek bir `contextLoads()` testinden ibaretti ve hiçbir iş kuralını doğrulamıyordu. Bu durum 27.08.2026'da değişti; güncel kapsam ve sınırları için bölüm 12'ye bakınız.
 
@@ -463,8 +465,10 @@ Servis testleri yalnızca doğru exception'ın fırladığını doğrular; aşa�
 | --- | ---: | --- |
 | `HttpStatusMappingTest` | 10 | `409` çakışma, `400` validasyon/enum/tip/sort, `404` bulunamadı, `405` metot, `403` kapsam, `401` oturumsuz, `/api/health` açık |
 | `AuthorizationMatrixTest` | 10 | `t14-authorization-matrix.md` bölüm 7'deki matrisin yürütülebilir karşılığı: rapor oluşturma/güncelleme, proje yönetimi, dashboard, admin ekranı, iş kalemi/risk yetkileri — dört rol için |
+| `SecurityHardeningTest` | 6 | Giriş denemesi sınırı (`429`), CSP, Referrer-Policy, varsayılan başlıklar, HSTS'in lokalde kapalı olması |
+| `AdminSafeguardTest` | 5 | Admin kendini kilitleyemez; en az bir aktif admin kalır |
 
-| | **Toplam** | **47** |
+| | **Toplam** | **58** |
 | --- | ---: | --- |
 | `WeeklyProjectStatusApplicationTests` | 1 | Spring bağlamı |
 
@@ -500,3 +504,68 @@ Her iki kusur da yakalandı. Ardından kod geri yüklendi; uygulama kaynağında
 | Tarayıcı (E2E) senaryoları | Yok — R2 |
 
 Yani R1 **backend için kapandı, arayüz için açık**: servis ve HTTP katmanları otomatik korunuyor, frontend manuel doğrulamaya dayanıyor. Frontend test altyapısı (Vitest/Playwright) bilinçli olarak kapsam dışı bırakıldı: yönetmelik bölüm 8.1 frontend çıktısı olarak test istemiyor ve E2E testleri çalışan backend + veritabanı gerektirdiği için testlerin ortam bağımsızlığını ortadan kaldırırdı.
+
+## 13. Güvenlik denetimi (27.08.2026)
+
+Canlıya alma öncesi 23 maddelik bir güvenlik ve mimari denetimi yapıldı. Sonuçlar ve alınan aksiyonlar aşağıdadır.
+
+### 13.1 Denetim sonucu
+
+| Durum | Adet | Maddeler |
+| --- | ---: | --- |
+| Güvenli | 10 | Secret taraması, git geçmişi, RBAC, sunucu tarafı yetki, girdi doğrulama, parola hash'leme, hata mesajları, loglama, SQL injection, XSS |
+| Riskli | 6 | CORS, güvenlik başlıkları, çerez bayrakları, admin izolasyonu, bağımlılıklar, GDPR |
+| **Kritik açık** | **1** | **Rate limiting yok** |
+| Uygulanamaz / kapsam dışı | 6 | Dosya yükleme, HTTPS, webhook, yedekleme, kota, (GDPR silme) |
+
+### 13.2 Kapatılan açıklar
+
+| Madde | Bulgu | Yapılan |
+| --- | --- | --- |
+| 5 | `/api/auth/login` sınırsız denemeye açıktı. BCrypt offline saldırıyı yavaşlatır ancak online brute-force'u engellemez | Bucket4j ile IP bazlı sınır (varsayılan 5/15 dk). Sınır aşıldığında parola hiç kontrol edilmez, `429` döner |
+| 8 | CORS origin'i kaynak koda sabit yazılmıştı; farklı adrese deploy kod değişikliği gerektiriyordu. `allowedHeaders("*")` geniştir | Origin `CORS_ALLOWED_ORIGINS` ile verilir; başlıklar dört gerçek başlıkla sınırlandı. Joker kullanılmaz |
+| 9 | CSP ve `Referrer-Policy` gönderilmiyordu | Her ikisi eklendi. HSTS `PRODUCTION_HARDENING` ile koşullu (lokalde kapalı; açık olsaydı tarayıcıyı `localhost` adına HTTPS'e kilitlerdi) |
+| 12 | Çerez bayrakları sabitti | `COOKIE_SECURE` ve `COOKIE_SAME_SITE` yapılandırılabilir; `HttpOnly` her zaman açık |
+| 18 | Admin kendini pasife alabiliyor, son admin'in rolü düşürülebiliyordu — sistem yönetilemez hale gelebilirdi | Admin kendi `active` bayrağını ve rolünü değiştiremez. Ayrıca ikincil emniyet ağı olarak "en az bir aktif admin" kontrolü |
+| 19 | `npm audit`: 2 high + 1 moderate (`brace-expansion`, `nanoid`, `postcss`) | `npm audit fix` uygulandı → **0 açık**. Üçü de geliştirme araçlarında (eslint, vite) idi, üretim bundle'ına girmiyordu |
+
+### 13.3 Doğrulama
+
+Sertleştirmeler **12 yeni testle** korunuyor (`SecurityHardeningTest` 6, `AdminSafeguardTest` 5, artı mevcut kapsam) ve çalışan uygulama üzerinde ayrıca doğrulandı:
+
+```text
+Güvenlik başlıkları (canlı):
+  Content-Security-Policy: default-src 'self'; ... frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+
+Rate limiting (canlı, varsayılan 5/15dk):
+  deneme 1-5 -> 401    (kimlik doğrulama çalışıyor)
+  deneme 6-7 -> 429    (sınır devreye girdi)
+```
+
+### 13.4 Bilinçli olarak yapılmayanlar
+
+| Madde | Neden |
+| --- | --- |
+| 10 — HTTPS zorunluluğu | TLS sertifikası ve reverse proxy gerektirir; deployment MVP kapsamı dışı (R8). Kod tarafı hazır: `FORWARD_HEADERS_STRATEGY` ve `COOKIE_SECURE` yalnızca env ile açılır |
+| 20 — Yedekleme / felaket kurtarma | Sunucu ve süreç işi. Sürümlenmiş migration eksikliği ayrıca R7/H8'de kayıtlı |
+| 21 — GDPR anonimleştirme | Kullanıcı silme yerine pasife alma, `t14-authorization-matrix.md` bölüm 7'de gerekçeli bir **kapsam kararıdır**. Anonimleştirme akışı eklemek yeni bir endpoint ve MVP kapsam genişlemesi olurdu |
+| 22 — Kota / maliyet uyarısı | Ücretli dış servis kullanılmıyor; doğrudan maliyet riski yok. Kaynak tüketimi riski madde 5 ile büyük ölçüde kapandı |
+| 19 — Sürekli bağımlılık taraması | Tek seferlik tarama yapıldı ve açıklar kapatıldı; sürekli takip (Dependabot/CI) altyapı işi |
+
+### 13.5 Saldırgan bakışıyla iş mantığı kontrolü (madde 23)
+
+| Senaryo | Sonuç |
+| --- | --- |
+| PM, atanmadığı projenin raporunu okur | `403` |
+| PM, `projectId` değiştirerek başka projeye yazar | `403` |
+| CTO / Admin / Ekip lideri rapor düzenler | `403` |
+| Alt kayıt üzerinden dolaylı erişim (work-item → report → project) | `403` — kapsam kontrolü rapor katmanında |
+| Pasif kullanıcı giriş yapar | `401` |
+| CSRF token'sız `POST`/`PUT`/`DELETE` | `403` |
+| Admin kendini kilitler | `400` — **denetimde kapatıldı** |
+| Sınırsız giriş denemesi | `429` — **denetimde kapatıldı** |
+
+Yetki ve kapsam kontrollerinde yetki yükseltmeye açık bir yol bulunamadı.
