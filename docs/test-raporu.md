@@ -13,7 +13,7 @@ Bu doküman, staj yönetmeliği bölüm 1.1'in ("Test kanıtı: senaryolar, hata
 | Konu | Durum |
 | --- | --- |
 | Test yaklaşımı | Ağırlıklı olarak **manuel** test: tarayıcı üzerinden kullanıcı akışları, Swagger/curl üzerinden API senaryoları |
-| Otomatik test | **Sınırlı.** Backend'de yalnızca uygulama bağlamının yüklendiğini doğrulayan tek bir test bulunur; frontend'de otomatik test altyapısı yoktur. Ayrıntı için bölüm 7 |
+| Otomatik test | Backend'de **27 test** kritik iş kurallarını korur (bölüm 12); in-memory H2 üzerinde çalışır, PostgreSQL gerektirmez. Frontend'de otomatik test altyapısı yoktur |
 | Test verisi | `DemoDataInitializer` ile üretilen demo verisi (`SEED_DEMO_DATA=true`) ve elle girilen kayıtlar |
 | Roller | Dört demo kullanıcısı ile ayrı oturumlar: `pm@`, `cto@`, `admin@`, `lider@demo.local` |
 
@@ -40,9 +40,14 @@ Final kapsam denetimi (26.08.2026, aynı gün, kod değişikliklerinden sonra) t
 | A8 | Frontend production build | `npm run build` | ✅ `built in 518ms` |
 | A9 | Frontend lint | `npm run lint` | ❌ **10 error** — değişmedi, hâlâ H7 |
 
-A7 hakkındaki dürüst not (aşağıda) geçerliliğini korur: eklenen güncelleme endpointleri için de otomatik test yazılmamıştır, doğrulama bölüm 10'daki manuel API senaryolarıyla yapılmıştır.
+Otomatik test paketi eklendikten sonra (27.08.2026):
 
-**A2 hakkında dürüst not:** Bu komutun `BUILD SUCCESS` dönmesi sistemin test edildiği anlamına gelmez. Çalışan tek test `WeeklyProjectStatusApplicationTests.contextLoads()` olup yalnızca Spring bağlamının hatasız yüklendiğini doğrular. Tek bir iş kuralı, tek bir yetki kontrolü veya tek bir validasyon bu testle doğrulanmamaktadır.
+| # | Kontrol | Komut | Sonuç |
+| --- | --- | --- | --- |
+| A10 | Backend test | `mvnw test` | ✅ `Tests run: 27, Failures: 0, Errors: 0, Skipped: 0` |
+| A11 | Testlerin PostgreSQL'den bağımsızlığı | Geçersiz `DB_URL`/`DB_PASSWORD` ile `mvnw test` | ✅ 27/27 geçti |
+
+**A2 hakkında dürüst not (tarihsel):** A2 çalıştırıldığı tarihte kapsam tek bir `contextLoads()` testinden ibaretti ve hiçbir iş kuralını doğrulamıyordu. Bu durum 27.08.2026'da değişti; güncel kapsam ve sınırları için bölüm 12'ye bakınız.
 
 ## 3. MVP fonksiyonel senaryoları (T08 / 15. gün)
 
@@ -295,7 +300,7 @@ Bu bölüm bilinçli olarak dürüst tutulmuştur; aşağıdakiler projenin bili
 
 | # | Risk | Etki | Neden kabul edildi |
 | --- | --- | --- | --- |
-| R1 | **Otomatik test kapsamı pratikte yok.** Çalışan tek test `contextLoads()`. İş kuralları, yetkilendirme, filtreleme ve validasyon davranışlarının hiçbiri otomatik olarak korunmuyor | **Yüksek.** Bir regresyon yalnızca manuel testle yakalanabilir; refactoring riski yüksek | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı ancak uygulanmadı. Teslim tarihine kadar anlamlı bir test paketi yazmak mümkün değildi; aceleyle yazılmış zayıf testler gerçek kapsam yerine yanlış güven üretirdi |
+| R1 | **Otomatik test kapsamı sınırlı.** ~~Çalışan tek test `contextLoads()`~~ → **27 test** kritik iş kurallarını koruyor (bkz. bölüm 12). Ancak kapsam tam değil: uçtan uca HTTP katmanı, frontend ve tarayıcı akışları hâlâ otomatik korunmuyor | **Orta** (önceden Yüksek). Servis katmanındaki iş kuralları artık regresyona karşı korunuyor; controller/UI katmanı manuel doğrulamaya dayanıyor | Teknik Karar Notu bölüm 9'da JUnit/Mockito planlanmıştı; final denetiminde uygulandı. Kalan kapsam (E2E, frontend) bilinçli olarak sonraki aşamaya bırakıldı — bkz. R2 |
 | R2 | **E2E / tarayıcı testleri repository'de saklanmıyor.** Rol senaryoları tarayıcı üzerinden çalıştırıldı, ancak yeniden koşulabilir bir artefakt yok | Orta. Sonuçlar bu dokümana ve `t14-authorization-matrix.md`'ye dayanıyor, otomatik olarak yeniden üretilemiyor | Otomatik E2E altyapısı kurmak T14 kapsamının dışındaydı |
 | R3 | `npm run lint` 10 hata veriyor (H7) | Düşük. Üretim build'ini etkilemiyor | Bkz. H7 |
 | ~~R4~~ | ~~**Haftalık rapor ve proje güncelleme endpointleri yok.**~~ **KAPANDI (26.08.2026).** Her iki endpoint de final kapsam denetiminde eklendi ve bölüm 10'daki senaryolarla doğrulandı. Gerekçe: [`t14-authorization-matrix.md`](t14-authorization-matrix.md) bölüm 13 | — | **Silme** endpointleri hâlâ yok ve bilinçli olarak kapsam dışı (Ön Analiz 12.3, açık soru 3) |
@@ -408,3 +413,50 @@ Fonksiyonel MVP akışları, negatif/validasyon senaryoları, T13 filtreleme-say
 Projenin en büyük kalan riski R1'dir: **testlerin geçiyor olması, sistemin test edildiği anlamına gelmemektedir.** Bu denetimde eklenen özellikler de otomatik testle korunmamaktadır. Otomatik kapsamın oluşturulması bir sonraki adımdır.
 
 İkinci sırada R7 gelir: H8, sürümlenmiş migration eksikliğinin artık teorik bir risk olmadığını göstermiştir.
+
+## 12. Otomatik test paketi (27.08.2026)
+
+R1 riskini düşürmek için, denetim boyunca **elle** doğrulanan kritik iş kuralları otomatik teste bağlandı.
+
+### Altyapı kararı: testler veritabanı gerektirmez
+
+Testler in-memory **H2** üzerinde çalışır (`src/test/resources/application-test.properties`); üretimde PostgreSQL kullanılmaya devam eder. Şema her çalışmada `create-drop` ile sıfırdan kurulur ve seeder'lar testte devre dışıdır — her test kendi verisini kurar.
+
+**Neden:** `mvnw test` çalışan bir PostgreSQL kurulumu gerektirmez, her ortamda aynı sonucu verir ve demo günü veritabanı erişimine bağımlı değildir. Bu, geçersiz `DB_URL`/`DB_PASSWORD` ile çalıştırılarak doğrulanmıştır: **27/27 test geçti.**
+
+**Yeni bağımlılıklar (yalnızca `test` scope):** `com.h2database:h2`, `spring-security-test`.
+
+### Kapsam
+
+| Test sınıfı | Test | Neyi korur |
+| --- | ---: | --- |
+| `WorkItemValidationTest` | 4 | İş kalemi tarih/durum kuralları (bulgu H4) |
+| `WeeklyReportServiceTest` | 10 | Hafta normalizasyonu (H10), çakışma kuralı, kapsam kontrolü, pasif proje kuralı (T6), sıralama allow-list (T13) |
+| `RiskLevelDerivationTest` | 6 | Risk seviyesinin açık risk kayıtlarından türetilmesi (T4) |
+| `DashboardConsistencyTest` | 6 | Sayaç ↔ tablo tutarlılığı (T3), yaşam döngüsünün göstergelere karışmaması (T1) |
+| `WeeklyProjectStatusApplicationTests` | 1 | Spring bağlamı |
+| **Toplam** | **27** | |
+
+### Testlerin gerçekten hata yakaladığı doğrulandı
+
+Bir test paketinin yeşil yanması tek başına bir şey kanıtlamaz; **testlerin bozulmayı yakaladığı** ayrıca sınanmalıdır. Bunun için hafta normalizasyonu kasten devre dışı bırakıldı (`date.with(DayOfWeek.MONDAY)` → `date`):
+
+```
+Tests run: 10, Failures: 5  -- WeeklyReportServiceTest
+expected: 2026-07-13  but was: 2026-07-15
+expected: 2026-07-13  but was: 2026-07-19
+expected: 1L          but was: 0L
+```
+
+Beş test kırmızı yandı ve hatanın tam nedenini gösterdi. Ardından kod geri yüklendi; uygulama kaynağında kalıcı değişiklik yapılmadı.
+
+### Hâlâ otomatik korunmayanlar — dürüst not
+
+| Konu | Durum |
+| --- | --- |
+| Controller/HTTP katmanı (`403`/`401`/`409` durum kodları) | Manuel doğrulandı (bölüm 10), otomatik test yok |
+| Yetki matrisinin 39 senaryosu | Manuel (bkz. `t14-authorization-matrix.md` bölüm 10) |
+| Frontend birim/bileşen testleri | Yok — R2 |
+| Tarayıcı (E2E) senaryoları | Yok — R2 |
+
+Yani R1 **kapanmadı, düşürüldü**: servis katmanındaki iş kuralları artık korunuyor, HTTP ve arayüz katmanı manuel doğrulamaya dayanıyor.
